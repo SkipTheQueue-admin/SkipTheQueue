@@ -1,0 +1,13 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="container mt-5 text-center">
+    <h2 class="mb-3">🎉 Order Placed Successfully!</h2>
+    <p>Thanks, {{ request.session.user_name }}. Your order has been received.</p>
+
+    <div class="mt-4">
+        <a href="{% url 'menu' %}" class="btn btn-outline-primary btn-lg me-2">🍽️ Order More</a>
+        <a href="{% url 'track_order' %}" class="btn btn-outline-success btn-lg">📦 Track My Order</a>
+    </div>
+</div>
+{% endblock %}

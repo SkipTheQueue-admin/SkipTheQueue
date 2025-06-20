@@ -1,0 +1,14 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<main class="min-h-screen flex flex-col justify-center items-center text-center px-4 bg-white">
+  <h2 class="text-4xl sm:text-5xl font-bold leading-tight mb-6">Your Canteen, Just Smarter</h2>
+  <p class="text-lg text-gray-600 max-w-xl mb-8">
+    Welcome to SkipTheQueue – the universal canteen ordering system built for schools, colleges, and institutions. Easy, fast, and hassle-free.
+  </p>
+  <div class="flex space-x-4">
+    <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">Explore Menu</a>
+    <a href="{% url 'view_cart' %}" class="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition">Go to Cart</a>
+  </div>
+</main>
+{% endblock %}

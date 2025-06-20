@@ -1,0 +1,75 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 py-6">
+  <h2 class="text-3xl font-bold text-blue-600 mb-6">Canteen Admin Dashboard</h2>
+
+  {% if orders %}
+  <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-100 text-left text-sm font-semibold text-gray-600">
+        <tr>
+          <th class="px-6 py-3">Order #</th>
+          <th class="px-6 py-3">Customer</th>
+          <th class="px-6 py-3">Items</th>
+          <th class="px-6 py-3">Status</th>
+          <th class="px-6 py-3">Placed At</th>
+          <th class="px-6 py-3">Action</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-200 text-sm">
+        {% for order in orders %}
+        <tr>
+          <td class="px-6 py-4 font-bold text-blue-500">#{{ order.id }}</td>
+          <td class="px-6 py-4">{{ order.user_name }}<br><span class="text-xs text-gray-500">{{ order.user_phone }}</span></td>
+         <td class="px-6 py-4">
+  {% if order.order_items.all %}
+    <ul class="list-disc list-inside">
+      {% for oi in order.order_items.all %}
+      <li>{{ oi.item.name }} (₹{{ oi.item.price }}) × {{ oi.quantity }}</li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <span class="text-gray-400 italic">No items</span>
+  {% endif %}
+</td>
+
+          <td class="px-6 py-4">
+            <form action="{% url 'update_order_status' order.id %}" method="POST">
+              {% csrf_token %}
+              <select name="status" class="border rounded p-1">
+                {% for key, value in status_choices %}
+                  <option value="{{ key }}" {% if order.status == key %}selected{% endif %}>{{ value }}</option>
+                {% endfor %}
+              </select>
+          </td>
+          <td class="px-6 py-4">{{ order.created_at|date:"Y-m-d H:i" }}</td>
+          <td class="px-6 py-4 space-x-2">
+              <button type="submit" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-sm">Update</button>
+              </form>
+              <form action="{% url 'accept_order' order.id %}" method="POST" class="inline">
+                {% csrf_token %}
+                <button class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm">Accept</button>
+              </form>
+              <form action="{% url 'decline_order' order.id %}" method="POST" class="inline">
+                {% csrf_token %}
+                <button class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">Decline</button>
+              </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <p class="text-gray-500">No orders yet.</p>
+  {% endif %}
+</div>
+
+<!-- Auto-refresh every 10 seconds -->
+<script>
+  setInterval(() => {
+    window.location.reload();
+  }, 10000);
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-10">
+  <h2 class="text-3xl font-bold mb-6 text-center">🛒 Your Cart</h2>
+
+  {% if cart_items %}
+    <table class="w-full text-left mb-6">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="px-4 py-2">Item</th>
+          <th class="px-4 py-2">Qty</th>
+          <th class="px-4 py-2">Total</th>
+          <th class="px-4 py-2">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in cart_items %}
+  <div class="flex items-center justify-between bg-white rounded shadow p-4 mb-4">
+    <div>
+      <h3 class="text-lg font-semibold">{{ entry.item.name }}</h3>
+      <p class="text-sm text-gray-500">₹{{ entry.item.price }} x {{ entry.quantity }}</p>
+    </div>
+    <div class="flex items-center space-x-2">
+      <form method="post" action="{% url 'update_cart' entry.item.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="decrease">
+        <button class="bg-gray-200 hover:bg-gray-300 px-2 rounded">-</button>
+      </form>
+      <span class="px-2">{{ entry.quantity }}</span>
+      <form method="post" action="{% url 'update_cart' entry.item.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="increase">
+        <button class="bg-gray-200 hover:bg-gray-300 px-2 rounded">+</button>
+      </form>
+      <form method="post" action="{% url 'remove_from_cart' entry.item.id %}">
+        {% csrf_token %}
+        <button class="text-red-500 hover:text-red-700 ml-2">Remove</button>
+      </form>
+    </div>
+  </div>
+{% empty %}
+  <p>Your cart is empty.</p>
+{% endfor %}
+
+      </tbody>
+    </table>
+
+    <div class="flex justify-between items-center mb-6">
+      <span class="text-xl font-semibold">Total: ₹{{ total }}</span>
+      <form method="post" action="{% url 'place_order' %}">
+        {% csrf_token %}
+        <button type="submit" class="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">Place Order</button>
+      </form>
+    </div>
+  {% else %}
+    <p class="text-center text-gray-500">Your cart is empty.</p>
+    <div class="text-center mt-4">
+      <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-5 py-2 rounded hover:bg-blue-700">Continue Shopping</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
