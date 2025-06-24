@@ -3,12 +3,13 @@ Production settings for SkipTheQueue
 """
 
 from .settings import *
+import os
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
 # Generate a proper secret key for production
-SECRET_KEY = 'your-production-secret-key-here-make-it-long-and-random'
+SECRET_KEY = os.environ.get('SECRET_KEY')  # Set this in your environment
 
 # Allowed hosts for production
 ALLOWED_HOSTS = ['skipqueue.com', 'www.skipqueue.com', 'your-domain.com']
@@ -37,11 +38,11 @@ CSRF_TRUSTED_ORIGINS = ['https://skipqueue.com', 'https://www.skipqueue.com']
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'skipqueue_db',
-        'USER': 'skipqueue_user',
-        'PASSWORD': 'your-secure-password',
-        'HOST': 'localhost',
-        'PORT': '5432',
+        'NAME': os.environ.get('POSTGRES_DB', 'skipqueue_db'),
+        'USER': os.environ.get('POSTGRES_USER', 'skipqueue_user'),
+        'PASSWORD': os.environ.get('POSTGRES_PASSWORD'),  # Set this in your environment
+        'HOST': os.environ.get('POSTGRES_HOST', 'localhost'),
+        'PORT': os.environ.get('POSTGRES_PORT', '5432'),
     }
 }
 
@@ -50,8 +51,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'your-email@gmail.com'
-EMAIL_HOST_PASSWORD = 'your-app-password'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')  # Set this in your environment
 
 # Static files
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
@@ -104,10 +105,10 @@ CACHES = {
 }
 
 # Payment Gateway Keys (replace with your actual keys)
-PAYMENT_SECRET_KEY = 'your-production-payment-secret-key'
+PAYMENT_SECRET_KEY = os.environ.get('PAYMENT_SECRET_KEY')  # Set this in your environment
 
 # Google Analytics
-GOOGLE_ANALYTICS_ID = 'GA_MEASUREMENT_ID'
+GOOGLE_ANALYTICS_ID = os.environ.get('GOOGLE_ANALYTICS_ID', '')
 
 # Google AdSense
-GOOGLE_ADSENSE_PUBLISHER_ID = 'ca-pub-YOUR_PUBLISHER_ID' 
+GOOGLE_ADSENSE_PUBLISHER_ID = os.environ.get('GOOGLE_ADSENSE_PUBLISHER_ID', '') 
