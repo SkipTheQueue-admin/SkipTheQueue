@@ -1,0 +1,214 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4">
+  <div class="max-w-md mx-auto">
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <!-- Security Badge -->
+      <div class="flex items-center justify-center mb-6">
+        <div class="bg-green-100 p-3 rounded-full">
+          <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-bold text-center text-gray-800 mb-2">Secure Payment</h2>
+      <p class="text-center text-gray-600 mb-8">Order #{{ order.id }} • ₹{{ order.total_price|floatformat:2 }}</p>
+
+      <!-- Security Notice -->
+      <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+        <div class="flex items-start">
+          <svg class="w-5 h-5 text-blue-600 mt-0.5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <div>
+            <h4 class="font-semibold text-blue-800">Secure Payment Gateway</h4>
+            <p class="text-sm text-blue-700 mt-1">Your payment is protected by bank-level security. All data is encrypted.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Order Summary -->
+      <div class="bg-gray-50 rounded-lg p-4 mb-6">
+        <h4 class="font-semibold text-gray-800 mb-3">Order Summary</h4>
+        <div class="space-y-2">
+          {% for item in order.order_items.all %}
+          <div class="flex justify-between text-sm">
+            <span class="text-gray-600">{{ item.item.name }} × {{ item.quantity }}</span>
+            <span class="font-medium">₹{{ item.price_at_time|floatformat:2 }}</span>
+          </div>
+          {% endfor %}
+          <hr class="my-2">
+          <div class="flex justify-between font-semibold">
+            <span>Total Amount</span>
+            <span class="text-lg">₹{{ order.total_price|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Form -->
+      <form method="POST" class="space-y-6" id="payment-form">
+        {% csrf_token %}
+        
+        <!-- Hidden Fields -->
+        <input type="hidden" name="amount" value="{{ order.total_price|floatformat:2 }}">
+        <input type="hidden" name="payment_method" value="Online">
+        <input type="hidden" name="payment_gateway" value="razorpay" id="payment-gateway">
+
+        <!-- Payment Gateway Selection -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-3">Select Payment Gateway</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button type="button" class="gateway-btn p-3 border-2 border-gray-200 rounded-lg hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors" data-gateway="razorpay">
+              <div class="text-center">
+                <div class="w-8 h-8 bg-blue-600 rounded mx-auto mb-2 flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">R</span>
+                </div>
+                <span class="text-xs font-medium">Razorpay</span>
+              </div>
+            </button>
+            <button type="button" class="gateway-btn p-3 border-2 border-gray-200 rounded-lg hover:border-blue-500 focus:border-blue-500 focus:outline-none transition-colors" data-gateway="paytm">
+              <div class="text-center">
+                <div class="w-8 h-8 bg-blue-500 rounded mx-auto mb-2 flex items-center justify-center">
+                  <span class="text-white text-xs font-bold">P</span>
+                </div>
+                <span class="text-xs font-medium">Paytm</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Security Features -->
+        <div class="space-y-3">
+          <div class="flex items-center text-sm text-gray-600">
+            <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>256-bit SSL encryption</span>
+          </div>
+          <div class="flex items-center text-sm text-gray-600">
+            <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>PCI DSS compliant</span>
+          </div>
+          <div class="flex items-center text-sm text-gray-600">
+            <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            <span>Real-time fraud detection</span>
+          </div>
+        </div>
+
+        <!-- Payment Button -->
+        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-105" id="pay-button">
+          <div class="flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+            </svg>
+            Pay ₹{{ order.total_price|floatformat:2 }} Securely
+          </div>
+        </button>
+
+        <!-- Cancel Button -->
+        <a href="{% url 'view_cart' %}" class="block text-center text-gray-600 hover:text-gray-800 font-medium">
+          Cancel Payment
+        </a>
+      </form>
+
+      <!-- Security Footer -->
+      <div class="mt-8 pt-6 border-t border-gray-200">
+        <div class="flex items-center justify-center space-x-4 text-xs text-gray-500">
+          <div class="flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Secure</span>
+          </div>
+          <div class="flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Encrypted</span>
+          </div>
+          <div class="flex items-center">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span>Verified</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment gateway selection
+    const gatewayBtns = document.querySelectorAll('.gateway-btn');
+    const paymentGatewayInput = document.getElementById('payment-gateway');
+    
+    gatewayBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            gatewayBtns.forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50'));
+            
+            // Add active class to clicked button
+            this.classList.add('border-blue-500', 'bg-blue-50');
+            
+            // Update hidden input
+            paymentGatewayInput.value = this.dataset.gateway;
+        });
+    });
+    
+    // Set default gateway
+    document.querySelector('[data-gateway="razorpay"]').click();
+    
+    // Form submission with security checks
+    const paymentForm = document.getElementById('payment-form');
+    const payButton = document.getElementById('pay-button');
+    
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Disable button to prevent double submission
+        payButton.disabled = true;
+        payButton.innerHTML = `
+            <div class="flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing Payment...
+            </div>
+        `;
+        
+        // Submit form
+        this.submit();
+    });
+    
+    // Security: Prevent form resubmission
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+    
+    // Security: Auto-logout on inactivity (30 minutes)
+    let inactivityTimer;
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+            window.location.href = '/logout/';
+        }, 30 * 60 * 1000); // 30 minutes
+    }
+    
+    // Reset timer on user activity
+    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+        document.addEventListener(event, resetInactivityTimer, true);
+    });
+    
+    resetInactivityTimer();
+});
+</script>
+{% endblock %} 

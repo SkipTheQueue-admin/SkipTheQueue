@@ -1,0 +1,178 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50 py-8">
+  <div class="max-w-4xl mx-auto px-4">
+    <!-- Header -->
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-bold text-gray-900 mb-4">Help Center</h1>
+      <p class="text-xl text-gray-600">Find answers to common questions and get support</p>
+    </div>
+
+    <!-- Contact Info -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-4">Need Immediate Help?</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Email Support</h3>
+            <p class="text-gray-600">skipthequeue.app@gmail.com</p>
+          </div>
+        </div>
+        <div class="flex items-center">
+          <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mr-4">
+            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3 class="font-semibold text-gray-900">Response Time</h3>
+            <p class="text-gray-600">Within 24 hours</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">Frequently Asked Questions</h2>
+      
+      <div class="space-y-6">
+        <!-- FAQ Item 1 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">How do I place an order?</h3>
+          <p class="text-gray-600">
+            1. Select your college from the home page<br>
+            2. Browse the menu and add items to your cart<br>
+            3. Review your cart and proceed to checkout<br>
+            4. Enter your phone number and payment method<br>
+            5. Complete payment and wait for confirmation
+          </p>
+        </div>
+
+        <!-- FAQ Item 2 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">What payment methods are accepted?</h3>
+          <p class="text-gray-600">
+            We accept both online payments (credit/debit cards, UPI) and cash payments when you collect your order. The available options depend on your college's settings.
+          </p>
+        </div>
+
+        <!-- FAQ Item 3 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">How long does it take to prepare my order?</h3>
+          <p class="text-gray-600">
+            Preparation time varies by college and order size, typically 10-20 minutes. You can track your order status in real-time through the app.
+          </p>
+        </div>
+
+        <!-- FAQ Item 4 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Can I cancel my order?</h3>
+          <p class="text-gray-600">
+            Orders can only be cancelled if they haven't started preparation yet. Contact the canteen staff directly for cancellation requests.
+          </p>
+        </div>
+
+        <!-- FAQ Item 5 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">What if my order is wrong or damaged?</h3>
+          <p class="text-gray-600">
+            If you receive the wrong order or if items are damaged, please contact the canteen staff immediately. They will help resolve the issue.
+          </p>
+        </div>
+
+        <!-- FAQ Item 6 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">How do I track my order?</h3>
+          <p class="text-gray-600">
+            You can track your order through the "Track Order" feature. Enter your order number to see real-time updates on your order status.
+          </p>
+        </div>
+
+        <!-- FAQ Item 7 -->
+        <div class="border-b border-gray-200 pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Is my payment information secure?</h3>
+          <p class="text-gray-600">
+            Yes, all payment information is encrypted and secure. We use industry-standard security protocols to protect your data.
+          </p>
+        </div>
+
+        <!-- FAQ Item 8 -->
+        <div class="pb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-2">Can I add special instructions to my order?</h3>
+          <p class="text-gray-600">
+            Yes, you can add special instructions during checkout. This helps the kitchen staff prepare your order according to your preferences.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- How to Use -->
+    <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">How to Use SkipTheQueue</h2>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">1</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Select College</h3>
+          <p class="text-sm text-gray-600">Choose your college from the list</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">2</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Browse Menu</h3>
+          <p class="text-sm text-gray-600">View available items and add to cart</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">3</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Place Order</h3>
+          <p class="text-sm text-gray-600">Enter details and complete payment</p>
+        </div>
+        
+        <div class="text-center">
+          <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <span class="text-2xl font-bold text-blue-600">4</span>
+          </div>
+          <h3 class="font-semibold text-gray-900 mb-2">Collect</h3>
+          <p class="text-sm text-gray-600">Track and pick up when ready</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Troubleshooting -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+      <h2 class="text-2xl font-semibold text-gray-900 mb-6">Troubleshooting</h2>
+      
+      <div class="space-y-4">
+        <div class="border-l-4 border-yellow-400 pl-4">
+          <h3 class="font-semibold text-gray-900">Can't add items to cart?</h3>
+          <p class="text-gray-600">Try refreshing the page or clearing your browser cache. Make sure you're logged in.</p>
+        </div>
+        
+        <div class="border-l-4 border-red-400 pl-4">
+          <h3 class="font-semibold text-gray-900">Payment failed?</h3>
+          <p class="text-gray-600">Check your internet connection and payment method. Try using a different payment option.</p>
+        </div>
+        
+        <div class="border-l-4 border-blue-400 pl-4">
+          <h3 class="font-semibold text-gray-900">Order not showing?</h3>
+          <p class="text-gray-600">Check your order history or contact support with your order number.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} 

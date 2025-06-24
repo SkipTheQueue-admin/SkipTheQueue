@@ -1,0 +1,46 @@
+WARNING 2025-06-21 18:25:02,440 base 23084 18764 Session data corrupted
+WARNING 2025-06-21 18:25:07,647 base 23084 22444 Session data corrupted
+WARNING 2025-06-21 18:26:39,467 base 23084 12688 Session data corrupted
+WARNING 2025-06-21 18:33:41,013 middleware 22592 10292 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 18:43:50,705 middleware 9352 13332 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 18:49:26,419 middleware 9352 18064 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 20:08:33,152 base 17828 23468 Session data corrupted
+WARNING 2025-06-21 21:47:02,961 base 10828 22032 Session data corrupted
+WARNING 2025-06-21 21:53:52,138 base 25100 13248 Session data corrupted
+WARNING 2025-06-21 21:54:18,472 base 24892 27184 Session data corrupted
+WARNING 2025-06-21 21:54:23,814 base 26324 27972 Session data corrupted
+WARNING 2025-06-21 21:58:53,967 base 24704 28440 Session data corrupted
+WARNING 2025-06-21 22:00:20,470 middleware 24704 27408 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 22:07:36,646 base 28044 21744 Session data corrupted
+WARNING 2025-06-21 22:08:13,495 middleware 28044 26108 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 22:11:17,576 base 2580 26568 Session data corrupted
+WARNING 2025-06-21 22:11:23,188 base 12316 20628 Session data corrupted
+WARNING 2025-06-21 22:15:50,871 base 12700 20948 Session data corrupted
+WARNING 2025-06-21 22:34:04,174 base 27604 24852 Session data corrupted
+WARNING 2025-06-21 22:36:20,511 middleware 27604 22852 SQL injection attempt detected from 127.0.0.1
+WARNING 2025-06-21 22:56:02,165 middleware 28584 1532 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 23:00:26,464 base 17044 21832 Session data corrupted
+WARNING 2025-06-21 23:02:15,244 base 13432 27324 Session data corrupted
+WARNING 2025-06-21 23:06:26,227 base 24556 12304 Session data corrupted
+WARNING 2025-06-21 23:06:46,154 middleware 24556 17980 Invalid payment session from 127.0.0.1
+WARNING 2025-06-21 23:15:10,066 base 22588 16100 Session data corrupted
+WARNING 2025-06-22 12:08:16,920 middleware 3360 2408 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:14:27,140 base 16080 26432 Session data corrupted
+WARNING 2025-06-22 12:18:15,446 middleware 16080 17700 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:18:23,669 middleware 16080 17700 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:18:57,391 middleware 16080 16424 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:21:22,979 base 26660 18180 Session data corrupted
+WARNING 2025-06-22 12:21:41,758 middleware 26660 18180 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:24:11,109 base 25168 996 Session data corrupted
+WARNING 2025-06-22 12:24:55,228 middleware 25168 16152 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:31:51,654 base 25312 2848 Session data corrupted
+WARNING 2025-06-22 12:32:08,440 middleware 25312 2848 Invalid payment session from 127.0.0.1
+WARNING 2025-06-22 12:44:13,412 base 16096 15324 Session data corrupted
+WARNING 2025-06-23 12:36:13,955 middleware 2588 17016 Invalid payment session from 127.0.0.1
+WARNING 2025-06-23 12:37:27,794 middleware 2588 17016 Invalid payment session from 127.0.0.1
+WARNING 2025-06-23 13:25:23,795 base 21228 21812 Session data corrupted
+WARNING 2025-06-23 13:25:23,795 middleware 21228 21812 Invalid payment session from 127.0.0.1
+WARNING 2025-06-23 13:26:29,985 middleware 21228 21812 Payment rate limit exceeded from 127.0.0.1
+WARNING 2025-06-23 13:26:39,884 middleware 21228 21812 Payment rate limit exceeded from 127.0.0.1
+WARNING 2025-06-23 13:44:16,978 base 30800 26204 Session data corrupted
+WARNING 2025-06-23 15:59:57,559 base 3660 28040 Session data corrupted

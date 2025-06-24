@@ -1,0 +1,210 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center py-12">
+  <div class="max-w-2xl mx-auto px-4">
+    <!-- Registration Card -->
+    <div class="bg-white rounded-2xl shadow-xl p-8">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        </div>
+        
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Register Your College</h1>
+        <p class="text-gray-600">
+          Join SkipTheQueue and provide your students with a modern ordering experience
+        </p>
+      </div>
+      
+      <!-- Registration Form -->
+      <form method="post" class="space-y-6">
+        {% csrf_token %}
+        
+        <!-- College Information -->
+        <div class="bg-blue-50 rounded-lg p-4 mb-6">
+          <h3 class="text-lg font-semibold text-blue-900 mb-3">College Information</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                College Name *
+              </label>
+              <input type="text" id="name" name="name" required
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="Enter college name">
+            </div>
+            
+            <div>
+              <label for="slug" class="block text-sm font-medium text-gray-700 mb-2">
+                College Code *
+              </label>
+              <input type="text" id="slug" name="slug" required
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="e.g., dtu, nsut, igdtuw">
+              <p class="text-xs text-gray-500 mt-1">This will be used in the URL: skipqueue.com/college/[code]/</p>
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+              College Address
+            </label>
+            <textarea id="address" name="address" rows="3"
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Enter college address"></textarea>
+          </div>
+        </div>
+        
+        <!-- Admin Information -->
+        <div class="bg-green-50 rounded-lg p-4 mb-6">
+          <h3 class="text-lg font-semibold text-green-900 mb-3">Admin Information</h3>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="admin_name" class="block text-sm font-medium text-gray-700 mb-2">
+                Admin Name
+              </label>
+              <input type="text" id="admin_name" name="admin_name"
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                     placeholder="Enter admin name">
+            </div>
+            
+            <div>
+              <label for="admin_phone" class="block text-sm font-medium text-gray-700 mb-2">
+                Admin Phone
+              </label>
+              <input type="tel" id="admin_phone" name="admin_phone"
+                     class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                     placeholder="Enter phone number">
+            </div>
+          </div>
+          
+          <div class="mt-4">
+            <label for="admin_email" class="block text-sm font-medium text-gray-700 mb-2">
+              Admin Email *
+            </label>
+            <input type="email" id="admin_email" name="admin_email" required
+                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                   placeholder="Enter admin email">
+            <p class="text-xs text-gray-500 mt-1">This will be used for admin dashboard access</p>
+          </div>
+        </div>
+        
+        <!-- Terms and Conditions -->
+        <div class="bg-gray-50 rounded-lg p-4 mb-6">
+          <div class="flex items-start">
+            <input type="checkbox" id="terms" name="terms" required
+                   class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+            <label for="terms" class="ml-3 text-sm text-gray-700">
+              I agree to the <a href="#" class="text-blue-600 hover:text-blue-700">Terms and Conditions</a> 
+              and <a href="#" class="text-blue-600 hover:text-blue-700">Privacy Policy</a> of SkipTheQueue
+            </label>
+          </div>
+        </div>
+        
+        <!-- Submit Button -->
+        <div class="flex flex-col sm:flex-row gap-4">
+          <button type="submit" class="flex-1 bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 transition duration-300 font-semibold text-lg flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            Register College
+          </button>
+          
+          <a href="{% url 'home' %}" class="flex-1 bg-gray-200 text-gray-700 py-4 px-6 rounded-lg hover:bg-gray-300 transition duration-300 font-semibold text-lg flex items-center justify-center">
+            Cancel
+          </a>
+        </div>
+      </form>
+      
+      <!-- Benefits -->
+      <div class="mt-8 pt-6 border-t border-gray-200">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Benefits of Registering</h3>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex items-start">
+            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900">Free Platform</h4>
+              <p class="text-sm text-gray-600">No setup fees or monthly charges</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900">Easy Management</h4>
+              <p class="text-sm text-gray-600">Simple dashboard to manage menu and orders</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900">Student Satisfaction</h4>
+              <p class="text-sm text-gray-600">Reduce queues and improve student experience</p>
+            </div>
+          </div>
+          
+          <div class="flex items-start">
+            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center mr-3 mt-0.5">
+              <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <h4 class="font-medium text-gray-900">Analytics</h4>
+              <p class="text-sm text-gray-600">Track orders and popular items</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Auto-generate slug from college name
+document.getElementById('name').addEventListener('input', function() {
+  const name = this.value;
+  const slug = name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  document.getElementById('slug').value = slug;
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+  const name = document.getElementById('name').value.trim();
+  const slug = document.getElementById('slug').value.trim();
+  const email = document.getElementById('admin_email').value.trim();
+  
+  if (!name || !slug || !email) {
+    e.preventDefault();
+    alert('Please fill all required fields marked with *');
+    return false;
+  }
+  
+  if (!email.includes('@')) {
+    e.preventDefault();
+    alert('Please enter a valid email address');
+    return false;
+  }
+});
+</script>
+{% endblock %} 

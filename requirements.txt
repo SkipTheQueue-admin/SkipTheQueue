@@ -1,0 +1,9 @@
+Django==5.2
+social-auth-app-django==5.4.0
+social-auth-core==4.5.0
+Pillow
+requests==2.31.0
+python-decouple==3.8
+gunicorn==21.2.0
+whitenoise==6.6.0
+dj-database-url 

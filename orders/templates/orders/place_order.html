@@ -1,23 +1,117 @@
-{% extends 'orders/base.html' %}
-
-{% block title %}Place Order - SkipTheQueue{% endblock %}
+{% extends "orders/base.html" %}
 
 {% block content %}
-    <h2 class="mb-4">Place Your Order</h2>
-    <form method="post">
-        {% csrf_token %}
-        <div class="mb-3">
-            {% for item in items %}
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="items" value="{{ item.id }}" id="item{{ item.id }}">
-                    <label class="form-check-label" for="item{{ item.id }}">
-                        {{ item.name }} - ₹{{ item.price }}
-                    </label>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+  <div class="max-w-2xl mx-auto">
+    <!-- Header -->
+    <div class="text-center mb-8">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Place Your Order</h1>
+      <p class="text-gray-600">Review your order and proceed to payment</p>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4 border-b border-gray-100">
+        <h2 class="text-xl font-semibold text-gray-800">Order Summary</h2>
+      </div>
+      
+      <div class="p-6">
+        <!-- Cart Items -->
+        <div class="space-y-4 mb-6">
+          {% for item in cart_items %}
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+              <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+                  <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                  </svg>
                 </div>
-            {% empty %}
-                <p>No menu items available.</p>
-            {% endfor %}
+                <div>
+                  <h3 class="font-semibold text-gray-900">{{ item.item.name }}</h3>
+                  <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
+                </div>
+              </div>
+              <div class="text-right">
+                <p class="font-semibold text-gray-900">₹{{ item.total|floatformat:2 }}</p>
+                <p class="text-sm text-gray-600">₹{{ item.item.price|floatformat:2 }} each</p>
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-center py-8 text-gray-500">
+              <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+              </svg>
+              <p>Your cart is empty</p>
+              <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-800 font-medium">Browse Menu</a>
+            </div>
+          {% endfor %}
         </div>
-        <button type="submit" class="btn btn-success">Place Order</button>
-    </form>
+
+        <!-- Total -->
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex justify-between items-center">
+            <span class="text-lg font-semibold text-gray-900">Total Amount</span>
+            <span class="text-2xl font-bold text-gray-900">₹{{ total|floatformat:2 }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Payment Options -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+      <div class="bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-4 border-b border-gray-100">
+        <h2 class="text-xl font-semibold text-gray-800">Payment Method</h2>
+      </div>
+      
+      <div class="p-6">
+        <div class="space-y-4">
+          {% if college.payment_gateway_enabled %}
+            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer">
+              <input type="radio" name="payment_method" value="Online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
+              <div class="ml-3">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-blue-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                  </svg>
+                  <span class="font-medium text-gray-900">Online Payment</span>
+                </div>
+                <p class="text-sm text-gray-600">Pay securely with UPI, cards, or net banking</p>
+              </div>
+            </label>
+          {% endif %}
+          
+          {% if college.allow_pay_later %}
+            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 cursor-pointer">
+              <input type="radio" name="payment_method" value="Cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" {% if not college.payment_gateway_enabled %}checked{% endif %}>
+              <div class="ml-3">
+                <div class="flex items-center">
+                  <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                  </svg>
+                  <span class="font-medium text-gray-900">Pay Later (Cash)</span>
+                </div>
+                <p class="text-sm text-gray-600">Pay when you collect your order</p>
+              </div>
+            </label>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex space-x-4">
+      <a href="{% url 'view_cart' %}" 
+         class="flex-1 bg-gray-200 text-gray-700 py-3 px-6 rounded-lg hover:bg-gray-300 transition-colors duration-200 text-center font-medium">
+        Back to Cart
+      </a>
+      
+      {% if cart_items %}
+        <a href="{% url 'collect_phone' %}" 
+           class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-center font-medium">
+          Continue to Payment
+        </a>
+      {% endif %}
+    </div>
+  </div>
+</div>
 {% endblock %}

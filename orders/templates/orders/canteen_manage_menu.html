@@ -1,0 +1,263 @@
+{% extends "orders/base.html" %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
+  <!-- Header -->
+  <div class="bg-white/10 backdrop-blur-lg border-b border-white/20">
+    <div class="max-w-7xl mx-auto px-4 py-4">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+          </div>
+          <div>
+            <h1 class="text-xl font-bold text-white">{{ college.name }}</h1>
+            <p class="text-blue-200 text-sm">Menu Management</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-3">
+          <a href="{% url 'canteen_staff_dashboard' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+            </svg>
+            Dashboard
+          </a>
+          <a href="{% url 'canteen_order_history' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            History
+          </a>
+          <a href="{% url 'canteen_staff_logout' %}" class="bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm rounded-lg px-4 py-2 text-red-200 text-sm font-medium transition duration-200">
+            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Messages -->
+    {% if messages %}
+      <div class="mb-6 space-y-3">
+        {% for message in messages %}
+          <div class="bg-{% if message.tags == 'error' %}red-500/20 border-red-500/30 text-red-200{% else %}green-500/20 border-green-500/30 text-green-200{% endif %} border rounded-lg p-4 backdrop-blur-sm">
+            <div class="flex items-center">
+              {% if message.tags == 'error' %}
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              {% else %}
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+              {% endif %}
+              {{ message }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <!-- Stats Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-200 text-sm">Total Items</p>
+            <p class="text-3xl font-bold text-white">{{ menu_items|length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-200 text-sm">Available</p>
+            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"is_available"|length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-200 text-sm">Categories</p>
+            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"category"|length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+        <div class="flex items-center justify-between">
+          <div>
+            <p class="text-blue-200 text-sm">Stock Managed</p>
+            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"is_stock_managed"|length }}</p>
+          </div>
+          <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
+            <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Menu Items Section -->
+    <div class="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 overflow-hidden">
+      <div class="px-6 py-4 border-b border-white/20">
+        <h2 class="text-xl font-bold text-white">Menu Items</h2>
+        <p class="text-blue-200 text-sm">Manage your college's menu items</p>
+      </div>
+      
+      <div class="p-6">
+        {% if menu_items %}
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in menu_items %}
+              <div class="bg-white/5 backdrop-blur-sm rounded-xl p-6 border border-white/10 hover:bg-white/10 transition duration-200">
+                <!-- Item Header -->
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1">
+                    <h3 class="text-white font-semibold text-lg">{{ item.name }}</h3>
+                    <p class="text-blue-200 text-sm">{{ item.category }}</p>
+                  </div>
+                  <div class="flex items-center space-x-2">
+                    <span class="text-white font-bold text-lg">₹{{ item.price|floatformat:2 }}</span>
+                    <div class="w-3 h-3 rounded-full {% if item.is_available %}bg-green-500{% else %}bg-red-500{% endif %}"></div>
+                  </div>
+                </div>
+                
+                <!-- Description -->
+                {% if item.description %}
+                  <p class="text-blue-200 text-sm mb-4">{{ item.description }}</p>
+                {% endif %}
+                
+                <!-- Stock Info -->
+                {% if item.is_stock_managed %}
+                  <div class="mb-4 p-3 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                    <div class="flex items-center justify-between">
+                      <span class="text-orange-200 text-sm">Stock:</span>
+                      <span class="text-white font-medium">{{ item.stock_quantity }}</span>
+                    </div>
+                  </div>
+                {% endif %}
+                
+                <!-- Action Buttons -->
+                <div class="space-y-3">
+                  <!-- Toggle Availability -->
+                  <form method="post" class="inline-block w-full">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="toggle_availability">
+                    <input type="hidden" name="item_id" value="{{ item.id }}">
+                    <button type="submit" class="w-full bg-{% if item.is_available %}red-600 hover:bg-red-700{% else %}green-600 hover:bg-green-700{% endif %} text-white py-2 px-4 rounded-lg font-medium transition duration-200">
+                      {% if item.is_available %}
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"></path>
+                        </svg>
+                        Disable
+                      {% else %}
+                        <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        Enable
+                      {% endif %}
+                    </button>
+                  </form>
+                  
+                  <!-- Update Price -->
+                  <div class="flex space-x-2">
+                    <input type="number" step="0.01" min="0" value="{{ item.price|floatformat:2 }}" 
+                           class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                           placeholder="Price" id="price-{{ item.id }}">
+                    <form method="post" class="inline-block">
+                      {% csrf_token %}
+                      <input type="hidden" name="action" value="update_price">
+                      <input type="hidden" name="item_id" value="{{ item.id }}">
+                      <input type="hidden" name="price" id="price-input-{{ item.id }}">
+                      <button type="submit" onclick="updatePrice({{ item.id }})" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-lg font-medium transition duration-200">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                        </svg>
+                      </button>
+                    </form>
+                  </div>
+                  
+                  <!-- Update Stock (if stock managed) -->
+                  {% if item.is_stock_managed %}
+                    <div class="flex space-x-2">
+                      <input type="number" min="0" value="{{ item.stock_quantity }}" 
+                             class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                             placeholder="Stock" id="stock-{{ item.id }}">
+                      <form method="post" class="inline-block">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_stock">
+                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                        <input type="hidden" name="stock" id="stock-input-{{ item.id }}">
+                        <button type="submit" onclick="updateStock({{ item.id }})" class="bg-orange-600 hover:bg-orange-700 text-white py-2 px-3 rounded-lg font-medium transition duration-200">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                          </svg>
+                        </button>
+                      </form>
+                    </div>
+                  {% endif %}
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="text-center py-12">
+            <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+              </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-2">No Menu Items</h3>
+            <p class="text-blue-200">Contact your college administrator to add menu items.</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function updatePrice(itemId) {
+  const priceInput = document.getElementById(`price-${itemId}`);
+  const priceHiddenInput = document.getElementById(`price-input-${itemId}`);
+  priceHiddenInput.value = priceInput.value;
+}
+
+function updateStock(itemId) {
+  const stockInput = document.getElementById(`stock-${itemId}`);
+  const stockHiddenInput = document.getElementById(`stock-input-${itemId}`);
+  stockHiddenInput.value = stockInput.value;
+}
+
+// Auto-refresh every 60 seconds
+setInterval(() => {
+  location.reload();
+}, 60000);
+</script>
+{% endblock %} 
