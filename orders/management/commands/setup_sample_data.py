@@ -2,6 +2,7 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from orders.models import College, MenuItem, UserProfile
 from django.utils import timezone
+from django.db import models
 
 class Command(BaseCommand):
     help = 'Setup sample data for SkipTheQueue'
