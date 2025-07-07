@@ -4,6 +4,7 @@ from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, C
 admin.site.register(MenuItem)
 admin.site.register(Order)
 admin.site.register(OrderItem)
+admin.site.register(College)
 
 @admin.register(CanteenStaff)
 class CanteenStaffAdmin(admin.ModelAdmin):

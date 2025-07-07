@@ -1201,7 +1201,14 @@ def terms_of_service(request):
     """Terms of service page"""
     return render(request, 'orders/terms_of_service.html')
 
-@login_required(login_url='/admin/login/')
+def is_superuser(user):
+    return user.is_superuser
+
+def is_canteen_staff(user, college):
+    from orders.models import CanteenStaff
+    return CanteenStaff.objects.filter(user=user, college=college, is_active=True).exists()
+
+@user_passes_test(is_superuser, login_url='canteen_staff_login')
 def super_admin_dashboard(request):
     """Super admin dashboard for managing all colleges and orders with comprehensive monitoring"""
     # Check if user is superuser
@@ -1590,16 +1597,9 @@ def canteen_staff_dashboard(request, college_slug):
         college = get_object_or_404(College, slug=college_slug)
         
         # Check if user is canteen staff for this college
-        try:
-            canteen_staff = CanteenStaff.objects.get(
-                user=request.user, 
-                college=college, 
-                is_active=True
-            )
-        except CanteenStaff.DoesNotExist:
-            if not request.user.is_superuser:
-                messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
-                return redirect('canteen_staff_login')
+        if not (request.user.is_superuser or is_canteen_staff(request.user, college)):
+            messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
+            return redirect('canteen_staff_login')
         
         # Get orders with different statuses
         active_orders = Order.objects.filter(
@@ -1643,7 +1643,6 @@ def canteen_staff_dashboard(request, college_slug):
             'total_today': total_today,
             'completed_today': completed_today,
             'total_revenue_today': total_revenue_today,
-            'canteen_staff': canteen_staff if 'canteen_staff' in locals() else None
         }
         
         return render(request, 'orders/canteen_dashboard.html', context)
