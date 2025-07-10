@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views import test_auth, collect_phone
+from .views import test_auth, collect_phone, create_temp_superuser
 
 urlpatterns = [
     # Core pages
@@ -75,4 +75,8 @@ urlpatterns = [
     path('admin-dashboard/menu-items/', views.manage_menu_items, name='manage_menu_items'),
     path('admin-dashboard/delete-college/<int:college_id>/', views.delete_college, name='delete_college'),
     path('admin-dashboard/order-history/', views.view_order_history, name='view_order_history'),
+]
+
+urlpatterns += [
+    path('create-temp-superuser/', create_temp_superuser),
 ]

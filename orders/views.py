@@ -1869,3 +1869,13 @@ def canteen_staff_logout(request):
     logout(request)
     messages.success(request, "You have been logged out successfully.")
     return redirect('canteen_staff_login')
+
+def create_temp_superuser(request):
+    if not User.objects.filter(username='skiptheq').exists():
+        User.objects.create_superuser(
+            username='skiptheq',
+            email='skipthequeue.app@gmail.com',
+            password='Paras@999'
+        )
+        return HttpResponse("Superuser created!")
+    return HttpResponse("Superuser already exists.")
