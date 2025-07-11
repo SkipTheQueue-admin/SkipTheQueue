@@ -1555,7 +1555,7 @@ def favorites(request):
 
 # Canteen Staff Authentication and Management Views
 def canteen_staff_login(request):
-    """Canteen staff login view"""
+    """Canteen staff login view (now supports email or username)"""
     if request.user.is_authenticated:
         # Check if user is canteen staff
         try:
@@ -1563,31 +1563,29 @@ def canteen_staff_login(request):
             return redirect('canteen_dashboard', college_slug=canteen_staff.college.slug)
         except CanteenStaff.DoesNotExist:
             pass
-    
+
     if request.method == 'POST':
-        email = request.POST.get('email')
+        identifier = request.POST.get('email')  # This could be email or username
         password = request.POST.get('password')
-        
-        if email and password:
-            try:
-                user = User.objects.get(email=email)
-                if user.check_password(password):
-                    # Check if user is canteen staff
-                    try:
-                        canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
-                        from django.contrib.auth import login
-                        login(request, user)
-                        messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-                        return redirect('canteen_dashboard', college_slug=canteen_staff.college.slug)
-                    except CanteenStaff.DoesNotExist:
-                        messages.error(request, "Access denied. You are not authorized as canteen staff.")
-                else:
-                    messages.error(request, "Invalid credentials.")
-            except User.DoesNotExist:
+
+        if identifier and password:
+            user = User.objects.filter(email=identifier).first()
+            if not user:
+                user = User.objects.filter(username=identifier).first()
+            if user and user.check_password(password):
+                try:
+                    canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
+                    from django.contrib.auth import login
+                    login(request, user)
+                    messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+                    return redirect('canteen_dashboard', college_slug=canteen_staff.college.slug)
+                except CanteenStaff.DoesNotExist:
+                    messages.error(request, "Access denied. You are not authorized as canteen staff.")
+            else:
                 messages.error(request, "Invalid credentials.")
         else:
-            messages.error(request, "Please provide both email and password.")
-    
+            messages.error(request, "Please provide both email/username and password.")
+
     return render(request, 'orders/canteen_staff_login.html')
 
 @login_required(login_url='/canteen/login/')
