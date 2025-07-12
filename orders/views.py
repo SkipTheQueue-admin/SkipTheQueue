@@ -1555,7 +1555,7 @@ def favorites(request):
 
 # Canteen Staff Authentication and Management Views
 def canteen_staff_login(request):
-    """Canteen staff login view (now supports email or username)"""
+    """Canteen staff login view (now supports email or username) with detailed debugging"""
     if request.user.is_authenticated:
         # Check if user is canteen staff
         try:
@@ -1569,19 +1569,32 @@ def canteen_staff_login(request):
         password = request.POST.get('password')
 
         if identifier and password:
+            # Debug: Log what we're looking for
+            print(f"DEBUG: Looking for user with identifier: {identifier}")
+            
             user = User.objects.filter(email=identifier).first()
             if not user:
                 user = User.objects.filter(username=identifier).first()
-            if user and user.check_password(password):
-                try:
-                    canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
-                    from django.contrib.auth import login
-                    login(request, user)
-                    messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-                    return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
-                except CanteenStaff.DoesNotExist:
-                    messages.error(request, "Access denied. You are not authorized as canteen staff.")
+            
+            if user:
+                print(f"DEBUG: Found user: {user.username} ({user.email})")
+                if user.check_password(password):
+                    print(f"DEBUG: Password is correct")
+                    try:
+                        canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
+                        print(f"DEBUG: Found canteen staff assignment: {canteen_staff.college.name} (slug: {canteen_staff.college.slug})")
+                        from django.contrib.auth import login
+                        login(request, user)
+                        messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+                        return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+                    except CanteenStaff.DoesNotExist:
+                        print(f"DEBUG: User is not assigned as active canteen staff")
+                        messages.error(request, "Access denied. You are not authorized as canteen staff.")
+                else:
+                    print(f"DEBUG: Password is incorrect")
+                    messages.error(request, "Invalid credentials.")
             else:
+                print(f"DEBUG: User not found with identifier: {identifier}")
                 messages.error(request, "Invalid credentials.")
         else:
             messages.error(request, "Please provide both email/username and password.")
@@ -1591,13 +1604,19 @@ def canteen_staff_login(request):
 @login_required(login_url='/canteen/login/')
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with better security and features"""
+    print(f"DEBUG: Dashboard called with college_slug: '{college_slug}'")
+    
     try:
         college = get_object_or_404(College, slug=college_slug)
+        print(f"DEBUG: Found college: {college.name} with slug: '{college.slug}'")
         
         # Check if user is canteen staff for this college
         if not (request.user.is_superuser or is_canteen_staff(request.user, college)):
+            print(f"DEBUG: User {request.user.username} is not authorized for college {college.name}")
             messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
             return redirect('canteen_staff_login')
+        
+        print(f"DEBUG: User {request.user.username} is authorized for college {college.name}")
         
         # Get orders with different statuses
         active_orders = Order.objects.filter(
@@ -1646,6 +1665,7 @@ def canteen_staff_dashboard(request, college_slug):
         return render(request, 'orders/canteen_dashboard.html', context)
         
     except Exception as e:
+        print(f"DEBUG: Error in dashboard: {str(e)}")
         messages.error(request, "Error loading dashboard.")
         return redirect('canteen_staff_login')
 
