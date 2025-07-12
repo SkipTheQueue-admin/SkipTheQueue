@@ -1586,7 +1586,11 @@ def canteen_staff_login(request):
                         from django.contrib.auth import login
                         login(request, user)
                         messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-                        return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+                        
+                        # Use the exact college slug from the database
+                        college_slug = canteen_staff.college.slug
+                        print(f"DEBUG: Redirecting to dashboard with slug: {college_slug}")
+                        return redirect('canteen_staff_dashboard', college_slug=college_slug)
                     except CanteenStaff.DoesNotExist:
                         print(f"DEBUG: User is not assigned as active canteen staff")
                         messages.error(request, "Access denied. You are not authorized as canteen staff.")
@@ -1607,8 +1611,22 @@ def canteen_staff_dashboard(request, college_slug):
     print(f"DEBUG: Dashboard called with college_slug: '{college_slug}'")
     
     try:
-        college = get_object_or_404(College, slug=college_slug)
-        print(f"DEBUG: Found college: {college.name} with slug: '{college.slug}'")
+        # Try to find the college with the given slug
+        try:
+            college = College.objects.get(slug=college_slug)
+            print(f"DEBUG: Found college: {college.name} with slug: '{college.slug}'")
+        except College.DoesNotExist:
+            print(f"DEBUG: College with slug '{college_slug}' not found")
+            # Try to find the user's assigned college
+            try:
+                canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+                college = canteen_staff.college
+                print(f"DEBUG: Using user's assigned college: {college.name} with slug: '{college.slug}'")
+                # Redirect to the correct URL
+                return redirect('canteen_staff_dashboard', college_slug=college.slug)
+            except CanteenStaff.DoesNotExist:
+                messages.error(request, "College not found and you are not assigned to any college.")
+                return redirect('canteen_staff_login')
         
         # Check if user is canteen staff for this college
         if not (request.user.is_superuser or is_canteen_staff(request.user, college)):
