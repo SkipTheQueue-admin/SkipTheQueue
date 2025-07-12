@@ -1560,7 +1560,7 @@ def canteen_staff_login(request):
         # Check if user is canteen staff
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
-            return redirect('canteen_dashboard', college_slug=canteen_staff.college.slug)
+            return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
         except CanteenStaff.DoesNotExist:
             pass
 
@@ -1578,7 +1578,7 @@ def canteen_staff_login(request):
                     from django.contrib.auth import login
                     login(request, user)
                     messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-                    return redirect('canteen_dashboard', college_slug=canteen_staff.college.slug)
+                    return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
                 except CanteenStaff.DoesNotExist:
                     messages.error(request, "Access denied. You are not authorized as canteen staff.")
             else:
