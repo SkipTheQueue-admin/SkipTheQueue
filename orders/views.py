@@ -1877,3 +1877,38 @@ def create_temp_superuser(request):
         )
         return HttpResponse("Superuser created!")
     return HttpResponse("Superuser already exists.")
+
+def debug_canteen_staff(request):
+    """Temporary debug view to check canteen staff assignments"""
+    if not request.user.is_superuser:
+        return HttpResponse("Access denied. Superuser only.")
+    
+    debug_info = []
+    
+    # Check all canteen staff
+    canteen_staff_list = CanteenStaff.objects.filter(is_active=True).select_related('user', 'college')
+    debug_info.append(f"Total active canteen staff: {canteen_staff_list.count()}")
+    
+    for staff in canteen_staff_list:
+        debug_info.append(f"User: {staff.user.username} ({staff.user.email}) - College: {staff.college.name} (slug: {staff.college.slug}) - Active: {staff.is_active}")
+    
+    # Check specific user 'paras'
+    try:
+        paras_user = User.objects.get(username='paras')
+        debug_info.append(f"\nUser 'paras' found: {paras_user.username} ({paras_user.email})")
+        
+        paras_staff = CanteenStaff.objects.filter(user=paras_user, is_active=True).first()
+        if paras_staff:
+            debug_info.append(f"Paras is assigned to: {paras_staff.college.name} (slug: {paras_staff.college.slug})")
+        else:
+            debug_info.append("Paras is NOT assigned as active canteen staff")
+    except User.DoesNotExist:
+        debug_info.append("User 'paras' not found")
+    
+    # Check all colleges
+    colleges = College.objects.filter(is_active=True)
+    debug_info.append(f"\nActive colleges: {colleges.count()}")
+    for college in colleges:
+        debug_info.append(f"College: {college.name} (slug: {college.slug})")
+    
+    return HttpResponse("<br>".join(debug_info))

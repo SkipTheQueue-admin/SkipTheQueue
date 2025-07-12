@@ -1,6 +1,6 @@
 from django.urls import path, include
 from . import views
-from .views import test_auth, collect_phone, create_temp_superuser
+from .views import test_auth, collect_phone, create_temp_superuser, debug_canteen_staff
 
 urlpatterns = [
     # Core pages
@@ -79,4 +79,5 @@ urlpatterns = [
 
 urlpatterns += [
     path('create-temp-superuser/', create_temp_superuser),
+    path('debug-canteen-staff/', debug_canteen_staff),
 ]
