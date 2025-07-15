@@ -237,8 +237,26 @@
 <script>
 // Auto-refresh every 30 seconds if viewing a specific order
 {% if order %}
+let lastStatus = '{{ order.status }}';
 setInterval(() => {
-  window.location.reload();
+  fetch(window.location.href)
+    .then(response => response.text())
+    .then(html => {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newStatus = doc.querySelector('.status-badge');
+      if (newStatus && newStatus.textContent.trim() !== lastStatus) {
+        if (newStatus.textContent.trim() === 'Completed') {
+          // Show popup notification
+          const notif = document.getElementById('orderCompleteNotification');
+          notif.classList.remove('hidden');
+          setTimeout(() => notif.classList.add('hidden'), 5000);
+        }
+        // Status changed, reload page
+        window.location.reload();
+      }
+    })
+    .catch(error => console.log('Status check failed:', error));
 }, 30000);
 {% endif %}
 
@@ -256,3 +274,8 @@ document.querySelector('form').addEventListener('submit', function() {
 }
 </style>
 {% endblock %}
+
+<!-- Notification Popup -->
+<div id="orderCompleteNotification" class="fixed top-4 left-1/2 transform -translate-x-1/2 bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg z-50 hidden">
+  <span>Your order is completed! Please collect it from the counter.</span>
+</div>
