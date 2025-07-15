@@ -17,12 +17,13 @@
         
         <!-- College Selection -->
         {% if colleges %}
-          <div class="mb-8">
+          <div class="mb-8" id="college-select-section">
             <h2 class="text-2xl font-semibold text-gray-800 mb-6">Select Your College</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto" id="college-grid">
               {% for college in colleges %}
                 <a href="{% url 'select_college' college.slug %}" 
-                   class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 text-left group border-2 border-transparent hover:border-blue-200">
+                   class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-8 text-left group border-2 border-transparent hover:border-blue-200 college-link"
+                   data-college-slug="{{ college.slug }}">
                   <div class="flex flex-col items-center text-center mb-4">
                     <!-- College Logo -->
                     <div class="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mb-4 p-2">
@@ -66,6 +67,13 @@
                 </a>
               {% endfor %}
             </div>
+            <div class="mt-4 flex items-center justify-center">
+              <input type="checkbox" id="rememberCollege" class="mr-2">
+              <label for="rememberCollege" class="text-sm text-gray-700">Remember my college/canteen for fast access</label>
+            </div>
+          </div>
+          <div id="change-college-bar" class="hidden text-center mt-6">
+            <span class="text-blue-700 font-medium">You are being redirected to your college. <button id="changeCollegeBtn" class="underline text-blue-600 ml-2">Change College</button></span>
           </div>
         {% endif %}
 
@@ -147,3 +155,39 @@
   </div>
 </div>
 {% endblock %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  // Remember college logic
+  const collegeLinks = document.querySelectorAll('.college-link');
+  const rememberCheckbox = document.getElementById('rememberCollege');
+  const changeCollegeBar = document.getElementById('change-college-bar');
+  const collegeSelectSection = document.getElementById('college-select-section');
+
+  // If college is remembered, auto-redirect
+  const rememberedCollege = localStorage.getItem('rememberedCollege');
+  if (rememberedCollege) {
+    collegeSelectSection.style.display = 'none';
+    changeCollegeBar.classList.remove('hidden');
+    // Try to find the college link and redirect
+    const collegeLink = document.querySelector(`.college-link[data-college-slug="${rememberedCollege}"]`);
+    if (collegeLink) {
+      setTimeout(() => { window.location.href = collegeLink.href; }, 1200);
+    }
+    document.getElementById('changeCollegeBtn').onclick = function() {
+      localStorage.removeItem('rememberedCollege');
+      location.reload();
+    };
+    return;
+  }
+
+  // On college click, if remember is checked, store slug
+  collegeLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      if (rememberCheckbox && rememberCheckbox.checked) {
+        localStorage.setItem('rememberedCollege', this.dataset.collegeSlug);
+      }
+    });
+  });
+});
+</script>
