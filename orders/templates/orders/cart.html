@@ -5,7 +5,6 @@
   {% csrf_token %}
 </form>
 
-<!-- Fallback for non-JS users: visible remove/decrement/increment forms -->
 <noscript>
   <div class="bg-red-100 text-red-800 p-4 rounded mb-4">JavaScript is required for cart updates. Please enable JavaScript.</div>
   <div>
@@ -23,86 +22,114 @@
       <form method="post" action="{% url 'update_cart' entry.item.id %}" style="display:inline;">
         {% csrf_token %}
         <input type="hidden" name="action" value="remove">
-        <button type="submit">🗑️</button>
+        <button type="submit"> 5d1 e0f</button>
       </form>
     {% endfor %}
   </div>
 </noscript>
 
 {% block content %}
-<div class="min-h-screen bg-gray-50 px-2 sm:px-4 md:px-8 py-4">
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 px-2 sm:px-4 md:px-8 py-4">
   <div class="max-w-2xl mx-auto">
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-900 mb-4 text-center">Cart Items</h1>
-    <div class="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6">
-      <!-- Cart Items Table or List -->
-      <div class="space-y-4">
-        {% for item in cart_items %}
-          <div class="flex flex-col sm:flex-row items-center justify-between bg-gray-50 rounded-lg p-4">
-            <div class="flex-1 text-lg font-medium text-gray-800">{{ item.item.name }}</div>
-            <div class="flex items-center mt-2 sm:mt-0">
-              <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold mr-2">-</button>
-              <span class="text-lg font-semibold">{{ item.quantity }}</span>
-              <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold ml-2">+</button>
+    <div class="space-y-4 mb-6">
+      {% for item in cart_items %}
+        <div class="flex flex-col sm:flex-row items-center justify-between bg-white rounded-2xl shadow-xl border-2 border-blue-100 p-4 sm:p-6 transition hover:shadow-2xl">
+          <div class="flex-1 flex flex-col sm:flex-row items-center gap-4 w-full">
+            <div class="w-14 h-14 bg-blue-50 rounded-xl flex items-center justify-center">
+              <svg class="w-7 h-7 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+              </svg>
             </div>
-            <div class="text-lg font-semibold text-green-600 mt-2 sm:mt-0">₹{{ item.item.price|floatformat:2 }}</div>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-    <div class="bg-white rounded-2xl shadow-md p-4 sm:p-6 mb-6">
-      <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-3">Order Summary</h2>
-      <div class="space-y-2">
-        <div class="flex justify-between text-base sm:text-lg">
-          <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }})</span>
-          <span class="font-semibold">₹{{ cart_total|floatformat:2 }}</span>
-        </div>
-        <div class="flex justify-between text-base sm:text-lg">
-          <span>Service Charge</span>
-          <span class="font-semibold">₹0.00</span>
-        </div>
-        <div class="flex justify-between text-lg sm:text-xl font-bold mt-2">
-          <span>Total</span>
-          <span class="text-green-600">₹{{ cart_total|floatformat:2 }}</span>
-        </div>
-      </div>
-      <div class="mt-4">
-        <div class="bg-blue-50 rounded-lg p-3 mb-3">
-          <div class="text-base sm:text-lg font-medium mb-1">Payment Options</div>
-          <div class="flex flex-col gap-2">
-            <label class="flex items-center">
-              <input type="radio" name="payment_method" value="Online" class="form-radio text-blue-600 mr-2" checked>
-              <span>Online Payment Available</span>
-            </label>
-            <label class="flex items-center">
-              <input type="radio" name="payment_method" value="Cash" class="form-radio text-blue-600 mr-2">
-              <span>Pay Later with Cash Available</span>
-            </label>
-            <p class="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2 mb-0">
-              If you choose Pay Later (Cash), please collect your order within 15 minutes to avoid cancellation or wastage.
-            </p>
+            <div class="flex-1 min-w-0">
+              <div class="text-lg font-semibold text-gray-900 truncate">{{ item.item.name }}</div>
+              <div class="text-sm text-gray-500">Price:  4b9{{ item.item.price|floatformat:2 }}</div>
+            </div>
+            <div class="flex items-center gap-2 mt-2 sm:mt-0">
+              <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" data-action="decrease" data-item-id="{{ item.item.id }}">-</button>
+              <span class="text-lg font-semibold quantity-display" data-item-id="{{ item.item.id }}">{{ item.quantity }}</span>
+              <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" data-action="increase" data-item-id="{{ item.item.id }}">+</button>
+            </div>
+            <div class="text-lg font-semibold text-green-600 mt-2 sm:mt-0 item-total" data-item-id="{{ item.item.id }}"> 4b9{{ item.item.price|floatformat:2 }}</div>
+            <button class="ml-4 text-red-500 hover:text-red-700 transition-colors" data-action="remove" data-item-id="{{ item.item.id }}" title="Remove">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
         </div>
-        <button class="w-full bg-green-600 text-white px-6 py-4 rounded-xl hover:bg-green-700 transition duration-300 font-bold text-lg shadow-lg">Proceed to Order</button>
-      </div>
+      {% empty %}
+        <div class="bg-white rounded-2xl shadow-xl border-2 border-blue-100 p-8 text-center text-gray-500">
+          <svg class="w-16 h-16 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+          </svg>
+          <p>Your cart is empty</p>
+          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-800 font-medium">Browse Menu</a>
+        </div>
+      {% endfor %}
     </div>
+    <form method="post" action="{% url 'place_order' %}">
+      {% csrf_token %}
+      <div class="bg-white rounded-2xl shadow-xl border-2 border-blue-100 p-6 mb-6">
+        <h2 class="text-lg sm:text-xl font-semibold text-gray-900 mb-3">Order Summary</h2>
+        <div class="space-y-2">
+          <div class="flex justify-between text-base sm:text-lg">
+            <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }})</span>
+            <span class="font-semibold"> 4b9{{ cart_total|floatformat:2 }}</span>
+          </div>
+          <div class="flex justify-between text-base sm:text-lg">
+            <span>Service Charge</span>
+            <span class="font-semibold"> 4b90.00</span>
+          </div>
+          <div class="flex justify-between text-lg sm:text-xl font-bold mt-2">
+            <span>Total</span>
+            <span class="text-green-600"> 4b9{{ cart_total|floatformat:2 }}</span>
+          </div>
+        </div>
+        <div class="mt-4">
+          <div class="bg-blue-50 rounded-lg p-3 mb-3">
+            <div class="text-base sm:text-lg font-medium mb-1">Payment Options</div>
+            <div class="flex flex-col gap-2">
+              <label class="flex items-center">
+                <input type="radio" name="payment_method" value="Online" class="form-radio text-blue-600 mr-2" checked>
+                <span>Online Payment</span>
+              </label>
+              <label class="flex items-center">
+                <input type="radio" name="payment_method" value="Cash" class="form-radio text-blue-600 mr-2">
+                <span>Pay Later (Cash)</span>
+              </label>
+              <p class="text-xs text-yellow-700 bg-yellow-50 border border-yellow-200 rounded px-3 py-2 mt-2 mb-0">
+                If you choose Pay Later (Cash), please collect your order within 15 minutes, or your order may be cancelled or given to someone else.
+              </p>
+            </div>
+          </div>
+          {% if user.is_authenticated %}
+            <button type="submit" class="w-full bg-green-600 text-white px-6 py-4 rounded-xl hover:bg-green-700 transition duration-300 font-bold text-lg shadow-lg">Proceed to Order</button>
+          {% else %}
+            <a href="/auth/login/google-oauth2/" class="w-full block bg-blue-600 text-white px-6 py-4 rounded-xl hover:bg-blue-700 transition duration-300 font-bold text-lg shadow-lg text-center mb-2">Login to Continue</a>
+            <a href="{% url 'menu' %}" class="w-full block bg-gray-200 text-gray-700 px-6 py-3 rounded-xl hover:bg-gray-300 transition duration-300 font-medium text-center">Continue Shopping</a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
   </div>
 </div>
+{% endblock %}
 
 <!-- Success Notification -->
 <div id="successNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
   <div class="flex items-center">
     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
     </svg>
     <span id="successMessage">Action completed successfully!</span>
   </div>
 </div>
 
-<!-- Error Notification -->
 <div id="errorNotification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
   <div class="flex items-center">
     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
     </svg>
     <span id="errorMessage">An error occurred!</span>
   </div>
@@ -191,7 +218,7 @@ function updateCartDisplay(data) {
     const itemTotal = document.querySelector(`.item-total[data-item-id="${cartItem.id}"]`);
     
     if (quantityDisplay) quantityDisplay.textContent = cartItem.quantity;
-    if (itemTotal) itemTotal.textContent = `₹${cartItem.total.toFixed(2)}`;
+    if (itemTotal) itemTotal.textContent = ` 4b9${cartItem.total.toFixed(2)}`;
   });
   
   // Remove items that are no longer in cart
@@ -240,5 +267,4 @@ function showNotification(type, message) {
   overflow: hidden;
 }
 </style>
-{% endblock %}
 
