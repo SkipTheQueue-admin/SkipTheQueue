@@ -43,14 +43,14 @@
             </div>
             <div class="flex-1 min-w-0">
               <div class="text-lg font-semibold text-gray-900 truncate">{{ item.item.name }}</div>
-              <div class="text-sm text-gray-500">Price:  4b9{{ item.item.price|floatformat:2 }}</div>
+              <div class="text-sm text-gray-500">Price: ₹{{ item.item.price|floatformat:2 }}</div>
             </div>
             <div class="flex items-center gap-2 mt-2 sm:mt-0">
               <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" data-action="decrease" data-item-id="{{ item.item.id }}">-</button>
               <span class="text-lg font-semibold quantity-display" data-item-id="{{ item.item.id }}">{{ item.quantity }}</span>
               <button class="bg-blue-100 text-blue-600 rounded-full w-8 h-8 flex items-center justify-center text-xl font-bold focus:outline-none focus:ring-2 focus:ring-blue-400" data-action="increase" data-item-id="{{ item.item.id }}">+</button>
             </div>
-            <div class="text-lg font-semibold text-green-600 mt-2 sm:mt-0 item-total" data-item-id="{{ item.item.id }}"> 4b9{{ item.item.price|floatformat:2 }}</div>
+            <div class="text-lg font-semibold text-green-600 mt-2 sm:mt-0 item-total" data-item-id="{{ item.item.id }}"> ₹{{ item.item.price|floatformat:2 }}</div>
             <button class="ml-4 text-red-500 hover:text-red-700 transition-colors" data-action="remove" data-item-id="{{ item.item.id }}" title="Remove">
               <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
@@ -75,15 +75,15 @@
         <div class="space-y-2">
           <div class="flex justify-between text-base sm:text-lg">
             <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }})</span>
-            <span class="font-semibold"> 4b9{{ cart_total|floatformat:2 }}</span>
+            <span class="font-semibold">₹{{ cart_total|floatformat:2 }}</span>
           </div>
           <div class="flex justify-between text-base sm:text-lg">
             <span>Service Charge</span>
-            <span class="font-semibold"> 4b90.00</span>
+            <span class="font-semibold">₹0.00</span>
           </div>
           <div class="flex justify-between text-lg sm:text-xl font-bold mt-2">
             <span>Total</span>
-            <span class="text-green-600"> 4b9{{ cart_total|floatformat:2 }}</span>
+            <span class="text-green-600">₹{{ cart_total|floatformat:2 }}</span>
           </div>
         </div>
         <div class="mt-4">
@@ -218,7 +218,7 @@ function updateCartDisplay(data) {
     const itemTotal = document.querySelector(`.item-total[data-item-id="${cartItem.id}"]`);
     
     if (quantityDisplay) quantityDisplay.textContent = cartItem.quantity;
-    if (itemTotal) itemTotal.textContent = ` 4b9${cartItem.total.toFixed(2)}`;
+    if (itemTotal) itemTotal.textContent = `₹${cartItem.total.toFixed(2)}`;
   });
   
   // Remove items that are no longer in cart
@@ -263,6 +263,7 @@ function showNotification(type, message) {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
