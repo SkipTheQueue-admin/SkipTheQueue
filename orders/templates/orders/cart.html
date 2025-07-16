@@ -75,7 +75,7 @@
         <div class="space-y-2">
           <div class="flex justify-between text-base sm:text-lg">
             <span>Subtotal ({{ cart_items|length }} item{{ cart_items|length|pluralize }})</span>
-            <span class="font-semibold">₹{{ cart_total|floatformat:2 }}</span>
+            <span class="font-semibold">₹{{ total|floatformat:2 }}</span>
           </div>
           <div class="flex justify-between text-base sm:text-lg">
             <span>Service Charge</span>
@@ -83,7 +83,7 @@
           </div>
           <div class="flex justify-between text-lg sm:text-xl font-bold mt-2">
             <span>Total</span>
-            <span class="text-green-600">₹{{ cart_total|floatformat:2 }}</span>
+            <span class="text-green-600">₹{{ total|floatformat:2 }}</span>
           </div>
         </div>
         <div class="mt-4">
@@ -262,7 +262,7 @@ function showNotification(type, message) {
 <style>
 .line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 2;
+  i-webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
