@@ -188,21 +188,21 @@
                 <!-- Action Buttons -->
                 <div class="flex space-x-3">
                   {% if order.status == 'Paid' %}
-                    <button onclick="acceptOrder({{ order.id }})" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button id="accept-order-btn-{{ order.id }}" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                       </svg>
                       Accept Order
                     </button>
                   {% elif order.status == 'In Progress' %}
-                    <button onclick="markReady({{ order.id }})" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button id="mark-ready-btn-{{ order.id }}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                       Mark Ready
                     </button>
                   {% elif order.status == 'Ready' %}
-                    <button onclick="completeOrder({{ order.id }})" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button id="complete-order-btn-{{ order.id }}" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                       </svg>
@@ -210,7 +210,7 @@
                     </button>
                   {% endif %}
                   
-                  <button onclick="declineOrder({{ order.id }})" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                  <button id="decline-order-btn-{{ order.id }}" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -345,6 +345,37 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<!-- Add CSRF token -->
+<div id="active-order-ids" data-ids='[{% for order in active_orders %}{{ order.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var orderIdsDiv = document.getElementById('active-order-ids');
+  var orderIds = [];
+  if (orderIdsDiv) {
+    try {
+      orderIds = JSON.parse(orderIdsDiv.getAttribute('data-ids'));
+    } catch (e) {
+      orderIds = [];
+    }
+  }
+  orderIds.forEach(function(id) {
+    var acceptBtn = document.getElementById('accept-order-btn-' + id);
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', function() { acceptOrder(id); });
+    }
+    var markReadyBtn = document.getElementById('mark-ready-btn-' + id);
+    if (markReadyBtn) {
+      markReadyBtn.addEventListener('click', function() { markReady(id); });
+    }
+    var completeBtn = document.getElementById('complete-order-btn-' + id);
+    if (completeBtn) {
+      completeBtn.addEventListener('click', function() { completeOrder(id); });
+    }
+    var declineBtn = document.getElementById('decline-order-btn-' + id);
+    if (declineBtn) {
+      declineBtn.addEventListener('click', function() { declineOrder(id); });
+    }
+  });
+});
+</script>
 {% csrf_token %}
 {% endblock %}

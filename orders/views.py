@@ -27,6 +27,7 @@ import hashlib
 import hmac
 from functools import wraps
 import logging
+logger = logging.getLogger(__name__)
 
 # Security decorators and utilities
 def rate_limit(max_requests=10, window=60):
@@ -1585,6 +1586,8 @@ def canteen_staff_login(request):
                         print(f"DEBUG: Found canteen staff assignment: {canteen_staff.college.name} (slug: {canteen_staff.college.slug})")
                         from django.contrib.auth import login
                         login(request, user)
+                        request.session.save()  # Force session save
+                        print(f"DEBUG: After login, user is authenticated: {request.user.is_authenticated}")
                         messages.success(request, f"Welcome back, {user.first_name or user.username}!")
                         
                         # Use the exact college slug from the database
