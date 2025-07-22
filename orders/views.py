@@ -1556,52 +1556,48 @@ def favorites(request):
 
 # Canteen Staff Authentication and Management Views
 def canteen_staff_login(request):
-    """Canteen staff login view (now supports email or username) with detailed debugging"""
+    """Canteen staff login view (now supports email or username) with detailed debugging and strict email check"""
+    from django.contrib.auth import logout
     if request.user.is_authenticated:
         # Check if user is canteen staff
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
-            return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+            # Ensure email matches
+            if request.user.email == canteen_staff.user.email:
+                return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+            else:
+                logout(request)
+                messages.error(request, "Access denied. Email mismatch for canteen staff.")
+                return redirect('canteen_staff_login')
         except CanteenStaff.DoesNotExist:
-            pass
+            logout(request)
+            messages.error(request, "Access denied. You are not authorized as canteen staff.")
+            return redirect('canteen_staff_login')
 
     if request.method == 'POST':
         identifier = request.POST.get('email')  # This could be email or username
         password = request.POST.get('password')
 
         if identifier and password:
-            # Debug: Log what we're looking for
-            print(f"DEBUG: Looking for user with identifier: {identifier}")
-            
             user = User.objects.filter(email=identifier).first()
             if not user:
                 user = User.objects.filter(username=identifier).first()
-            
-            if user:
-                print(f"DEBUG: Found user: {user.username} ({user.email})")
-                if user.check_password(password):
-                    print(f"DEBUG: Password is correct")
-                    try:
-                        canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
-                        print(f"DEBUG: Found canteen staff assignment: {canteen_staff.college.name} (slug: {canteen_staff.college.slug})")
-                        from django.contrib.auth import login
-                        login(request, user)
-                        request.session.save()  # Force session save
-                        print(f"DEBUG: After login, user is authenticated: {request.user.is_authenticated}")
-                        messages.success(request, f"Welcome back, {user.first_name or user.username}!")
-                        
-                        # Use the exact college slug from the database
-                        college_slug = canteen_staff.college.slug
-                        print(f"DEBUG: Redirecting to dashboard with slug: {college_slug}")
-                        return redirect('canteen_staff_dashboard', college_slug=college_slug)
-                    except CanteenStaff.DoesNotExist:
-                        print(f"DEBUG: User is not assigned as active canteen staff")
-                        messages.error(request, "Access denied. You are not authorized as canteen staff.")
-                else:
-                    print(f"DEBUG: Password is incorrect")
-                    messages.error(request, "Invalid credentials.")
+            if user and user.check_password(password):
+                try:
+                    canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
+                    # Strict email match
+                    if user.email != canteen_staff.user.email:
+                        messages.error(request, "Access denied. Email mismatch for canteen staff.")
+                        return render(request, 'orders/canteen_staff_login.html')
+                    from django.contrib.auth import login
+                    login(request, user)
+                    request.session.save()  # Force session save
+                    messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+                    college_slug = canteen_staff.college.slug
+                    return redirect('canteen_staff_dashboard', college_slug=college_slug)
+                except CanteenStaff.DoesNotExist:
+                    messages.error(request, "Access denied. You are not authorized as canteen staff.")
             else:
-                print(f"DEBUG: User not found with identifier: {identifier}")
                 messages.error(request, "Invalid credentials.")
         else:
             messages.error(request, "Please provide both email/username and password.")
@@ -1611,29 +1607,29 @@ def canteen_staff_login(request):
 @login_required(login_url='/canteen/login/')
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with better security and features"""
-    print(f"DEBUG: Dashboard called with college_slug: '{college_slug}'")
-    
+    from django.contrib.auth import logout
     try:
         # Try to find the college with the given slug
         try:
             college = College.objects.get(slug=college_slug)
-            print(f"DEBUG: Found college: {college.name} with slug: '{college.slug}'")
         except College.DoesNotExist:
-            print(f"DEBUG: College with slug '{college_slug}' not found")
             # Try to find the user's assigned college
             try:
                 canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+                # Strict email match
+                if request.user.email != canteen_staff.user.email:
+                    logout(request)
+                    messages.error(request, "Access denied. Email mismatch for canteen staff.")
+                    return redirect('canteen_staff_login')
                 college = canteen_staff.college
-                print(f"DEBUG: Using user's assigned college: {college.name} with slug: '{college.slug}'")
-                # Redirect to the correct URL
                 return redirect('canteen_staff_dashboard', college_slug=college.slug)
             except CanteenStaff.DoesNotExist:
+                logout(request)
                 messages.error(request, "College not found and you are not assigned to any college.")
                 return redirect('canteen_staff_login')
-        
-        # Check if user is canteen staff for this college
-        if not (request.user.is_superuser or is_canteen_staff(request.user, college)):
-            print(f"DEBUG: User {request.user.username} is not authorized for college {college.name}")
+        # Check if user is canteen staff for this college and email matches
+        if not (request.user.is_superuser or (is_canteen_staff(request.user, college) and request.user.email == CanteenStaff.objects.get(user=request.user, college=college, is_active=True).user.email)):
+            logout(request)
             messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
             return redirect('canteen_staff_login')
         
