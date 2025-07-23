@@ -1,4 +1,5 @@
 {% extends "orders/base.html" %}
+{% load static %}
 
 {% block content %}
 <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
@@ -6,9 +7,7 @@
     <!-- Header -->
     <div class="text-center">
       <div class="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
-        <svg class="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
-        </svg>
+        <img src="{% static 'images/zap-icon.svg' %}" alt="Login Logo" class="h-8 w-8">
       </div>
       <h2 class="text-3xl font-bold text-white mb-2">Canteen Staff Login</h2>
       <p class="text-blue-200">Access your college's canteen dashboard</p>

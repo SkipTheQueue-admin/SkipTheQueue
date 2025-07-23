@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, CanteenStaff
+from core.security import SecurityValidator, SessionSecurity
 
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -60,15 +61,6 @@ def rate_limit(max_requests=10, window=60):
         return wrapped
     return decorator
 
-def validate_phone_number(phone):
-    """Validate phone number format"""
-    if not phone:
-        return False
-    # Remove all non-digit characters
-    phone_clean = re.sub(r'\D', '', phone)
-    # Check if it's 10-12 digits
-    return 10 <= len(phone_clean) <= 12
-
 def validate_payment_data(data):
     """Validate payment data"""
     required_fields = ['amount', 'payment_method']
@@ -85,14 +77,6 @@ def validate_payment_data(data):
         return False, "Invalid amount format"
     
     return True, "Valid"
-
-def sanitize_input(text):
-    """Sanitize user input"""
-    if not text:
-        return ""
-    # Remove potentially dangerous characters
-    text = re.sub(r'[<>"\']', '', str(text))
-    return text.strip()
 
 def verify_payment_signature(data, signature, secret_key):
     """Verify payment signature for security"""
@@ -155,9 +139,9 @@ def collect_phone(request):
         messages.error(request, "No valid items in your cart.")
         return redirect('menu')
     if request.method == 'POST':
-        phone = sanitize_input(request.POST.get('phone'))
+        phone = SecurityValidator.sanitize_input(request.POST.get('phone'))
         payment_method = request.POST.get('payment_method', 'Online')
-        if not validate_phone_number(phone):
+        if not SecurityValidator.validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             cart = request.session.get('cart', {})
             menu_items = []
@@ -197,7 +181,7 @@ def collect_phone(request):
         request.session['payment_method'] = payment_method
         request.session.modified = True
         # Get special instructions if any
-        special_instructions = sanitize_input(request.POST.get('special_instructions', ''))
+        special_instructions = SecurityValidator.sanitize_input(request.POST.get('special_instructions', ''))
         if special_instructions:
             request.session['special_instructions'] = special_instructions
         # Redirect to place order
@@ -415,9 +399,7 @@ def place_order(request):
         
         # Clear session data
         request.session['cart'] = {}
-        request.session.pop('user_phone', None)
-        request.session.pop('special_instructions', None)
-        request.session.pop('payment_method', None)
+        SessionSecurity.clear_sensitive_session_data(request)
 
         messages.success(request, f"Order #{order.id} placed successfully!")
         return redirect('order_success', order_id=order.id)
@@ -524,12 +506,12 @@ def register_college(request):
     """College registration form with security"""
     if request.method == 'POST':
         # Sanitize all inputs
-        name = sanitize_input(request.POST.get('name'))
-        slug = sanitize_input(request.POST.get('slug'))
-        address = sanitize_input(request.POST.get('address'))
-        admin_name = sanitize_input(request.POST.get('admin_name'))
-        admin_email = sanitize_input(request.POST.get('admin_email'))
-        admin_phone = sanitize_input(request.POST.get('admin_phone'))
+        name = SecurityValidator.sanitize_input(request.POST.get('name'))
+        slug = SecurityValidator.sanitize_input(request.POST.get('slug'))
+        address = SecurityValidator.sanitize_input(request.POST.get('address'))
+        admin_name = SecurityValidator.sanitize_input(request.POST.get('admin_name'))
+        admin_email = SecurityValidator.sanitize_input(request.POST.get('admin_email'))
+        admin_phone = SecurityValidator.sanitize_input(request.POST.get('admin_phone'))
         
         # Validate inputs
         if not name or len(name) < 3:
@@ -547,7 +529,7 @@ def register_college(request):
                 messages.error(request, "Please enter a valid email address.")
                 return render(request, 'orders/register_college.html')
         
-        if admin_phone and not validate_phone_number(admin_phone):
+        if admin_phone and not SecurityValidator.validate_phone_number(admin_phone):
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/register_college.html')
         
@@ -934,7 +916,7 @@ def manage_menu(request, college_slug):
         college = get_object_or_404(College, slug=college_slug)
         
         if request.method == 'POST':
-            action = sanitize_input(request.POST.get('action'))
+            action = SecurityValidator.sanitize_input(request.POST.get('action'))
             item_id = request.POST.get('item_id')
             
             if action == 'toggle_availability' and item_id:
@@ -949,10 +931,10 @@ def manage_menu(request, college_slug):
                 messages.success(request, f"{item.name} deleted from menu!")
                 
             elif action == 'add_item':
-                name = sanitize_input(request.POST.get('name'))
-                description = sanitize_input(request.POST.get('description', ''))
+                name = SecurityValidator.sanitize_input(request.POST.get('name'))
+                description = SecurityValidator.sanitize_input(request.POST.get('description', ''))
                 price = request.POST.get('price')
-                category = sanitize_input(request.POST.get('category', 'General'))
+                category = SecurityValidator.sanitize_input(request.POST.get('category', 'General'))
                 
                 if name and price:
                     try:
@@ -1082,9 +1064,7 @@ def process_payment(request, order_id):
                 
                 # Clear sensitive session data
                 request.session['cart'] = {}
-                request.session.pop('user_phone', None)
-                request.session.pop('special_instructions', None)
-                request.session.pop('payment_method', None)
+                SessionSecurity.clear_sensitive_session_data(request)
 
                 messages.success(request, f"✅ Payment successful! Order #{order.id} confirmed.")
                 return redirect('order_success', order_id=order.id)
@@ -1121,7 +1101,7 @@ def order_history(request):
 @never_cache
 def track_order(request):
     """Enhanced order tracking with validation"""
-    phone = sanitize_input(request.GET.get('phone'))
+    phone = SecurityValidator.sanitize_input(request.GET.get('phone'))
     order_id = request.GET.get('order_id')
     
     if order_id:
@@ -1132,7 +1112,7 @@ def track_order(request):
             messages.error(request, "Order not found.")
     
     elif phone:
-        if not validate_phone_number(phone):
+        if not SecurityValidator.validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/track_order.html')
         
@@ -1324,11 +1304,11 @@ def manage_college(request, college_id):
     
     if request.method == 'POST':
         # Update college settings
-        college.name = sanitize_input(request.POST.get('name', college.name))
-        college.address = sanitize_input(request.POST.get('address', college.address))
-        college.admin_name = sanitize_input(request.POST.get('admin_name', college.admin_name))
-        college.admin_email = sanitize_input(request.POST.get('admin_email', college.admin_email))
-        college.admin_phone = sanitize_input(request.POST.get('admin_phone', college.admin_phone))
+        college.name = SecurityValidator.sanitize_input(request.POST.get('name', college.name))
+        college.address = SecurityValidator.sanitize_input(request.POST.get('address', college.address))
+        college.admin_name = SecurityValidator.sanitize_input(request.POST.get('admin_name', college.admin_name))
+        college.admin_email = SecurityValidator.sanitize_input(request.POST.get('admin_email', college.admin_email))
+        college.admin_phone = SecurityValidator.sanitize_input(request.POST.get('admin_phone', college.admin_phone))
         college.is_active = request.POST.get('is_active') == 'on'
         college.payment_gateway_enabled = request.POST.get('payment_gateway_enabled') == 'on'
         college.allow_pay_later = request.POST.get('allow_pay_later') == 'on'
@@ -1361,10 +1341,10 @@ def manage_menu_items(request):
         
         if action == 'add':
             # Add new menu item
-            name = sanitize_input(request.POST.get('name'))
-            description = sanitize_input(request.POST.get('description'))
+            name = SecurityValidator.sanitize_input(request.POST.get('name'))
+            description = SecurityValidator.sanitize_input(request.POST.get('description'))
             price = request.POST.get('price')
-            category = sanitize_input(request.POST.get('category'))
+            category = SecurityValidator.sanitize_input(request.POST.get('category'))
             college_id = request.POST.get('college')
             
             try:
@@ -1398,10 +1378,10 @@ def manage_menu_items(request):
             item_id = request.POST.get('item_id')
             try:
                 item = MenuItem.objects.get(id=item_id)
-                item.name = sanitize_input(request.POST.get('name', item.name))
-                item.description = sanitize_input(request.POST.get('description', item.description))
+                item.name = SecurityValidator.sanitize_input(request.POST.get('name', item.name))
+                item.description = SecurityValidator.sanitize_input(request.POST.get('description', item.description))
                 item.price = request.POST.get('price', item.price)
-                item.category = sanitize_input(request.POST.get('category', item.category))
+                item.category = SecurityValidator.sanitize_input(request.POST.get('category', item.category))
                 item.is_available = request.POST.get('is_available') == 'on'
                 item.save()
                 messages.success(request, f"Menu item '{item.name}' updated successfully!")

@@ -42,7 +42,7 @@ class MenuItem(models.Model):
     description = models.TextField(blank=True)
     price = models.DecimalField(max_digits=6, decimal_places=2)
     is_available = models.BooleanField(default=True)
-    college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='menu_items', null=True, blank=True)
+    college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='menu_items', null=True, blank=True, db_index=True)
     category = models.CharField(max_length=50, default='General')
     image_url = models.URLField(blank=True, null=True)
     created_at = models.DateTimeField(default=timezone.now)
@@ -78,11 +78,11 @@ class Order(models.Model):
         ('Cash', 'Pay Later (Cash)'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
     user_name = models.CharField(max_length=100)
     user_phone = models.CharField(max_length=15)
-    college = models.ForeignKey(College, on_delete=models.SET_NULL, null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    college = models.ForeignKey(College, on_delete=models.SET_NULL, null=True, blank=True, db_index=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending', db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     estimated_time = models.IntegerField(default=15, help_text="Estimated time in minutes")
@@ -150,7 +150,7 @@ class Payment(models.Model):
 
 class CanteenStaff(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='canteen_staff')
-    college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='canteen_staff')
+    college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='canteen_staff', db_index=True)
     is_active = models.BooleanField(default=True)
     can_accept_orders = models.BooleanField(default=True)
     can_update_status = models.BooleanField(default=True)
