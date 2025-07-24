@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, CanteenStaff
-from core.security import SecurityValidator, SessionSecurity
+from core.security import sanitize_input, validate_phone_number, clear_sensitive_session_data
 
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -139,9 +139,9 @@ def collect_phone(request):
         messages.error(request, "No valid items in your cart.")
         return redirect('menu')
     if request.method == 'POST':
-        phone = SecurityValidator.sanitize_input(request.POST.get('phone'))
+        phone = sanitize_input(request.POST.get('phone'))
         payment_method = request.POST.get('payment_method', 'Online')
-        if not SecurityValidator.validate_phone_number(phone):
+        if not validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             cart = request.session.get('cart', {})
             menu_items = []
@@ -181,7 +181,7 @@ def collect_phone(request):
         request.session['payment_method'] = payment_method
         request.session.modified = True
         # Get special instructions if any
-        special_instructions = SecurityValidator.sanitize_input(request.POST.get('special_instructions', ''))
+        special_instructions = sanitize_input(request.POST.get('special_instructions', ''))
         if special_instructions:
             request.session['special_instructions'] = special_instructions
         # Redirect to place order
@@ -399,7 +399,7 @@ def place_order(request):
         
         # Clear session data
         request.session['cart'] = {}
-        SessionSecurity.clear_sensitive_session_data(request)
+        clear_sensitive_session_data(request)
 
         messages.success(request, f"Order #{order.id} placed successfully!")
         return redirect('order_success', order_id=order.id)
@@ -506,12 +506,12 @@ def register_college(request):
     """College registration form with security"""
     if request.method == 'POST':
         # Sanitize all inputs
-        name = SecurityValidator.sanitize_input(request.POST.get('name'))
-        slug = SecurityValidator.sanitize_input(request.POST.get('slug'))
-        address = SecurityValidator.sanitize_input(request.POST.get('address'))
-        admin_name = SecurityValidator.sanitize_input(request.POST.get('admin_name'))
-        admin_email = SecurityValidator.sanitize_input(request.POST.get('admin_email'))
-        admin_phone = SecurityValidator.sanitize_input(request.POST.get('admin_phone'))
+        name = sanitize_input(request.POST.get('name'))
+        slug = sanitize_input(request.POST.get('slug'))
+        address = sanitize_input(request.POST.get('address'))
+        admin_name = sanitize_input(request.POST.get('admin_name'))
+        admin_email = sanitize_input(request.POST.get('admin_email'))
+        admin_phone = sanitize_input(request.POST.get('admin_phone'))
         
         # Validate inputs
         if not name or len(name) < 3:
@@ -529,7 +529,7 @@ def register_college(request):
                 messages.error(request, "Please enter a valid email address.")
                 return render(request, 'orders/register_college.html')
         
-        if admin_phone and not SecurityValidator.validate_phone_number(admin_phone):
+        if admin_phone and not validate_phone_number(admin_phone):
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/register_college.html')
         
@@ -916,7 +916,7 @@ def manage_menu(request, college_slug):
         college = get_object_or_404(College, slug=college_slug)
         
         if request.method == 'POST':
-            action = SecurityValidator.sanitize_input(request.POST.get('action'))
+            action = sanitize_input(request.POST.get('action'))
             item_id = request.POST.get('item_id')
             
             if action == 'toggle_availability' and item_id:
@@ -931,10 +931,10 @@ def manage_menu(request, college_slug):
                 messages.success(request, f"{item.name} deleted from menu!")
                 
             elif action == 'add_item':
-                name = SecurityValidator.sanitize_input(request.POST.get('name'))
-                description = SecurityValidator.sanitize_input(request.POST.get('description', ''))
+                name = sanitize_input(request.POST.get('name'))
+                description = sanitize_input(request.POST.get('description', ''))
                 price = request.POST.get('price')
-                category = SecurityValidator.sanitize_input(request.POST.get('category', 'General'))
+                category = sanitize_input(request.POST.get('category', 'General'))
                 
                 if name and price:
                     try:
@@ -1064,7 +1064,7 @@ def process_payment(request, order_id):
                 
                 # Clear sensitive session data
                 request.session['cart'] = {}
-                SessionSecurity.clear_sensitive_session_data(request)
+                clear_sensitive_session_data(request)
 
                 messages.success(request, f"✅ Payment successful! Order #{order.id} confirmed.")
                 return redirect('order_success', order_id=order.id)
@@ -1101,7 +1101,7 @@ def order_history(request):
 @never_cache
 def track_order(request):
     """Enhanced order tracking with validation"""
-    phone = SecurityValidator.sanitize_input(request.GET.get('phone'))
+    phone = sanitize_input(request.GET.get('phone'))
     order_id = request.GET.get('order_id')
     
     if order_id:
@@ -1112,7 +1112,7 @@ def track_order(request):
             messages.error(request, "Order not found.")
     
     elif phone:
-        if not SecurityValidator.validate_phone_number(phone):
+        if not validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/track_order.html')
         
@@ -1304,11 +1304,11 @@ def manage_college(request, college_id):
     
     if request.method == 'POST':
         # Update college settings
-        college.name = SecurityValidator.sanitize_input(request.POST.get('name', college.name))
-        college.address = SecurityValidator.sanitize_input(request.POST.get('address', college.address))
-        college.admin_name = SecurityValidator.sanitize_input(request.POST.get('admin_name', college.admin_name))
-        college.admin_email = SecurityValidator.sanitize_input(request.POST.get('admin_email', college.admin_email))
-        college.admin_phone = SecurityValidator.sanitize_input(request.POST.get('admin_phone', college.admin_phone))
+        college.name = sanitize_input(request.POST.get('name', college.name))
+        college.address = sanitize_input(request.POST.get('address', college.address))
+        college.admin_name = sanitize_input(request.POST.get('admin_name', college.admin_name))
+        college.admin_email = sanitize_input(request.POST.get('admin_email', college.admin_email))
+        college.admin_phone = sanitize_input(request.POST.get('admin_phone', college.admin_phone))
         college.is_active = request.POST.get('is_active') == 'on'
         college.payment_gateway_enabled = request.POST.get('payment_gateway_enabled') == 'on'
         college.allow_pay_later = request.POST.get('allow_pay_later') == 'on'
@@ -1341,10 +1341,10 @@ def manage_menu_items(request):
         
         if action == 'add':
             # Add new menu item
-            name = SecurityValidator.sanitize_input(request.POST.get('name'))
-            description = SecurityValidator.sanitize_input(request.POST.get('description'))
+            name = sanitize_input(request.POST.get('name'))
+            description = sanitize_input(request.POST.get('description'))
             price = request.POST.get('price')
-            category = SecurityValidator.sanitize_input(request.POST.get('category'))
+            category = sanitize_input(request.POST.get('category'))
             college_id = request.POST.get('college')
             
             try:
@@ -1378,10 +1378,10 @@ def manage_menu_items(request):
             item_id = request.POST.get('item_id')
             try:
                 item = MenuItem.objects.get(id=item_id)
-                item.name = SecurityValidator.sanitize_input(request.POST.get('name', item.name))
-                item.description = SecurityValidator.sanitize_input(request.POST.get('description', item.description))
+                item.name = sanitize_input(request.POST.get('name', item.name))
+                item.description = sanitize_input(request.POST.get('description', item.description))
                 item.price = request.POST.get('price', item.price)
-                item.category = SecurityValidator.sanitize_input(request.POST.get('category', item.category))
+                item.category = sanitize_input(request.POST.get('category', item.category))
                 item.is_available = request.POST.get('is_available') == 'on'
                 item.save()
                 messages.success(request, f"Menu item '{item.name}' updated successfully!")
@@ -1539,9 +1539,11 @@ def canteen_staff_login(request):
     """Canteen staff login view (now supports email or username) with detailed debugging and strict email check"""
     from django.contrib.auth import logout, login
     if request.user.is_authenticated:
+        print(f"DEBUG: Already authenticated as {request.user.email}")
         # Always fetch the user's assigned canteen staff record
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            print(f"DEBUG: Found CanteenStaff for {request.user.email} assigned to {canteen_staff.college.slug}")
             # Ensure email matches
             if request.user.email == canteen_staff.user.email:
                 # Always redirect to the assigned college dashboard
@@ -1551,6 +1553,7 @@ def canteen_staff_login(request):
                 messages.error(request, "Access denied. Email mismatch for canteen staff.")
                 return redirect('canteen_staff_login')
         except CanteenStaff.DoesNotExist:
+            print(f"DEBUG: No CanteenStaff found for {request.user.email}")
             logout(request)
             messages.error(request, "Access denied. You are not authorized as canteen staff.")
             return redirect('canteen_staff_login')
@@ -1559,13 +1562,16 @@ def canteen_staff_login(request):
         identifier = request.POST.get('email')  # This could be email or username
         password = request.POST.get('password')
 
+        print(f"DEBUG: Attempting login for identifier: {identifier}")
         if identifier and password:
             user = User.objects.filter(email=identifier).first()
             if not user:
                 user = User.objects.filter(username=identifier).first()
             if user and user.check_password(password):
+                print(f"DEBUG: Authenticated user {user.email}")
                 try:
                     canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
+                    print(f"DEBUG: Found CanteenStaff for {user.email} assigned to {canteen_staff.college.slug}")
                     # Strict email match
                     if user.email != canteen_staff.user.email:
                         messages.error(request, "Access denied. Email mismatch for canteen staff.")
@@ -1576,12 +1582,15 @@ def canteen_staff_login(request):
                     # Always redirect to the assigned college dashboard
                     return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
                 except CanteenStaff.DoesNotExist:
+                    print(f"DEBUG: No CanteenStaff found for {user.email}")
                     logout(request)
                     messages.error(request, "Access denied. You are not authorized as canteen staff.")
                     return redirect('canteen_staff_login')
             else:
+                print(f"DEBUG: Invalid credentials for {identifier}")
                 messages.error(request, "Invalid credentials.")
         else:
+            print(f"DEBUG: Missing email/username or password")
             messages.error(request, "Please provide both email/username and password.")
 
     return render(request, 'orders/canteen_staff_login.html')
@@ -1590,25 +1599,38 @@ def canteen_staff_login(request):
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with better security and features"""
     from django.contrib.auth import logout
+    print(f"DEBUG: Dashboard access for user {request.user.email}, slug: {college_slug}")
     try:
         # Always fetch the user's assigned canteen staff record
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            print(f"DEBUG: Found CanteenStaff for {request.user.email} assigned to {canteen_staff.college.slug}")
         except CanteenStaff.DoesNotExist:
+            print(f"DEBUG: No CanteenStaff found for {request.user.email}")
             logout(request)
             messages.error(request, "Access denied. You are not authorized as canteen staff.")
             return redirect('canteen_staff_login')
         # Strict email match
         if request.user.email != canteen_staff.user.email:
+            print(f"DEBUG: Email mismatch for {request.user.email} vs {canteen_staff.user.email}")
             logout(request)
             messages.error(request, "Access denied. Email mismatch for canteen staff.")
             return redirect('canteen_staff_login')
         # Always use the assigned college
         assigned_college = canteen_staff.college
+        print(f"DEBUG: Assigned college slug: {assigned_college.slug}")
         if college_slug != assigned_college.slug:
+            print(f"DEBUG: Slug mismatch: URL slug {college_slug} vs assigned {assigned_college.slug}")
             # Redirect to the correct dashboard
             return redirect('canteen_staff_dashboard', college_slug=assigned_college.slug)
-        college = assigned_college
+        try:
+            college = College.objects.get(slug=college_slug)
+            print(f"DEBUG: Found college {college.name} (slug: {college.slug})")
+        except College.DoesNotExist:
+            print(f"DEBUG: College with slug {college_slug} not found")
+            messages.error(request, "College not found.")
+            return redirect('home')
+        # Always use the assigned college
         # Check if user is canteen staff for this college and email matches
         if not (request.user.is_superuser or (is_canteen_staff(request.user, college) and request.user.email == CanteenStaff.objects.get(user=request.user, college=college, is_active=True).user.email)):
             logout(request)
