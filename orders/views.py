@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, CanteenStaff
-from core.security import sanitize_input, validate_phone_number, clear_sensitive_session_data
+from core.security import sanitize_input, SecurityValidator, clear_sensitive_session_data
 
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -141,7 +141,8 @@ def collect_phone(request):
     if request.method == 'POST':
         phone = sanitize_input(request.POST.get('phone'))
         payment_method = request.POST.get('payment_method', 'Online')
-        if not validate_phone_number(phone):
+        is_valid, _ = SecurityValidator.validate_phone_number(phone)
+        if not is_valid:
             messages.error(request, "Please enter a valid phone number.")
             cart = request.session.get('cart', {})
             menu_items = []
@@ -529,9 +530,11 @@ def register_college(request):
                 messages.error(request, "Please enter a valid email address.")
                 return render(request, 'orders/register_college.html')
         
-        if admin_phone and not validate_phone_number(admin_phone):
-            messages.error(request, "Please enter a valid phone number.")
-            return render(request, 'orders/register_college.html')
+        if admin_phone:
+            is_valid, _ = SecurityValidator.validate_phone_number(admin_phone)
+            if not is_valid:
+                messages.error(request, "Please enter a valid phone number.")
+                return render(request, 'orders/register_college.html')
         
         # Check if slug already exists
         if College.objects.filter(slug=slug).exists():
@@ -1112,7 +1115,8 @@ def track_order(request):
             messages.error(request, "Order not found.")
     
     elif phone:
-        if not validate_phone_number(phone):
+        is_valid, _ = SecurityValidator.validate_phone_number(phone)
+        if not is_valid:
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/track_order.html')
         
