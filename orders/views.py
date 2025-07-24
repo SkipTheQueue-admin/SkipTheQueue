@@ -2,7 +2,6 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
 from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, CanteenStaff
-from core.security import sanitize_input, SecurityValidator, clear_sensitive_session_data
 
 from django.contrib.auth import logout
 from django.contrib.auth.decorators import login_required
@@ -61,6 +60,15 @@ def rate_limit(max_requests=10, window=60):
         return wrapped
     return decorator
 
+def validate_phone_number(phone):
+    """Validate phone number format"""
+    if not phone:
+        return False
+    # Remove all non-digit characters
+    phone_clean = re.sub(r'\D', '', phone)
+    # Check if it's 10-12 digits
+    return 10 <= len(phone_clean) <= 12
+
 def validate_payment_data(data):
     """Validate payment data"""
     required_fields = ['amount', 'payment_method']
@@ -77,6 +85,14 @@ def validate_payment_data(data):
         return False, "Invalid amount format"
     
     return True, "Valid"
+
+def sanitize_input(text):
+    """Sanitize user input"""
+    if not text:
+        return ""
+    # Remove potentially dangerous characters
+    text = re.sub(r'[<>"\']', '', str(text))
+    return text.strip()
 
 def verify_payment_signature(data, signature, secret_key):
     """Verify payment signature for security"""
@@ -141,8 +157,7 @@ def collect_phone(request):
     if request.method == 'POST':
         phone = sanitize_input(request.POST.get('phone'))
         payment_method = request.POST.get('payment_method', 'Online')
-        is_valid, _ = SecurityValidator.validate_phone_number(phone)
-        if not is_valid:
+        if not validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             cart = request.session.get('cart', {})
             menu_items = []
@@ -400,7 +415,9 @@ def place_order(request):
         
         # Clear session data
         request.session['cart'] = {}
-        clear_sensitive_session_data(request)
+        request.session.pop('user_phone', None)
+        request.session.pop('special_instructions', None)
+        request.session.pop('payment_method', None)
 
         messages.success(request, f"Order #{order.id} placed successfully!")
         return redirect('order_success', order_id=order.id)
@@ -530,11 +547,9 @@ def register_college(request):
                 messages.error(request, "Please enter a valid email address.")
                 return render(request, 'orders/register_college.html')
         
-        if admin_phone:
-            is_valid, _ = SecurityValidator.validate_phone_number(admin_phone)
-            if not is_valid:
-                messages.error(request, "Please enter a valid phone number.")
-                return render(request, 'orders/register_college.html')
+        if admin_phone and not validate_phone_number(admin_phone):
+            messages.error(request, "Please enter a valid phone number.")
+            return render(request, 'orders/register_college.html')
         
         # Check if slug already exists
         if College.objects.filter(slug=slug).exists():
@@ -1067,7 +1082,9 @@ def process_payment(request, order_id):
                 
                 # Clear sensitive session data
                 request.session['cart'] = {}
-                clear_sensitive_session_data(request)
+                request.session.pop('user_phone', None)
+                request.session.pop('special_instructions', None)
+                request.session.pop('payment_method', None)
 
                 messages.success(request, f"✅ Payment successful! Order #{order.id} confirmed.")
                 return redirect('order_success', order_id=order.id)
@@ -1115,8 +1132,7 @@ def track_order(request):
             messages.error(request, "Order not found.")
     
     elif phone:
-        is_valid, _ = SecurityValidator.validate_phone_number(phone)
-        if not is_valid:
+        if not validate_phone_number(phone):
             messages.error(request, "Please enter a valid phone number.")
             return render(request, 'orders/track_order.html')
         
@@ -1543,11 +1559,9 @@ def canteen_staff_login(request):
     """Canteen staff login view (now supports email or username) with detailed debugging and strict email check"""
     from django.contrib.auth import logout, login
     if request.user.is_authenticated:
-        print(f"DEBUG: Already authenticated as {request.user.email}")
         # Always fetch the user's assigned canteen staff record
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
-            print(f"DEBUG: Found CanteenStaff for {request.user.email} assigned to {canteen_staff.college.slug}")
             # Ensure email matches
             if request.user.email == canteen_staff.user.email:
                 # Always redirect to the assigned college dashboard
@@ -1557,7 +1571,6 @@ def canteen_staff_login(request):
                 messages.error(request, "Access denied. Email mismatch for canteen staff.")
                 return redirect('canteen_staff_login')
         except CanteenStaff.DoesNotExist:
-            print(f"DEBUG: No CanteenStaff found for {request.user.email}")
             logout(request)
             messages.error(request, "Access denied. You are not authorized as canteen staff.")
             return redirect('canteen_staff_login')
@@ -1566,16 +1579,13 @@ def canteen_staff_login(request):
         identifier = request.POST.get('email')  # This could be email or username
         password = request.POST.get('password')
 
-        print(f"DEBUG: Attempting login for identifier: {identifier}")
         if identifier and password:
             user = User.objects.filter(email=identifier).first()
             if not user:
                 user = User.objects.filter(username=identifier).first()
             if user and user.check_password(password):
-                print(f"DEBUG: Authenticated user {user.email}")
                 try:
                     canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
-                    print(f"DEBUG: Found CanteenStaff for {user.email} assigned to {canteen_staff.college.slug}")
                     # Strict email match
                     if user.email != canteen_staff.user.email:
                         messages.error(request, "Access denied. Email mismatch for canteen staff.")
@@ -1586,15 +1596,12 @@ def canteen_staff_login(request):
                     # Always redirect to the assigned college dashboard
                     return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
                 except CanteenStaff.DoesNotExist:
-                    print(f"DEBUG: No CanteenStaff found for {user.email}")
                     logout(request)
                     messages.error(request, "Access denied. You are not authorized as canteen staff.")
                     return redirect('canteen_staff_login')
             else:
-                print(f"DEBUG: Invalid credentials for {identifier}")
                 messages.error(request, "Invalid credentials.")
         else:
-            print(f"DEBUG: Missing email/username or password")
             messages.error(request, "Please provide both email/username and password.")
 
     return render(request, 'orders/canteen_staff_login.html')
@@ -1603,38 +1610,25 @@ def canteen_staff_login(request):
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with better security and features"""
     from django.contrib.auth import logout
-    print(f"DEBUG: Dashboard access for user {request.user.email}, slug: {college_slug}")
     try:
         # Always fetch the user's assigned canteen staff record
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
-            print(f"DEBUG: Found CanteenStaff for {request.user.email} assigned to {canteen_staff.college.slug}")
         except CanteenStaff.DoesNotExist:
-            print(f"DEBUG: No CanteenStaff found for {request.user.email}")
             logout(request)
             messages.error(request, "Access denied. You are not authorized as canteen staff.")
             return redirect('canteen_staff_login')
         # Strict email match
         if request.user.email != canteen_staff.user.email:
-            print(f"DEBUG: Email mismatch for {request.user.email} vs {canteen_staff.user.email}")
             logout(request)
             messages.error(request, "Access denied. Email mismatch for canteen staff.")
             return redirect('canteen_staff_login')
         # Always use the assigned college
         assigned_college = canteen_staff.college
-        print(f"DEBUG: Assigned college slug: {assigned_college.slug}")
         if college_slug != assigned_college.slug:
-            print(f"DEBUG: Slug mismatch: URL slug {college_slug} vs assigned {assigned_college.slug}")
             # Redirect to the correct dashboard
             return redirect('canteen_staff_dashboard', college_slug=assigned_college.slug)
-        try:
-            college = College.objects.get(slug=college_slug)
-            print(f"DEBUG: Found college {college.name} (slug: {college.slug})")
-        except College.DoesNotExist:
-            print(f"DEBUG: College with slug {college_slug} not found")
-            messages.error(request, "College not found.")
-            return redirect('home')
-        # Always use the assigned college
+        college = assigned_college
         # Check if user is canteen staff for this college and email matches
         if not (request.user.is_superuser or (is_canteen_staff(request.user, college) and request.user.email == CanteenStaff.objects.get(user=request.user, college=college, is_active=True).user.email)):
             logout(request)

@@ -300,12 +300,3 @@ def is_suspicious_request(request):
         len(request.POST) > 1000,  # Too much data
     ]
     return any(suspicious_indicators) 
-
-def sanitize_input(text):
-    """Remove potentially dangerous characters from input"""
-    if not text:
-        return ""
-    import re
-    text = str(text)
-    text = re.sub(r'[<>"\']', '', text)
-    return text.strip() 
