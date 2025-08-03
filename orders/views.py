@@ -1908,14 +1908,15 @@ def canteen_staff_logout(request):
     return redirect('canteen_staff_login')
 
 def create_temp_superuser(request):
-    if not User.objects.filter(username='skiptheq').exists():
+    """Create a temporary superuser for admin access"""
+    if not User.objects.filter(username='admin').exists():
         User.objects.create_superuser(
-            username='skiptheq',
-            email='skipthequeue.app@gmail.com',
-            password='Paras@999'
+            username='admin',
+            email='admin@skipthequeue.com',
+            password='Admin@123'
         )
-        return HttpResponse("Superuser created!")
-    return HttpResponse("Superuser already exists.")
+        return HttpResponse("✅ Superuser created! Username: admin, Password: Admin@123")
+    return HttpResponse("❌ Superuser already exists. Username: admin")
 
 def debug_canteen_staff(request):
     """Temporary debug view to check canteen staff assignments"""
