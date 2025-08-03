@@ -10,8 +10,7 @@ const STATIC_FILES = [
   '/',
   '/static/css/style.css',
   '/static/js/app.js',
-  '/static/images/icon-192x192.png',
-  '/static/images/icon-512x512.png',
+  '/static/images/zap-icon.svg',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   '/manifest.json'
@@ -69,8 +68,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'New order received!',
-    icon: '/static/images/icon-192x192.png',
-    badge: '/static/images/badge-72x72.png',
+    icon: '/static/images/zap-icon.svg',
+          badge: '/static/images/zap-icon.svg',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -80,12 +79,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'View Order',
-        icon: '/static/images/icon-192x192.png'
+        icon: '/static/images/zap-icon.svg'
       },
       {
         action: 'close',
         title: 'Close',
-        icon: '/static/images/icon-192x192.png'
+        icon: '/static/images/zap-icon.svg'
       }
     ]
   };
