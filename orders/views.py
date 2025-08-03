@@ -423,7 +423,22 @@ def place_order(request):
         return redirect('order_success', order_id=order.id)
 
 def home(request):
-    """Home page - no login required"""
+    """Home page with auto-redirect based on user email"""
+    # Auto-redirect logic for logged-in users
+    if request.user.is_authenticated:
+        user_email = request.user.email
+        
+        # Check if user is the main admin
+        if user_email == 'skipthequeue.app@gmail.com':
+            return redirect('super_admin_dashboard')
+        
+        # Check if user is canteen staff for any college
+        try:
+            canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+        except CanteenStaff.DoesNotExist:
+            pass  # Continue to normal home page for regular users
+    
     colleges = College.objects.filter(is_active=True)
     
     # Get selected college from session
@@ -1909,14 +1924,14 @@ def canteen_staff_logout(request):
 
 def create_temp_superuser(request):
     """Create a temporary superuser for admin access"""
-    if not User.objects.filter(username='admin').exists():
+    if not User.objects.filter(email='skipthequeue.app@gmail.com').exists():
         User.objects.create_superuser(
-            username='admin',
-            email='admin@skipthequeue.com',
-            password='Admin@123'
+            username='skipthequeue',
+            email='skipthequeue.app@gmail.com',
+            password='Paras@999stq'
         )
-        return HttpResponse("✅ Superuser created! Username: admin, Password: Admin@123")
-    return HttpResponse("❌ Superuser already exists. Username: admin")
+        return HttpResponse("✅ Superuser created! Email: skipthequeue.app@gmail.com, Password: Paras@999stq")
+    return HttpResponse("❌ Superuser already exists with email: skipthequeue.app@gmail.com")
 
 def debug_canteen_staff(request):
     """Temporary debug view to check canteen staff assignments"""
