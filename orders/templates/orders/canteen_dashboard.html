@@ -286,6 +286,14 @@ function markReady(orderId) {
   }).then(response => {
     if (response.ok) {
       showNotification('Order marked as ready!');
+      // Trigger global notification for user
+      if (typeof showGlobalNotification === 'function') {
+        showGlobalNotification(
+          'Order Ready! 🎉', 
+          'Your order is ready for pickup! Please collect it from the canteen.', 
+          'success'
+        );
+      }
       setTimeout(() => location.reload(), 1000);
     }
   });

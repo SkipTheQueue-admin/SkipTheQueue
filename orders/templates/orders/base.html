@@ -78,12 +78,27 @@
       to { opacity: 1; }
     }
     
+    @keyframes slideInFromTop {
+      from {
+        transform: translateY(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+    
     .slide-up {
       animation: slideUp 0.3s ease-out;
     }
     
     .fade-in {
       animation: fadeIn 0.5s ease-out;
+    }
+    
+    .slide-in-from-top {
+      animation: slideInFromTop 0.4s ease-out;
     }
     
     /* PWA Install Prompt */
@@ -104,6 +119,37 @@
       transform: translateY(0);
     }
     
+    /* Global Notification System */
+    .global-notification {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: white;
+      padding: 1rem;
+      transform: translateY(-100%);
+      transition: transform 0.4s ease;
+      z-index: 9999;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .global-notification.show {
+      transform: translateY(0);
+    }
+    
+    .global-notification.warning {
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    }
+    
+    .global-notification.error {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    }
+    
+    .global-notification.info {
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    }
+    
     /* Ad container styles */
     .ad-container {
       background: #f8fafc;
@@ -119,10 +165,108 @@
       color: #64748b;
       margin-bottom: 0.5rem;
     }
+    
+    /* Responsive improvements */
+    @media (max-width: 768px) {
+      .global-notification {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+      }
+      
+      .global-notification .notification-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+      }
+      
+      /* Mobile navigation improvements */
+      .mobile-menu-item {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border-bottom: 1px solid #f3f4f6;
+      }
+      
+      .mobile-menu-item:last-child {
+        border-bottom: none;
+      }
+      
+      /* Mobile button improvements */
+      .mobile-btn {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 0.5rem;
+      }
+      
+      /* Mobile card improvements */
+      .mobile-card {
+        margin: 0.5rem;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      
+      /* Mobile form improvements */
+      .mobile-input {
+        padding: 0.875rem;
+        font-size: 1rem;
+        border-radius: 0.5rem;
+      }
+      
+      /* Mobile spacing improvements */
+      .mobile-padding {
+        padding: 1rem;
+      }
+      
+      .mobile-margin {
+        margin: 0.5rem;
+      }
+    }
+    
+    /* Extra small devices */
+    @media (max-width: 480px) {
+      .xs-mobile-padding {
+        padding: 0.75rem;
+      }
+      
+      .xs-mobile-text {
+        font-size: 0.875rem;
+      }
+      
+      .xs-mobile-btn {
+        padding: 0.625rem 0.875rem;
+        font-size: 0.875rem;
+      }
+    }
   </style>
 </head>
 
 <body class="bg-gray-50">
+  <!-- Global Notification System -->
+  <div id="globalNotification" class="global-notification">
+    <div class="max-w-7xl mx-auto">
+      <div class="notification-content flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+            <svg id="notificationIcon" class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+          </div>
+          <div>
+            <p id="notificationTitle" class="font-semibold">Order Update</p>
+            <p id="notificationMessage" class="text-sm text-blue-100">Your order status has been updated</p>
+          </div>
+        </div>
+        <button id="closeNotification" class="text-white/80 hover:text-white transition duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- PWA Install Prompt -->
   <div id="pwaInstallPrompt" class="pwa-install-prompt">
     <div class="flex items-center justify-between">
@@ -220,16 +364,46 @@
 
     <!-- Mobile Menu -->
     <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-200">
-      <div class="px-4 py-2 space-y-1">
-        <a href="{% url 'home' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Home</a>
-        <a href="{% url 'menu' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Menu</a>
+      <div class="px-4 py-4 space-y-2">
+        <a href="{% url 'home' %}" class="mobile-menu-item flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+          </svg>
+          <span>Home</span>
+        </a>
+        <a href="{% url 'menu' %}" class="mobile-menu-item flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+          </svg>
+          <span>Menu</span>
+        </a>
         {% if user.is_authenticated %}
-          <a href="{% url 'order_history' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">My Orders</a>
-          <a href="{% url 'track_order' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Track Order</a>
-          <hr class="my-2">
-          <a href="{% url 'logout' %}" class="block px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</a>
+          <a href="{% url 'order_history' %}" class="mobile-menu-item flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <span>My Orders</span>
+          </a>
+          <a href="{% url 'track_order' %}" class="mobile-menu-item flex items-center space-x-3 text-gray-700 hover:bg-gray-100 rounded-lg transition duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+            </svg>
+            <span>Track Order</span>
+          </a>
+          <hr class="my-3 border-gray-200">
+          <a href="{% url 'logout' %}" class="mobile-menu-item flex items-center space-x-3 text-red-600 hover:bg-red-50 rounded-lg transition duration-200">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            <span>Logout</span>
+          </a>
         {% else %}
-          <a href="/auth/login/google-oauth2/" class="block px-3 py-2 bg-blue-600 text-white rounded-lg text-center">Login</a>
+          <a href="/auth/login/google-oauth2/" class="mobile-btn bg-blue-600 text-white rounded-lg text-center font-medium hover:bg-blue-700 transition duration-200">
+            <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
+            </svg>
+            Login with Google
+          </a>
         {% endif %}
       </div>
     </div>
@@ -398,6 +572,75 @@
 
     // Make function globally available
     window.updateGlobalCartCount = updateGlobalCartCount;
+    
+    // Global Notification System
+    function showGlobalNotification(title, message, type = 'success') {
+      const notification = document.getElementById('globalNotification');
+      const titleElement = document.getElementById('notificationTitle');
+      const messageElement = document.getElementById('notificationMessage');
+      const iconElement = document.getElementById('notificationIcon');
+      
+      // Set content
+      titleElement.textContent = title;
+      messageElement.textContent = message;
+      
+      // Set type-specific styling and icon
+      notification.className = 'global-notification show';
+      if (type === 'warning') {
+        notification.classList.add('warning');
+        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>';
+      } else if (type === 'error') {
+        notification.classList.add('error');
+        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+      } else if (type === 'info') {
+        notification.classList.add('info');
+        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+      } else {
+        // success
+        iconElement.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+      }
+      
+      // Show notification
+      notification.classList.add('show');
+      
+      // Store notification in session storage to persist across page reloads
+      sessionStorage.setItem('pendingNotification', JSON.stringify({
+        title: title,
+        message: message,
+        type: type,
+        timestamp: Date.now()
+      }));
+    }
+    
+    function hideGlobalNotification() {
+      const notification = document.getElementById('globalNotification');
+      notification.classList.remove('show');
+      sessionStorage.removeItem('pendingNotification');
+    }
+    
+    // Check for pending notifications on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      const pendingNotification = sessionStorage.getItem('pendingNotification');
+      if (pendingNotification) {
+        const notification = JSON.parse(pendingNotification);
+        // Only show if notification is less than 5 minutes old
+        if (Date.now() - notification.timestamp < 300000) {
+          showGlobalNotification(notification.title, notification.message, notification.type);
+        } else {
+          sessionStorage.removeItem('pendingNotification');
+        }
+      }
+      
+      // Set up close button
+      const closeBtn = document.getElementById('closeNotification');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', hideGlobalNotification);
+      }
+    });
+    
+    // Make notification functions globally available
+    window.showGlobalNotification = showGlobalNotification;
+    window.hideGlobalNotification = hideGlobalNotification;
   </script>
 
   <!-- Google Analytics -->

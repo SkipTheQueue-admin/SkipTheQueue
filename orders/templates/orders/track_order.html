@@ -251,9 +251,57 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 {% if order %}
 <script>
-setInterval(function() {
-  window.location.reload();
-}, 30000);
+// Real-time order status checking
+let currentStatus = '{{ order.status }}';
+
+function checkOrderStatus() {
+  fetch(`{% url 'track_order' %}?order_id={{ order.id }}`)
+    .then(response => response.text())
+    .then(html => {
+      // Check if status has changed
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+      const newStatus = doc.querySelector('.status-badge');
+      
+      if (newStatus && newStatus.textContent.trim() !== currentStatus) {
+        const oldStatus = currentStatus;
+        currentStatus = newStatus.textContent.trim();
+        
+        // Show notification for status changes
+        if (typeof showGlobalNotification === 'function') {
+          if (currentStatus === 'Ready') {
+            showGlobalNotification(
+              'Order Ready! 🎉',
+              'Your order is ready for pickup! Please collect it from the canteen.',
+              'success'
+            );
+          } else if (currentStatus === 'In Progress') {
+            showGlobalNotification(
+              'Order Being Prepared 👨‍🍳',
+              'Your order is being prepared. Please wait.',
+              'info'
+            );
+          } else if (currentStatus === 'Completed') {
+            showGlobalNotification(
+              'Order Completed ✅',
+              'Your order has been completed. Thank you!',
+              'success'
+            );
+          }
+        }
+        
+        // Reload page to show updated status
+        setTimeout(() => window.location.reload(), 2000);
+      }
+    })
+    .catch(error => console.log('Status check failed:', error));
+}
+
+// Check status every 15 seconds
+setInterval(checkOrderStatus, 15000);
+
+// Also check immediately on page load
+document.addEventListener('DOMContentLoaded', checkOrderStatus);
 </script>
 {% endif %}
 

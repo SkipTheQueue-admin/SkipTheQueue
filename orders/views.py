@@ -402,21 +402,32 @@ def place_order(request):
         return redirect('order_success', order_id=order.id)
 
 def home(request):
-    """Home page with auto-redirect based on user email"""
+    """Home page with auto-redirect based on user email and enhanced security"""
     # Auto-redirect logic for logged-in users
     if request.user.is_authenticated:
         user_email = request.user.email
         
+        # Log access attempt for security monitoring
+        logger.info(f"User {request.user.username} ({user_email}) accessed home page")
+        
         # Check if user is the main admin (only if they are actually superuser)
         if user_email == 'skipthequeue.app@gmail.com' and request.user.is_superuser:
+            logger.info(f"Super admin {user_email} redirected to super admin dashboard")
             return redirect('super_admin_dashboard')
+        elif user_email == 'skipthequeue.app@gmail.com' and not request.user.is_superuser:
+            # Security alert: someone with admin email but not superuser status
+            logger.warning(f"Security alert: User {user_email} has admin email but not superuser status")
+            messages.warning(request, "Access restricted. Please contact administrator.")
         
         # Check if user is canteen staff for any college
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
             return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
         except CanteenStaff.DoesNotExist:
-            pass  # Continue to normal home page for regular users
+            # Regular user - continue to normal home page
+            logger.info(f"Regular user {user_email} accessing home page")
+            pass
     
     colleges = College.objects.filter(is_active=True)
     
@@ -1764,7 +1775,32 @@ def canteen_update_order_status(request, college_slug, order_id):
         if new_status in ['In Progress', 'Ready', 'Completed']:
             order.status = new_status
             order.save()
-            return JsonResponse({'success': True, 'message': f'Order #{order.id} status updated to {new_status}!'})
+            
+            # Prepare notification data for user
+            notification_data = {
+                'success': True, 
+                'message': f'Order #{order.id} status updated to {new_status}!',
+                'order_id': order.id,
+                'new_status': new_status,
+                'user_name': order.user_name,
+                'college_name': college.name
+            }
+            
+            # Add specific notification for ready status
+            if new_status == 'Ready':
+                notification_data['user_notification'] = {
+                    'title': 'Order Ready! 🎉',
+                    'message': f'Your order #{order.id} is ready for pickup at {college.name}!',
+                    'type': 'success'
+                }
+            elif new_status == 'In Progress':
+                notification_data['user_notification'] = {
+                    'title': 'Order Being Prepared 👨‍🍳',
+                    'message': f'Your order #{order.id} is being prepared at {college.name}.',
+                    'type': 'info'
+                }
+            
+            return JsonResponse(notification_data)
         else:
             return JsonResponse({'error': 'Invalid status'}, status=400)
             
