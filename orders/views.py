@@ -428,8 +428,8 @@ def home(request):
     if request.user.is_authenticated:
         user_email = request.user.email
         
-        # Check if user is the main admin
-        if user_email == 'skipthequeue.app@gmail.com':
+        # Check if user is the main admin (only if they are actually superuser)
+        if user_email == 'skipthequeue.app@gmail.com' and request.user.is_superuser:
             return redirect('super_admin_dashboard')
         
         # Check if user is canteen staff for any college
