@@ -1,9 +1,11 @@
 from django.apps import AppConfig
 from django.db.models.signals import post_migrate
-from django.contrib.auth.models import User
 
 def create_superuser(sender, **kwargs):
     """Create superuser if it doesn't exist"""
+    # Import here to avoid circular imports
+    from django.contrib.auth.models import User
+    
     if not User.objects.filter(email='skipthequeue.app@gmail.com').exists():
         try:
             user = User.objects.create_superuser(
