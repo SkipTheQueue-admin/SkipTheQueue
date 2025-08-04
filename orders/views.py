@@ -813,14 +813,33 @@ def decline_order(request, college_slug, order_id):
         return redirect('canteen_dashboard', college_slug=college_slug)
 
 def custom_login(request):
-    """Custom login view that handles redirects after OAuth"""
+    """Custom login view that handles both OAuth and email-based login"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        
+        if email and password:
+            try:
+                user = User.objects.get(email=email)
+                if user.check_password(password):
+                    from django.contrib.auth import login
+                    login(request, user)
+                    next_url = request.GET.get('next', '/')
+                    return redirect(next_url)
+                else:
+                    messages.error(request, "Invalid password.")
+            except User.DoesNotExist:
+                messages.error(request, "User with this email does not exist.")
+        else:
+            messages.error(request, "Please provide both email and password.")
+    
     next_url = request.GET.get('next', '/')
     
     # Store the next URL in session for after login
     request.session['next_url'] = next_url
     
-    # Redirect to Google OAuth
-    return redirect('social:begin', backend='google-oauth2')
+    # If it's a GET request, show the login form
+    return render(request, 'orders/login.html', {'next': next_url})
 
 def oauth_complete(request):
     """Handle redirect after successful OAuth login"""
