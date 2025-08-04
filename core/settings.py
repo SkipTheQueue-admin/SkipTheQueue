@@ -103,3 +103,10 @@ LOGOUT_REDIRECT_URL = '/'
 
 # CSRF trusted origins (for Render)
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://skipthequeue.onrender.com').split(',') 
+
+# Session Configuration for persistent login
+SESSION_COOKIE_AGE = 30 * 24 * 60 * 60  # 30 days in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser close
+SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
+SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
+SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
