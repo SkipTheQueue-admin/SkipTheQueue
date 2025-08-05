@@ -110,3 +110,8 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Keep session alive even after browser
 SESSION_SAVE_EVERY_REQUEST = True  # Save session on every request
 SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
 SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+
+# Security settings
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'

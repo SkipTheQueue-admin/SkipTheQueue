@@ -232,8 +232,45 @@ def test_collect_phone(request):
     })
 
 def test_auth(request):
-    """Test authentication"""
-    return HttpResponse(f"✅ You are logged in as: {request.user}")
+    """Test authentication status and user type"""
+    if request.user.is_authenticated:
+        user_email = request.user.email
+        
+        # Check user type
+        user_type = "Regular User"
+        redirect_url = None
+        
+        if user_email == 'skipthequeue.app@gmail.com':
+            user_type = "Super Admin"
+            redirect_url = '/super-admin/'
+        else:
+            try:
+                canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+                user_type = f"Canteen Staff ({canteen_staff.college.name})"
+                redirect_url = f'/canteen/dashboard/{canteen_staff.college.slug}/'
+            except CanteenStaff.DoesNotExist:
+                user_type = "Regular User"
+                redirect_url = '/'
+        
+        return JsonResponse({
+            'authenticated': True,
+            'username': request.user.username,
+            'email': user_email,
+            'is_superuser': request.user.is_superuser,
+            'is_staff': request.user.is_staff,
+            'user_type': user_type,
+            'redirect_url': redirect_url,
+        })
+    else:
+        return JsonResponse({
+            'authenticated': False,
+            'username': None,
+            'email': None,
+            'is_superuser': False,
+            'is_staff': False,
+            'user_type': 'Not Authenticated',
+            'redirect_url': '/login/',
+        })
 
 @csrf_exempt
 @require_POST
@@ -410,14 +447,18 @@ def home(request):
         # Log access attempt for security monitoring
         logger.info(f"User {request.user.username} ({user_email}) accessed home page")
         
-        # Check if user is the main admin (only if they are actually superuser)
-        if user_email == 'skipthequeue.app@gmail.com' and request.user.is_superuser:
-            logger.info(f"Super admin {user_email} redirected to super admin dashboard")
-            return redirect('super_admin_dashboard')
-        elif user_email == 'skipthequeue.app@gmail.com' and not request.user.is_superuser:
-            # Security alert: someone with admin email but not superuser status
-            logger.warning(f"Security alert: User {user_email} has admin email but not superuser status")
-            messages.warning(request, "Access restricted. Please contact administrator.")
+        # Check if user is the main admin (skipthequeue.app@gmail.com)
+        if user_email == 'skipthequeue.app@gmail.com':
+            if request.user.is_superuser:
+                logger.info(f"Super admin {user_email} redirected to super admin dashboard")
+                return redirect('super_admin_dashboard')
+            else:
+                # Update user to superuser if they have the admin email
+                request.user.is_superuser = True
+                request.user.is_staff = True
+                request.user.save()
+                logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
+                return redirect('super_admin_dashboard')
         
         # Check if user is canteen staff for any college
         try:
@@ -813,54 +854,51 @@ def decline_order(request, college_slug, order_id):
         return redirect('canteen_dashboard', college_slug=college_slug)
 
 def custom_login(request):
-    """Custom login view that handles both OAuth and email-based login"""
-    if request.method == 'POST':
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-        
-        if email and password:
-            try:
-                user = User.objects.get(email=email)
-                if user.check_password(password):
-                    from django.contrib.auth import login
-                    login(request, user)
-                    next_url = request.GET.get('next', '/')
-                    return redirect(next_url)
-                else:
-                    messages.error(request, "Invalid password.")
-            except User.DoesNotExist:
-                messages.error(request, "User with this email does not exist.")
-        else:
-            messages.error(request, "Please provide both email and password.")
-    
+    """Custom login view that handles redirects after OAuth"""
     next_url = request.GET.get('next', '/')
     
     # Store the next URL in session for after login
     request.session['next_url'] = next_url
     
-    # If it's a GET request, show the login form
-    return render(request, 'orders/login.html', {'next': next_url})
+    # Redirect to Google OAuth
+    return redirect('social:begin', backend='google-oauth2')
 
 def oauth_complete(request):
     """Handle redirect after successful OAuth login"""
     if request.user.is_authenticated:
-        # Get the stored next URL from session
-        next_url = request.session.get('next_url', '/')
-        # Clear the stored URL
-        request.session.pop('next_url', None)
+        user_email = request.user.email
         
-        # If user is on cart page and doesn't have phone number, redirect to collect_phone
-        if (next_url == '/cart/' or next_url == '/cart') and not request.session.get('user_phone'):
-            return redirect('collect_phone')
+        # Check if user is the main admin (skipthequeue.app@gmail.com)
+        if user_email == 'skipthequeue.app@gmail.com':
+            if not request.user.is_superuser:
+                # Update user to superuser if they have the admin email
+                request.user.is_superuser = True
+                request.user.is_staff = True
+                request.user.save()
+            return redirect('super_admin_dashboard')
         
-        # If user is trying to place an order and phone is missing, redirect to collect_phone
-        if (
-            next_url in ['/place-order/', '/place_order/', 'place_order', 'place-order'] or
-            next_url.endswith('/place-order/') or next_url.endswith('/place_order/')
-        ) and not request.session.get('user_phone'):
-            return redirect('collect_phone')
-        
-        return redirect(next_url)
+        # Check if user is canteen staff for any college
+        try:
+            canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+        except CanteenStaff.DoesNotExist:
+            # Regular user - check if they need to collect phone
+            next_url = request.session.get('next_url', '/')
+            request.session.pop('next_url', None)
+            
+            # If user is on cart page and doesn't have phone number, redirect to collect_phone
+            if (next_url == '/cart/' or next_url == '/cart') and not request.session.get('user_phone'):
+                return redirect('collect_phone')
+            
+            # If user is trying to place an order and phone is missing, redirect to collect_phone
+            if (
+                next_url in ['/place-order/', '/place_order/', 'place_order', 'place-order'] or
+                next_url.endswith('/place-order/') or next_url.endswith('/place_order/')
+            ) and not request.session.get('user_phone'):
+                return redirect('collect_phone')
+            
+            return redirect(next_url)
+    
     # If not authenticated, redirect to home
     return redirect('home')
 
@@ -1585,6 +1623,17 @@ def canteen_staff_login(request):
     
     # If user is already authenticated, check if they are valid canteen staff
     if request.user.is_authenticated:
+        user_email = request.user.email
+        
+        # Check if user is the main admin (skipthequeue.app@gmail.com)
+        if user_email == 'skipthequeue.app@gmail.com':
+            if not request.user.is_superuser:
+                # Update user to superuser if they have the admin email
+                request.user.is_superuser = True
+                request.user.is_staff = True
+                request.user.save()
+            return redirect('super_admin_dashboard')
+        
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
             # Redirect to the assigned college dashboard
@@ -1606,6 +1655,17 @@ def canteen_staff_login(request):
                 user = User.objects.filter(username=identifier).first()
             
             if user and user.check_password(password):
+                # Check if user is the main admin
+                if user.email == 'skipthequeue.app@gmail.com':
+                    if not user.is_superuser:
+                        user.is_superuser = True
+                        user.is_staff = True
+                        user.save()
+                    login(request, user)
+                    request.session.save()
+                    messages.success(request, f"Welcome back, {user.first_name or user.username}!")
+                    return redirect('super_admin_dashboard')
+                
                 try:
                     # Check if user is authorized as canteen staff
                     canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
@@ -1629,6 +1689,15 @@ def canteen_staff_login(request):
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with simplified security logic"""
     from django.contrib.auth import logout
+    
+    # Check if user is the main admin (skipthequeue.app@gmail.com)
+    if request.user.email == 'skipthequeue.app@gmail.com':
+        if not request.user.is_superuser:
+            # Update user to superuser if they have the admin email
+            request.user.is_superuser = True
+            request.user.is_staff = True
+            request.user.save()
+        return redirect('super_admin_dashboard')
     
     try:
         # Get the user's assigned canteen staff record

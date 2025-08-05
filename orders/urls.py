@@ -80,4 +80,5 @@ urlpatterns = [
 urlpatterns += [
     path('create-temp-superuser/', create_temp_superuser),
     path('debug-canteen-staff/', debug_canteen_staff),
+    path('fix-superuser/', views.fix_superuser_permissions, name='fix_superuser'),
 ]
