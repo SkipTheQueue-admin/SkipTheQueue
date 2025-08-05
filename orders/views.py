@@ -1,11 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.contrib.auth.models import User
+from django.contrib.auth import logout, login
+from django.contrib.auth.decorators import login_required, user_passes_test
 from .models import MenuItem, Order, OrderItem, College, Payment, UserProfile, CanteenStaff
-
-from django.contrib.auth import logout
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.decorators import user_passes_test
 
 from django.contrib import messages
 
@@ -449,31 +447,52 @@ def home(request):
         
         # Check if user is the main admin (skipthequeue.app@gmail.com)
         if user_email == 'skipthequeue.app@gmail.com':
-            if request.user.is_superuser:
-                logger.info(f"Super admin {user_email} redirected to super admin dashboard")
-                return redirect('super_admin_dashboard')
-            else:
+            if not request.user.is_superuser:
                 # Update user to superuser if they have the admin email
                 request.user.is_superuser = True
                 request.user.is_staff = True
                 request.user.save()
                 logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
-                return redirect('super_admin_dashboard')
+            return redirect('super_admin_dashboard')
         
         # Check if user is canteen staff for any college
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
-            logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
-            return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+            # Verify the college still exists and is active
+            if canteen_staff.college and canteen_staff.college.is_active:
+                logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
+                return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+            else:
+                # College is inactive or doesn't exist, log out the user
+                logout(request)
+                messages.error(request, "Your assigned college is no longer active. Please contact administrator.")
+                return redirect('home')
         except CanteenStaff.DoesNotExist:
             # Regular user - continue to normal home page
             logger.info(f"Regular user {user_email} accessing home page")
             pass
     
-    colleges = College.objects.filter(is_active=True)
+    # Get active colleges only
+    colleges = College.objects.filter(is_active=True).order_by('name')
     
     # Get selected college from session
     selected_college = request.session.get('selected_college')
+    
+    # Validate selected college still exists and is active
+    if selected_college:
+        try:
+            college = College.objects.get(id=selected_college['id'], is_active=True)
+            # Update session with current college data
+            request.session['selected_college'] = {
+                'id': college.id,
+                'name': college.name,
+                'slug': college.slug
+            }
+        except College.DoesNotExist:
+            # College no longer exists or is inactive, clear session
+            request.session.pop('selected_college', None)
+            selected_college = None
+            messages.warning(request, "Your previously selected college is no longer available.")
     
     context = {
         'colleges': colleges,
@@ -492,9 +511,11 @@ def menu(request):
         return redirect('home')
     
     try:
-        college = College.objects.get(id=selected_college['id'])
+        college = College.objects.get(id=selected_college['id'], is_active=True)
     except College.DoesNotExist:
-        messages.error(request, "Selected college not found.")
+        # Clear invalid college from session
+        request.session.pop('selected_college', None)
+        messages.error(request, "Selected college is no longer available. Please select another college.")
         return redirect('home')
     
     # Get search query
@@ -1619,7 +1640,6 @@ def favorites(request):
 # Canteen Staff Authentication and Management Views
 def canteen_staff_login(request):
     """Canteen staff login view with simplified and secure authentication logic"""
-    from django.contrib.auth import logout, login
     
     # If user is already authenticated, check if they are valid canteen staff
     if request.user.is_authenticated:
@@ -1688,7 +1708,6 @@ def canteen_staff_login(request):
 @login_required(login_url='/canteen/login/')
 def canteen_staff_dashboard(request, college_slug):
     """Enhanced canteen dashboard with simplified security logic"""
-    from django.contrib.auth import logout
     
     # Check if user is the main admin (skipthequeue.app@gmail.com)
     if request.user.email == 'skipthequeue.app@gmail.com':
@@ -1708,8 +1727,12 @@ def canteen_staff_dashboard(request, college_slug):
             messages.error(request, "Access denied. You are not authorized as canteen staff.")
             return redirect('canteen_staff_login')
         
-        # Get the assigned college
+        # Get the assigned college and verify it exists and is active
         assigned_college = canteen_staff.college
+        if not assigned_college or not assigned_college.is_active:
+            logout(request)
+            messages.error(request, "Your assigned college is no longer active. Please contact administrator.")
+            return redirect('canteen_staff_login')
         
         # If URL slug doesn't match assigned college, redirect to correct dashboard
         if college_slug != assigned_college.slug:
@@ -2068,3 +2091,65 @@ def debug_canteen_staff(request):
         debug_info.append(f"College: {college.name} (slug: {college.slug})")
     
     return HttpResponse("<br>".join(debug_info))
+
+def security_test(request):
+    """Comprehensive security test endpoint"""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    test_results = {
+        'authentication': {},
+        'session_security': {},
+        'input_validation': {},
+        'csrf_protection': {},
+        'rate_limiting': {},
+        'headers': {},
+        'overall_status': 'PASS'
+    }
+    
+    # Test Authentication
+    test_results['authentication']['user_authenticated'] = request.user.is_authenticated
+    test_results['authentication']['user_is_superuser'] = request.user.is_superuser
+    test_results['authentication']['user_is_staff'] = request.user.is_staff
+    test_results['authentication']['user_is_active'] = request.user.is_active
+    
+    # Test Session Security
+    test_results['session_security']['session_exists'] = bool(request.session.session_key)
+    test_results['session_security']['session_age'] = request.session.get('_session_age', 0)
+    test_results['session_security']['security_hash_exists'] = bool(request.session.get('_security_hash'))
+    
+    # Test Input Validation
+    test_input = '<script>alert("xss")</script>'
+    sanitized = SecurityValidator.sanitize_input(test_input)
+    test_results['input_validation']['xss_prevention'] = '<script>' not in sanitized
+    
+    # Test CSRF Protection
+    test_results['csrf_protection']['csrf_token_exists'] = bool(request.META.get('CSRF_COOKIE'))
+    test_results['csrf_protection']['csrf_header_exists'] = bool(request.META.get('HTTP_X_CSRFTOKEN'))
+    
+    # Test Rate Limiting
+    rate_limit_key = f"rate_limit:test:{request.META.get('REMOTE_ADDR', 'unknown')}"
+    current_count = request.session.get(rate_limit_key, 0)
+    test_results['rate_limiting']['current_count'] = current_count
+    test_results['rate_limiting']['limit_not_exceeded'] = current_count < 100
+    
+    # Test Security Headers
+    response = JsonResponse(test_results)
+    test_results['headers']['x_content_type_options'] = response.get('X-Content-Type-Options') == 'nosniff'
+    test_results['headers']['x_frame_options'] = response.get('X-Frame-Options') == 'DENY'
+    test_results['headers']['x_xss_protection'] = response.get('X-XSS-Protection') == '1; mode=block'
+    
+    # Overall Status
+    all_tests = []
+    for category, tests in test_results.items():
+        if category != 'overall_status':
+            for test_name, result in tests.items():
+                if isinstance(result, bool):
+                    all_tests.append(result)
+    
+    test_results['overall_status'] = 'PASS' if all(all_tests) else 'FAIL'
+    test_results['total_tests'] = len(all_tests)
+    test_results['passed_tests'] = sum(all_tests)
+    test_results['failed_tests'] = len(all_tests) - sum(all_tests)
+    
+    return JsonResponse(test_results)

@@ -35,8 +35,21 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+  </script>
+  
+  <!-- Security Meta Tags -->
+  <meta http-equiv="X-Content-Type-Options" content="nosniff">
+  <meta http-equiv="X-Frame-Options" content="DENY">
+  <meta http-equiv="X-XSS-Protection" content="1; mode=block">
+  <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+  <meta http-equiv="Permissions-Policy" content="geolocation=(), microphone=(), camera=()">
   
   <style>
     body {
@@ -98,6 +111,101 @@
     }
     
     .slide-in-from-top {
+      animation: slideInFromTop 0.3s ease-out;
+    }
+    
+    /* Enhanced UI Components */
+    .btn-primary {
+      @apply bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+    }
+    
+    .btn-secondary {
+      @apply bg-gray-600 hover:bg-gray-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50;
+    }
+    
+    .btn-success {
+      @apply bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50;
+    }
+    
+    .btn-danger {
+      @apply bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50;
+    }
+    
+    .card {
+      @apply bg-white rounded-xl shadow-lg border border-gray-200 p-6 transition-all duration-200 hover:shadow-xl;
+    }
+    
+    .input-field {
+      @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+    }
+    
+    .badge {
+      @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+    }
+    
+    .badge-success {
+      @apply bg-green-100 text-green-800;
+    }
+    
+    .badge-warning {
+      @apply bg-yellow-100 text-yellow-800;
+    }
+    
+    .badge-danger {
+      @apply bg-red-100 text-red-800;
+    }
+    
+    .badge-info {
+      @apply bg-blue-100 text-blue-800;
+    }
+    
+    /* Loading Spinner */
+    .spinner {
+      @apply animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600;
+    }
+    
+    /* Toast Notifications */
+    .toast {
+      @apply fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transform transition-all duration-300;
+    }
+    
+    .toast-success {
+      @apply bg-green-500 text-white;
+    }
+    
+    .toast-error {
+      @apply bg-red-500 text-white;
+    }
+    
+    .toast-warning {
+      @apply bg-yellow-500 text-white;
+    }
+    
+    .toast-info {
+      @apply bg-blue-500 text-white;
+    }
+    
+    /* Responsive Design */
+    @media (max-width: 640px) {
+      .mobile-hidden {
+        display: none;
+      }
+      
+      .mobile-full {
+        width: 100%;
+      }
+    }
+    
+    /* Dark mode support */
+    @media (prefers-color-scheme: dark) {
+      .dark-mode {
+        @apply bg-gray-900 text-white;
+      }
+      
+      .dark-mode .card {
+        @apply bg-gray-800 border-gray-700;
+      }
+    }
       animation: slideInFromTop 0.4s ease-out;
     }
     
@@ -639,6 +747,102 @@
     });
     
     // Make notification functions globally available
+    window.showGlobalNotification = showGlobalNotification;
+    window.hideGlobalNotification = hideGlobalNotification;
+    
+    // Enhanced Security Functions
+    function sanitizeInput(input) {
+      return input.replace(/[<>\"']/g, '');
+    }
+    
+    function validateEmail(email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      return emailRegex.test(email);
+    }
+    
+    function validatePhone(phone) {
+      const phoneRegex = /^[6-9]\d{9}$/;
+      return phoneRegex.test(phone.replace(/\D/g, ''));
+    }
+    
+    // CSRF Token Management
+    function getCSRFToken() {
+      return document.querySelector('[name=csrfmiddlewaretoken]')?.value || '';
+    }
+    
+    // Enhanced Form Validation
+    function validateForm(form) {
+      const inputs = form.querySelectorAll('input[required], select[required], textarea[required]');
+      let isValid = true;
+      
+      inputs.forEach(input => {
+        if (!input.value.trim()) {
+          input.classList.add('border-red-500');
+          isValid = false;
+        } else {
+          input.classList.remove('border-red-500');
+        }
+      });
+      
+      return isValid;
+    }
+    
+    // Auto-hide messages after 5 seconds
+    document.addEventListener('DOMContentLoaded', function() {
+      const messages = document.querySelectorAll('.alert, .message');
+      messages.forEach(message => {
+        setTimeout(() => {
+          message.style.opacity = '0';
+          setTimeout(() => {
+            message.remove();
+          }, 300);
+        }, 5000);
+      });
+    });
+    
+    // Prevent form resubmission
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.href);
+    }
+    
+    // Enhanced Loading States
+    function showLoading(element) {
+      element.disabled = true;
+      element.innerHTML = '<span class="spinner"></span> Loading...';
+    }
+    
+    function hideLoading(element, originalText) {
+      element.disabled = false;
+      element.innerHTML = originalText;
+    }
+    
+    // Global error handler
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error);
+      showGlobalNotification('Error', 'Something went wrong. Please try again.', 'error');
+    });
+    
+    // Service Worker Registration for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('SW registered: ', registration);
+          })
+          .catch(function(registrationError) {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+    
+    // Make security functions globally available
+    window.sanitizeInput = sanitizeInput;
+    window.validateEmail = validateEmail;
+    window.validatePhone = validatePhone;
+    window.getCSRFToken = getCSRFToken;
+    window.validateForm = validateForm;
+    window.showLoading = showLoading;
+    window.hideLoading = hideLoading;
     window.showGlobalNotification = showGlobalNotification;
     window.hideGlobalNotification = hideGlobalNotification;
   </script>

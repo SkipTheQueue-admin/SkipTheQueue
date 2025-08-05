@@ -3,56 +3,54 @@ Security Middleware for SkipTheQueue
 Protects against various hacking attempts and security threats
 """
 
-import re
 import logging
-from django.http import HttpResponseForbidden, JsonResponse
+import time
+import re
 from django.conf import settings
-from django.core.cache import cache
-from django.utils import timezone
+from django.http import HttpResponseForbidden, HttpResponse
 from django.utils.deprecation import MiddlewareMixin
+from django.core.cache import cache
+from .security import SecurityValidator, SessionSecurity, RateLimiter
 
-logger = logging.getLogger('django.security')
+logger = logging.getLogger(__name__)
 
 class SecurityMiddleware(MiddlewareMixin):
     """Comprehensive security middleware"""
     
     def process_request(self, request):
-        """Process each request for security threats"""
+        """Process incoming requests for security checks"""
         
-        # Get client IP
-        client_ip = self.get_client_ip(request)
+        # Update session security
+        SessionSecurity.update_session_security(request)
         
-        # Check for suspicious requests
-        if self.is_suspicious_request(request):
-            logger.warning(f'Suspicious request detected from {client_ip}: {request.path}')
-            return HttpResponseForbidden('Suspicious request detected')
+        # Rate limiting for all requests
+        if hasattr(settings, 'RATE_LIMIT_ENABLED') and settings.RATE_LIMIT_ENABLED:
+            is_allowed, message = RateLimiter.check_rate_limit(
+                request, 
+                'global', 
+                getattr(settings, 'RATE_LIMIT_REQUESTS', 100),
+                getattr(settings, 'RATE_LIMIT_WINDOW', 60)
+            )
+            
+            if not is_allowed:
+                logger.warning(f"Rate limit exceeded for {request.META.get('REMOTE_ADDR', 'unknown')}")
+                return HttpResponseForbidden("Rate limit exceeded. Please try again later.")
         
-        # Rate limiting
-        if not self.check_rate_limit(request, client_ip):
-            logger.warning(f'Rate limit exceeded from {client_ip}')
-            return JsonResponse({'error': 'Rate limit exceeded'}, status=429)
+        # Validate session security
+        is_valid, message = SessionSecurity.validate_session(request)
+        if not is_valid:
+            logger.warning(f"Invalid session for {request.META.get('REMOTE_ADDR', 'unknown')}: {message}")
+            return HttpResponseForbidden("Invalid session. Please login again.")
         
-        # Check for SQL injection attempts
-        if self.detect_sql_injection(request):
-            logger.warning(f'SQL injection attempt detected from {client_ip}')
-            return HttpResponseForbidden('Invalid request')
-        
-        # Check for XSS attempts
-        if self.detect_xss_attempt(request):
-            logger.warning(f'XSS attempt detected from {client_ip}')
-            return HttpResponseForbidden('Invalid request')
-        
-        # Check for path traversal attempts
-        if self.detect_path_traversal(request):
-            logger.warning(f'Path traversal attempt detected from {client_ip}')
-            return HttpResponseForbidden('Invalid request')
+        # Add security headers
+        request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
         
         return None
     
     def process_response(self, request, response):
-        """Add security headers to response"""
+        """Add security headers to responses"""
         
-        # Security Headers
+        # Security headers
         response['X-Content-Type-Options'] = 'nosniff'
         response['X-Frame-Options'] = 'DENY'
         response['X-XSS-Protection'] = '1; mode=block'
@@ -60,278 +58,181 @@ class SecurityMiddleware(MiddlewareMixin):
         response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
         
         # Content Security Policy
-        csp_policy = self.get_csp_policy()
+        csp_policy = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google-analytics.com https://www.googletagmanager.com; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            "img-src 'self' data: https:; "
+            "connect-src 'self' https://www.google-analytics.com; "
+            "frame-ancestors 'none';"
+        )
         response['Content-Security-Policy'] = csp_policy
         
-        # HSTS Header (only for HTTPS)
-        if request.is_secure():
+        # HSTS header (only for HTTPS)
+        if not settings.DEBUG and request.is_secure():
             response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
         
         return response
-    
-    def get_client_ip(self, request):
-        """Get client IP address"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
-    
-    def is_suspicious_request(self, request):
-        """Check if request is suspicious"""
-        suspicious_patterns = [
-            r'script\s*[<>]',
-            r'javascript:',
-            r'vbscript:',
-            r'<iframe',
-            r'<object',
-            r'<embed',
-            r'eval\s*\(',
-            r'exec\s*\(',
-            r'system\s*\(',
-            r'cmd\s*\.',
-            r'powershell',
-            r'bash\s*-',
-            r'\.\./',
-            r'\.\.\\',
-            r'%00',
-            r'%0d',
-            r'%0a',
-        ]
-        
-        # Check URL path
-        path = request.path.lower()
-        for pattern in suspicious_patterns:
-            if re.search(pattern, path, re.IGNORECASE):
-                return True
-        
-        # Check POST data
-        if request.method == 'POST':
-            post_data = str(request.POST)
-            for pattern in suspicious_patterns:
-                if re.search(pattern, post_data, re.IGNORECASE):
-                    return True
-        
-        # Check headers
-        headers = str(request.headers)
-        for pattern in suspicious_patterns:
-            if re.search(pattern, headers, re.IGNORECASE):
-                return True
-        
-        # Check for unusually large requests
-        if len(str(request.POST)) > 10000:  # 10KB limit
-            return True
-        
-        return False
-    
-    def check_rate_limit(self, request, client_ip):
-        """Check rate limiting"""
-        if not getattr(settings, 'RATE_LIMIT_ENABLED', True):
-            return True
-        
-        max_requests = getattr(settings, 'RATE_LIMIT_MAX_REQUESTS', 100)
-        window = getattr(settings, 'RATE_LIMIT_WINDOW', 60)
-        
-        cache_key = f'rate_limit:{client_ip}'
-        current_requests = cache.get(cache_key, 0)
-        
-        if current_requests >= max_requests:
-            return False
-        
-        cache.set(cache_key, current_requests + 1, window)
-        return True
-    
-    def detect_sql_injection(self, request):
-        """Detect SQL injection attempts"""
-        sql_patterns = [
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)',
-            r'(\b(or|and)\b\s+\d+\s*=\s*\d+)',
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\b(union|select|insert|update|delete|drop|create|alter)\b)',
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\bfrom\b)',
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\bwhere\b)',
-        ]
-        
-        # Check URL parameters
-        for key, value in request.GET.items():
-            for pattern in sql_patterns:
-                if re.search(pattern, value, re.IGNORECASE):
-                    return True
-        
-        # Check POST data
-        if request.method == 'POST':
-            for key, value in request.POST.items():
-                for pattern in sql_patterns:
-                    if re.search(pattern, str(value), re.IGNORECASE):
-                        return True
-        
-        return False
-    
-    def detect_xss_attempt(self, request):
-        """Detect XSS attempts"""
-        xss_patterns = [
-            r'<script[^>]*>.*?</script>',
-            r'javascript:',
-            r'vbscript:',
-            r'<iframe[^>]*>',
-            r'<object[^>]*>',
-            r'<embed[^>]*>',
-            r'<applet[^>]*>',
-            r'<form[^>]*>',
-            r'<input[^>]*>',
-            r'<textarea[^>]*>',
-            r'<select[^>]*>',
-            r'<button[^>]*>',
-        ]
-        
-        # Check URL parameters
-        for key, value in request.GET.items():
-            for pattern in xss_patterns:
-                if re.search(pattern, value, re.IGNORECASE):
-                    return True
-        
-        # Check POST data
-        if request.method == 'POST':
-            for key, value in request.POST.items():
-                for pattern in xss_patterns:
-                    if re.search(pattern, str(value), re.IGNORECASE):
-                        return True
-        
-        return False
-    
-    def detect_path_traversal(self, request):
-        """Detect path traversal attempts"""
-        traversal_patterns = [
-            r'\.\./',
-            r'\.\.\\',
-            r'%2e%2e%2f',
-            r'%2e%2e%5c',
-            r'%252e%252e%252f',
-            r'%252e%252e%255c',
-        ]
-        
-        path = request.path
-        for pattern in traversal_patterns:
-            if re.search(pattern, path, re.IGNORECASE):
-                return True
-        
-        return False
-    
-    def get_csp_policy(self):
-        """Get Content Security Policy"""
-        return "; ".join([
-            "default-src 'self'",
-            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://pagead2.googlesyndication.com https://www.googletagmanager.com",
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
-            "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: https:",
-            "connect-src 'self'",
-            "media-src 'self'",
-            "object-src 'none'",
-            "base-uri 'self'",
-            "form-action 'self'",
-            "frame-ancestors 'none'",
-            "upgrade-insecure-requests"
-        ])
 
-class PaymentSecurityMiddleware(MiddlewareMixin):
-    """Payment-specific security middleware"""
+class AuthenticationMiddleware(MiddlewareMixin):
+    """Enhanced authentication middleware"""
     
     def process_request(self, request):
-        """Process payment-related requests"""
+        """Process authentication-related security"""
         
-        # Check if this is a payment-related request
-        if self.is_payment_request(request):
-            # Validate payment session
-            if not self.validate_payment_session(request):
-                logger.warning(f'Invalid payment session from {self.get_client_ip(request)}')
-                return HttpResponseForbidden('Invalid payment session')
-            
-            # Check payment rate limiting
-            if not self.check_payment_rate_limit(request):
-                logger.warning(f'Payment rate limit exceeded from {self.get_client_ip(request)}')
-                return JsonResponse({'error': 'Payment rate limit exceeded'}, status=429)
+        # Skip for static files and admin
+        if request.path.startswith('/static/') or request.path.startswith('/admin/'):
+            return None
+        
+        # Check for suspicious activity
+        if self._is_suspicious_request(request):
+            logger.warning(f"Suspicious request detected from {request.META.get('REMOTE_ADDR', 'unknown')}")
+            return HttpResponseForbidden("Suspicious activity detected.")
+        
+        # Validate user session if authenticated
+        if request.user.is_authenticated:
+            if not self._validate_user_session(request):
+                logger.warning(f"Invalid user session for {request.user.username}")
+                return HttpResponseForbidden("Invalid session. Please login again.")
         
         return None
     
-    def is_payment_request(self, request):
-        """Check if request is payment-related"""
-        payment_paths = [
-            '/process-payment/',
-            '/place-order/',
-            '/collect-phone/',
+    def _is_suspicious_request(self, request):
+        """Check for suspicious request patterns"""
+        
+        # Check for SQL injection attempts
+        suspicious_patterns = [
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)',
+            r'(\b(and|or)\b\s+\d+\s*=\s*\d+)',
+            r'(\b(and|or)\b\s+\'\w+\'\s*=\s*\'\w+\')',
+            r'(\b(and|or)\b\s+\w+\s*=\s*\w+)',
+            r'(\b(and|or)\b\s+\w+\s*like\s*\w+)',
+            r'(\b(and|or)\b\s+\w+\s*in\s*\([^)]*\))',
+            r'(\b(and|or)\b\s+\w+\s*between\s+\w+\s+and\s+\w+)',
+            r'(\b(and|or)\b\s+\w+\s*exists\s*\([^)]*\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\([^)]*\))',
+            r'(\b(and|or)\b\s+\w+\s*is\s+null)',
+            r'(\b(and|or)\b\s+\w+\s*is\s+not\s+null)',
+            r'(\b(and|or)\b\s+\w+\s*=\s*null)',
+            r'(\b(and|or)\b\s+\w+\s*!=\s*null)',
+            r'(\b(and|or)\b\s+\w+\s*<>\s*null)',
+            r'(\b(and|or)\b\s+\w+\s*>\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*<\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*>=\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*<=\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*!=\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*<>\s*\d+)',
+            r'(\b(and|or)\b\s+\w+\s*like\s*\'\w+\')',
+            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\'\w+\')',
+            r'(\b(and|or)\b\s+\w+\s*in\s*\(\'\w+\'\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(\'\w+\'\))',
+            r'(\b(and|or)\b\s+\w+\s*between\s+\'\w+\'\s+and\s+\'\w+\')',
+            r'(\b(and|or)\b\s+\w+\s*not\s+between\s+\'\w+\'\s+and\s+\'\w+\')',
+            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
+            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
         ]
         
-        return any(path in request.path for path in payment_paths)
+        # Check query parameters
+        for key, value in request.GET.items():
+            for pattern in suspicious_patterns:
+                if re.search(pattern, str(value), re.IGNORECASE):
+                    return True
+        
+        # Check POST data
+        if request.method == 'POST':
+            for key, value in request.POST.items():
+                for pattern in suspicious_patterns:
+                    if re.search(pattern, str(value), re.IGNORECASE):
+                        return True
+        
+        return False
     
-    def validate_payment_session(self, request):
-        """Validate payment session"""
-        # Check if user is authenticated
-        if not request.user.is_authenticated:
+    def _validate_user_session(self, request):
+        """Validate user session security"""
+        
+        # Check if user is still active
+        if not request.user.is_active:
             return False
         
-        # Check if cart exists
-        if not request.session.get('cart'):
+        # Check session security hash
+        security_hash = request.session.get('_security_hash')
+        if not security_hash:
             return False
         
-        # Only require payment_method for place-order and process-payment, not collect-phone
-        if request.path.startswith('/place-order/') or request.path.startswith('/process-payment/'):
-            if not request.session.get('payment_method'):
-                return False
+        # Verify security hash
+        expected_hash = SecurityValidator.generate_secure_token({
+            'user_id': request.user.id,
+            'ip': request.META.get('REMOTE_ADDR', ''),
+            'user_agent': request.META.get('HTTP_USER_AGENT', '')
+        })
         
-        return True
-    
-    def check_payment_rate_limit(self, request):
-        """No payment rate limiting (unlimited payments per hour)"""
-        return True
-    
-    def get_client_ip(self, request):
-        """Get client IP address"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip
+        return security_hash == expected_hash
 
 class LoggingMiddleware(MiddlewareMixin):
-    """Logging middleware for security events"""
+    """Enhanced logging middleware"""
     
     def process_request(self, request):
-        """Log request details"""
-        if self.should_log_request(request):
-            logger.info(f'Request: {request.method} {request.path} from {self.get_client_ip(request)}')
+        """Log incoming requests"""
+        request.start_time = time.time()
+        
+        # Log request details
+        logger.info(
+            f"Request: {request.method} {request.path} "
+            f"from {request.META.get('REMOTE_ADDR', 'unknown')} "
+            f"User: {request.user.username if request.user.is_authenticated else 'Anonymous'}"
+        )
         
         return None
     
     def process_response(self, request, response):
         """Log response details"""
-        if self.should_log_response(request, response):
-            logger.info(f'Response: {response.status_code} for {request.method} {request.path}')
+        
+        if hasattr(request, 'start_time'):
+            duration = time.time() - request.start_time
+            
+            logger.info(
+                f"Response: {response.status_code} "
+                f"Duration: {duration:.3f}s "
+                f"for {request.method} {request.path}"
+            )
         
         return response
     
-    def should_log_request(self, request):
-        """Check if request should be logged"""
-        sensitive_paths = [
-            '/admin/',
-            '/process-payment/',
-            '/place-order/',
-            '/college-admin/',
-            '/canteen/',
-        ]
+    def process_exception(self, request, exception):
+        """Log exceptions"""
+        logger.error(
+            f"Exception: {type(exception).__name__}: {str(exception)} "
+            f"for {request.method} {request.path} "
+            f"from {request.META.get('REMOTE_ADDR', 'unknown')}"
+        )
         
-        return any(path in request.path for path in sensitive_paths)
-    
-    def should_log_response(self, request, response):
-        """Check if response should be logged"""
-        return response.status_code >= 400 or self.should_log_request(request)
-    
-    def get_client_ip(self, request):
-        """Get client IP address"""
-        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
-        if x_forwarded_for:
-            ip = x_forwarded_for.split(',')[0].strip()
-        else:
-            ip = request.META.get('REMOTE_ADDR')
-        return ip 
+        return None 
