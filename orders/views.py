@@ -1260,6 +1260,33 @@ def pwa_manifest(request):
     }
     return JsonResponse(manifest, content_type='application/manifest+json')
 
+def pwa_service_worker(request):
+    """Serve PWA service worker"""
+    from django.conf import settings
+    import os
+    
+    # Try to read the service worker file
+    sw_path = os.path.join(settings.STATIC_ROOT, 'sw.js')
+    if not os.path.exists(sw_path):
+        sw_path = os.path.join(settings.BASE_DIR, 'static', 'sw.js')
+    
+    if os.path.exists(sw_path):
+        with open(sw_path, 'r') as f:
+            content = f.read()
+        return HttpResponse(content, content_type='application/javascript')
+    else:
+        # Return a basic service worker if file doesn't exist
+        basic_sw = """
+        self.addEventListener('install', function(event) {
+            console.log('Service Worker installed');
+        });
+
+        self.addEventListener('fetch', function(event) {
+            event.respondWith(fetch(event.request));
+        });
+        """
+        return HttpResponse(basic_sw, content_type='application/javascript')
+
 @login_required(login_url='/admin/login/')
 @require_POST
 @csrf_protect

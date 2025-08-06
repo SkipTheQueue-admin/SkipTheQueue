@@ -318,6 +318,14 @@ class SessionSecurity:
     @staticmethod
     def validate_session(request):
         """Validate session security"""
+        # Skip validation for PWA files and static content
+        if (request.path.startswith('/static/') or 
+            request.path.startswith('/admin/') or
+            request.path in ['/manifest.json', '/sw.js'] or
+            request.path.startswith('/manifest.json') or
+            request.path.startswith('/sw.js')):
+            return True, "PWA/Static file - skipping session validation"
+        
         # Check if session is valid
         if not request.session.session_key:
             return False, "No active session"
@@ -334,6 +342,14 @@ class SessionSecurity:
     @staticmethod
     def update_session_security(request):
         """Update session security parameters"""
+        # Skip for PWA files and static content
+        if (request.path.startswith('/static/') or 
+            request.path.startswith('/admin/') or
+            request.path in ['/manifest.json', '/sw.js'] or
+            request.path.startswith('/manifest.json') or
+            request.path.startswith('/sw.js')):
+            return
+        
         # Update session age
         request.session['_session_age'] = request.session.get('_session_age', 0) + 1
         

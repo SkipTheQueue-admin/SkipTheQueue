@@ -20,6 +20,14 @@ class SecurityMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """Process incoming requests for security checks"""
         
+        # Skip security checks for PWA files and static files
+        if (request.path.startswith('/static/') or 
+            request.path.startswith('/admin/') or
+            request.path in ['/manifest.json', '/sw.js'] or
+            request.path.startswith('/manifest.json') or
+            request.path.startswith('/sw.js')):
+            return None
+        
         # Update session security
         SessionSecurity.update_session_security(request)
         
@@ -81,8 +89,12 @@ class AuthenticationMiddleware(MiddlewareMixin):
     def process_request(self, request):
         """Process authentication-related security"""
         
-        # Skip for static files and admin
-        if request.path.startswith('/static/') or request.path.startswith('/admin/'):
+        # Skip for static files, admin, and PWA files
+        if (request.path.startswith('/static/') or 
+            request.path.startswith('/admin/') or
+            request.path in ['/manifest.json', '/sw.js'] or
+            request.path.startswith('/manifest.json') or
+            request.path.startswith('/sw.js')):
             return None
         
         # Check for suspicious activity
