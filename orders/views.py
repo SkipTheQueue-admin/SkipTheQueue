@@ -35,15 +35,21 @@ def rate_limit(max_requests=10, window=60):
     def decorator(view_func):
         @wraps(view_func)
         def wrapped(request, *args, **kwargs):
-            # Simple rate limiting using session
+            # Improved rate limiting using session with proper time window
             now = timezone.now()
-            request_count = request.session.get('request_count', 0)
-            last_request_str = request.session.get('last_request')
+            
+            # Get user identifier (user ID if authenticated, IP if not)
+            user_id = request.user.id if request.user.is_authenticated else request.META.get('REMOTE_ADDR', 'anonymous')
+            
+            # Create unique key for this user and view
+            rate_key = f"rate_limit_{user_id}_{view_func.__name__}"
+            request_count = request.session.get(rate_key, 0)
+            last_request_str = request.session.get(f"{rate_key}_time")
             
             if last_request_str:
                 try:
                     last_request = timezone.datetime.fromisoformat(last_request_str.replace('Z', '+00:00'))
-                    time_diff = (now - last_request).seconds
+                    time_diff = (now - last_request).total_seconds()
                     if time_diff > window:
                         request_count = 0
                 except (ValueError, TypeError):
@@ -51,10 +57,13 @@ def rate_limit(max_requests=10, window=60):
                     request_count = 0
             
             if request_count >= max_requests:
-                return JsonResponse({'error': 'Rate limit exceeded'}, status=429)
+                return JsonResponse({
+                    'error': 'Rate limit exceeded. Please try again later.',
+                    'retry_after': window - (time_diff if 'time_diff' in locals() else 0)
+                }, status=429)
             
-            request.session['request_count'] = request_count + 1
-            request.session['last_request'] = now.isoformat()
+            request.session[rate_key] = request_count + 1
+            request.session[f"{rate_key}_time"] = now.isoformat()
             
             return view_func(request, *args, **kwargs)
         return wrapped
@@ -348,7 +357,7 @@ def update_cart_api(request, item_id):
 
 @login_required(login_url='/login/?next=/place-order/')
 @csrf_protect
-@rate_limit(max_requests=5, window=300)  # 5 orders per 5 minutes
+@rate_limit(max_requests=10, window=300)  # 10 orders per 5 minutes
 def place_order(request):
     """Place order with payment processing and security"""
     cart = request.session.get('cart', {})
