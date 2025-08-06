@@ -81,4 +81,7 @@ urlpatterns += [
     path('create-temp-superuser/', create_temp_superuser),
     path('debug-canteen-staff/', debug_canteen_staff),
     path('security-test/', views.security_test, name='security_test'),
+    path('debug-home/', views.debug_home, name='debug_home'),
+    path('health/', views.health_check, name='health_check'),
+    path('diagnostic/', views.site_diagnostic, name='site_diagnostic'),
 ]

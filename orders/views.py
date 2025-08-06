@@ -2153,3 +2153,159 @@ def security_test(request):
     test_results['failed_tests'] = len(all_tests) - sum(all_tests)
     
     return JsonResponse(test_results)
+
+def debug_home(request):
+    """Debug view to check what's happening with the home page"""
+    colleges = College.objects.filter(is_active=True).order_by('name')
+    selected_college = request.session.get('selected_college')
+    
+    debug_info = {
+        'user_authenticated': request.user.is_authenticated,
+        'user_email': request.user.email if request.user.is_authenticated else None,
+        'user_is_superuser': request.user.is_superuser if request.user.is_authenticated else False,
+        'colleges_count': colleges.count(),
+        'colleges_list': list(colleges.values('id', 'name', 'slug', 'is_active')),
+        'selected_college': selected_college,
+        'session_keys': list(request.session.keys()),
+        'debug_mode': settings.DEBUG,
+    }
+    
+    return JsonResponse(debug_info)
+
+def health_check(request):
+    """Simple health check to verify the application is working"""
+    try:
+        # Check database connection
+        colleges_count = College.objects.filter(is_active=True).count()
+        
+        # Check if superuser exists
+        superuser_exists = User.objects.filter(
+            email='skipthequeue.app@gmail.com',
+            is_superuser=True
+        ).exists()
+        
+        health_status = {
+            'status': 'healthy',
+            'timestamp': timezone.now().isoformat(),
+            'debug_mode': settings.DEBUG,
+            'colleges_count': colleges_count,
+            'superuser_exists': superuser_exists,
+            'database_connected': True,
+        }
+        
+        return JsonResponse(health_status, status=200)
+        
+    except Exception as e:
+        health_status = {
+            'status': 'unhealthy',
+            'timestamp': timezone.now().isoformat(),
+            'error': str(e),
+            'debug_mode': settings.DEBUG,
+        }
+        
+        return JsonResponse(health_status, status=500)
+
+def site_diagnostic(request):
+    """Comprehensive diagnostic to identify site issues"""
+    diagnostic_results = {
+        'timestamp': timezone.now().isoformat(),
+        'debug_mode': settings.DEBUG,
+        'issues': [],
+        'warnings': [],
+        'success': [],
+        'database': {},
+        'authentication': {},
+        'static_files': {},
+        'templates': {},
+    }
+    
+    try:
+        # Database checks
+        colleges = College.objects.filter(is_active=True)
+        diagnostic_results['database']['colleges_count'] = colleges.count()
+        diagnostic_results['database']['colleges_list'] = list(colleges.values('id', 'name', 'slug', 'is_active', 'estimated_preparation_time'))
+        
+        if colleges.count() == 0:
+            diagnostic_results['issues'].append('No active colleges found in database')
+        else:
+            diagnostic_results['success'].append(f'Found {colleges.count()} active colleges')
+        
+        # Check for superuser
+        superuser = User.objects.filter(email='skipthequeue.app@gmail.com', is_superuser=True).first()
+        if superuser:
+            diagnostic_results['authentication']['superuser_exists'] = True
+            diagnostic_results['authentication']['superuser_username'] = superuser.username
+            diagnostic_results['success'].append('Superuser exists and is properly configured')
+        else:
+            diagnostic_results['issues'].append('Superuser (skipthequeue.app@gmail.com) not found or not configured as superuser')
+        
+        # Check canteen staff
+        canteen_staff = CanteenStaff.objects.filter(is_active=True)
+        diagnostic_results['database']['canteen_staff_count'] = canteen_staff.count()
+        
+        # Check menu items
+        menu_items = MenuItem.objects.filter(is_available=True)
+        diagnostic_results['database']['menu_items_count'] = menu_items.count()
+        
+        # Check static files
+        try:
+            from django.contrib.staticfiles.finders import find
+            # Check if key static files exist
+            static_files_to_check = [
+                'images/colleges/ramdeo-baba-logo.png',
+                'images/colleges/gh-raisoni-logo.png', 
+                'images/colleges/ycce-logo.png',
+                'images/zap-icon.svg'
+            ]
+            
+            for static_file in static_files_to_check:
+                if find(static_file):
+                    diagnostic_results['static_files'][static_file] = 'Found'
+                else:
+                    diagnostic_results['warnings'].append(f'Static file not found: {static_file}')
+                    
+        except Exception as e:
+            diagnostic_results['warnings'].append(f'Static files check failed: {str(e)}')
+        
+        # Check session
+        diagnostic_results['session'] = {
+            'session_id': request.session.session_key,
+            'session_keys': list(request.session.keys()),
+            'selected_college': request.session.get('selected_college'),
+        }
+        
+        # Check user authentication
+        if request.user.is_authenticated:
+            diagnostic_results['authentication']['user_authenticated'] = True
+            diagnostic_results['authentication']['user_email'] = request.user.email
+            diagnostic_results['authentication']['user_is_superuser'] = request.user.is_superuser
+            diagnostic_results['authentication']['user_is_staff'] = request.user.is_staff
+        else:
+            diagnostic_results['authentication']['user_authenticated'] = False
+        
+        # Check for common issues
+        if settings.DEBUG:
+            diagnostic_results['warnings'].append('DEBUG mode is enabled - this should be False in production')
+        
+        # Check if any colleges have missing required fields
+        for college in colleges:
+            if not college.estimated_preparation_time:
+                diagnostic_results['warnings'].append(f'College "{college.name}" has no estimated preparation time')
+        
+        # Check for empty menu items
+        colleges_without_menu = colleges.exclude(menu_items__is_available=True).distinct()
+        if colleges_without_menu.exists():
+            diagnostic_results['warnings'].append(f'Colleges without menu items: {list(colleges_without_menu.values_list("name", flat=True))}')
+        
+    except Exception as e:
+        diagnostic_results['issues'].append(f'Database connection error: {str(e)}')
+    
+    # Determine overall status
+    if diagnostic_results['issues']:
+        diagnostic_results['status'] = 'ERROR'
+    elif diagnostic_results['warnings']:
+        diagnostic_results['status'] = 'WARNING'
+    else:
+        diagnostic_results['status'] = 'HEALTHY'
+    
+    return JsonResponse(diagnostic_results, status=200 if diagnostic_results['status'] != 'ERROR' else 500)
