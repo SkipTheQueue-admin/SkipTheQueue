@@ -338,10 +338,28 @@
                 navigator.serviceWorker.register('{% static "sw.js" %}')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful');
+                        
+                        // Handle service worker updates
+                        registration.addEventListener('updatefound', function() {
+                            const newWorker = registration.installing;
+                            newWorker.addEventListener('statechange', function() {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    // New service worker available, reload page
+                                    window.location.reload();
+                                }
+                            });
+                        });
                     })
                     .catch(function(err) {
                         console.log('ServiceWorker registration failed');
                     });
+                
+                // Listen for messages from service worker
+                navigator.serviceWorker.addEventListener('message', function(event) {
+                    if (event.data && event.data.type === 'RELOAD_PAGE') {
+                        window.location.reload();
+                    }
+                });
             });
         }
 

@@ -1,7 +1,7 @@
 // SkipTheQueue Service Worker
-// Version: 1.0.0
+// Version: 1.0.1 - Fixed static file references
 
-const CACHE_NAME = 'skipthequeue-v1';
+const CACHE_NAME = 'skipthequeue-v1.1';
 const STATIC_CACHE = 'skipqueue-static-v1.0.0';
 const DYNAMIC_CACHE = 'skipqueue-dynamic-v1.0.0';
 
@@ -43,6 +43,13 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Force all clients to reload to get the new service worker
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'RELOAD_PAGE' });
+        });
+      });
     })
   );
 });
@@ -142,6 +149,13 @@ async function syncOrder(order) {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'RELOAD_PAGE') {
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.navigate(client.url);
+      });
+    });
   }
 });
 
