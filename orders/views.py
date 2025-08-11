@@ -462,6 +462,9 @@ def home(request):
                 request.user.is_staff = True
                 request.user.save()
                 logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
+            # Store user type in session for consistent behavior
+            request.session['user_type'] = 'super_admin'
+            request.session['user_email'] = user_email
             return redirect('super_admin_dashboard')
         
         # Check if user is canteen staff for any college
@@ -469,6 +472,11 @@ def home(request):
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
             # Verify the college still exists and is active
             if canteen_staff.college and canteen_staff.college.is_active:
+                # Store user type and college info in session for consistent behavior
+                request.session['user_type'] = 'canteen_staff'
+                request.session['college_slug'] = canteen_staff.college.slug
+                request.session['college_name'] = canteen_staff.college.name
+                request.session['user_email'] = user_email
                 logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
                 return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
             else:
@@ -477,9 +485,22 @@ def home(request):
                 messages.error(request, "Your assigned college is no longer active. Please contact administrator.")
                 return redirect('home')
         except CanteenStaff.DoesNotExist:
-            # Regular user - continue to normal home page
-            logger.info(f"Regular user {user_email} accessing home page")
-            pass
+            # Check if user is college admin
+            try:
+                college_admin = College.objects.get(admin_email=user_email, is_active=True)
+                # Store user type and college info in session for consistent behavior
+                request.session['user_type'] = 'college_admin'
+                request.session['college_slug'] = college_admin.slug
+                request.session['college_name'] = college_admin.name
+                request.session['user_email'] = user_email
+                logger.info(f"College admin {user_email} redirected to {college_admin.name} dashboard")
+                return redirect('college_admin_dashboard', college_slug=college_admin.slug)
+            except College.DoesNotExist:
+                # Regular user - continue to normal home page
+                logger.info(f"Regular user {user_email} accessing home page")
+                # Store user type in session for consistent behavior
+                request.session['user_type'] = 'regular_user'
+                request.session['user_email'] = user_email
     
     # Get active colleges only
     colleges = College.objects.filter(is_active=True).order_by('name')
@@ -894,7 +915,7 @@ def custom_login(request):
     return redirect('social:begin', backend='google-oauth2')
 
 def oauth_complete(request):
-    """Handle redirect after successful OAuth login"""
+    """Handle redirect after successful OAuth login with proper user type routing"""
     if request.user.is_authenticated:
         user_email = request.user.email
         
@@ -905,29 +926,56 @@ def oauth_complete(request):
                 request.user.is_superuser = True
                 request.user.is_staff = True
                 request.user.save()
+            # Store user type in session for consistent behavior
+            request.session['user_type'] = 'super_admin'
+            request.session['user_email'] = user_email
             return redirect('super_admin_dashboard')
         
         # Check if user is canteen staff for any college
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            # Store user type and college info in session
+            request.session['user_type'] = 'canteen_staff'
+            request.session['college_slug'] = canteen_staff.college.slug
+            request.session['college_name'] = canteen_staff.college.name
+            request.session['user_email'] = user_email
+            # Redirect to canteen staff dashboard
             return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
         except CanteenStaff.DoesNotExist:
-            # Regular user - check if they need to collect phone
-            next_url = request.session.get('next_url', '/')
-            request.session.pop('next_url', None)
-            
-            # If user is on cart page and doesn't have phone number, redirect to collect_phone
-            if (next_url == '/cart/' or next_url == '/cart') and not request.session.get('user_phone'):
-                return redirect('collect_phone')
-            
-            # If user is trying to place an order and phone is missing, redirect to collect_phone
-            if (
-                next_url in ['/place-order/', '/place_order/', 'place_order', 'place-order'] or
-                next_url.endswith('/place-order/') or next_url.endswith('/place_order/')
-            ) and not request.session.get('user_phone'):
-                return redirect('collect_phone')
-            
-            return redirect(next_url)
+            # Check if user is a college admin
+            try:
+                college = College.objects.get(admin_email=user_email, is_active=True)
+                # Store user type and college info in session
+                request.session['user_type'] = 'college_admin'
+                request.session['college_slug'] = college.slug
+                request.session['college_name'] = college.name
+                request.session['user_email'] = user_email
+                # Redirect to college admin dashboard
+                return redirect('college_admin_dashboard', college_slug=college.slug)
+            except College.DoesNotExist:
+                # Regular user - check if they need to collect phone
+                next_url = request.session.get('next_url', '/')
+                request.session.pop('next_url', None)
+                
+                # Store user type in session
+                request.session['user_type'] = 'regular_user'
+                request.session['user_email'] = user_email
+                
+                # Check if user has phone number in profile
+                try:
+                    user_profile = UserProfile.objects.get(user=request.user)
+                    if user_profile.phone_number:
+                        request.session['user_phone'] = user_profile.phone_number
+                        # User has phone, go to intended page or home
+                        if next_url and next_url != '/':
+                            return redirect(next_url)
+                        return redirect('home')
+                    else:
+                        # User doesn't have phone number, redirect to collect_phone
+                        return redirect('collect_phone')
+                except UserProfile.DoesNotExist:
+                    # User profile doesn't exist, redirect to collect_phone
+                    return redirect('collect_phone')
     
     # If not authenticated, redirect to home
     return redirect('home')
@@ -981,10 +1029,23 @@ def get_orders_json(request, college_slug):
 @csrf_protect
 def college_admin_dashboard(request, college_slug):
     """College admin dashboard for managing menu and orders"""
-    # Check if user is superuser
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
+        # Check if user is the college admin for this college
+        try:
+            college = College.objects.get(slug=college_slug, admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
     
     try:
         college = get_object_or_404(College, slug=college_slug)
@@ -1019,10 +1080,23 @@ def college_admin_dashboard(request, college_slug):
 @csrf_protect
 def manage_menu(request, college_slug):
     """Manage college menu items with security"""
-    # Check if user is superuser
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
+        # Check if user is the college admin for this college
+        try:
+            college = College.objects.get(slug=college_slug, admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to manage this college's menu.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
     
     try:
         college = get_object_or_404(College, slug=college_slug)
@@ -1290,24 +1364,144 @@ def pwa_service_worker(request):
 @login_required(login_url='/admin/login/')
 @require_POST
 @csrf_protect
-def update_order_status(request, order_id):
-    """Update order status for canteen staff"""
-    # Check if user is superuser
-    if not request.user.is_superuser:
-        return JsonResponse({'success': False, 'error': 'Access denied. Super admin privileges required.'}, status=403)
-    
+def update_order_status(request, college_slug, order_id):
+    """Update order status with enhanced security and notifications"""
     try:
-        order = get_object_or_404(Order, id=order_id)
+        college = get_object_or_404(College, slug=college_slug)
+        order = get_object_or_404(Order, id=order_id, college=college)
         new_status = request.POST.get('status')
         
-        if new_status in dict(Order.STATUS_CHOICES):
+        # Check permissions
+        try:
+            canteen_staff = CanteenStaff.objects.get(
+                user=request.user, 
+                college=college, 
+                is_active=True,
+                can_update_status=True
+            )
+        except CanteenStaff.DoesNotExist:
+            if not request.user.is_superuser:
+                return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        if new_status in ['In Progress', 'Ready', 'Completed']:
+            old_status = order.status
             order.status = new_status
             order.save()
-            return JsonResponse({'success': True, 'status': new_status})
+            
+            # Prepare comprehensive notification data for user
+            notification_data = {
+                'success': True, 
+                'message': f'Order #{order.id} status updated to {new_status}!',
+                'order_id': order.id,
+                'new_status': new_status,
+                'old_status': old_status,
+                'user_name': order.user_name,
+                'college_name': college.name,
+                'timestamp': timezone.now().isoformat(),
+                'requires_user_action': False,
+                'requires_notification': True
+            }
+            
+            # Add specific notification for ready status - requires user action
+            if new_status == 'Ready':
+                notification_data['user_notification'] = {
+                    'title': '🎉 Order Ready for Pickup!',
+                    'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                    'type': 'success',
+                    'persistent': True,  # This notification won't auto-dismiss
+                    'action_required': True,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['requires_user_action'] = True
+                notification_data['status_color'] = 'status-ready'
+            elif new_status == 'In Progress':
+                notification_data['user_notification'] = {
+                    'title': '👨‍🍳 Order Being Prepared',
+                    'message': f'Your order #{order.id} is being prepared at {college.name}. We\'ll notify you when it\'s ready!',
+                    'type': 'info',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['status_color'] = 'status-preparing'
+            elif new_status == 'Completed':
+                notification_data['user_notification'] = {
+                    'title': '✅ Order Completed',
+                    'message': f'Your order #{order.id} has been completed. Thank you for using SkipTheQueue!',
+                    'type': 'success',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['status_color'] = 'status-completed'
+            
+            # Store notification in session for the user to see
+            if order.user_phone:
+                # Create a session key for this user's notifications
+                notification_key = f'order_notification_{order.user_phone}_{order.id}'
+                request.session[notification_key] = notification_data
+                
+                # Also store in a general user notification key for easier retrieval
+                user_notification_key = f'user_notification_{order.user_phone}_{order.id}'
+                request.session[user_notification_key] = notification_data.get('user_notification', {})
+                
+                # Store the order in user's active orders for real-time tracking
+                active_orders_key = f'active_orders_{order.user_phone}'
+                active_orders = request.session.get(active_orders_key, [])
+                if order.id not in active_orders:
+                    active_orders.append(order.id)
+                    request.session[active_orders_key] = active_orders
+                
+                # Store notification in a global notifications list for real-time access
+                global_notifications_key = 'global_notifications'
+                global_notifications = request.session.get(global_notifications_key, [])
+                global_notifications.append({
+                    'user_phone': order.user_phone,
+                    'order_id': order.id,
+                    'notification': notification_data,
+                    'timestamp': timezone.now().isoformat()
+                })
+                request.session[global_notifications_key] = global_notifications
+                
+                # Store persistent notification for ready orders that won't auto-dismiss
+                if new_status == 'Ready':
+                    persistent_key = f'persistent_notification_{order.user_phone}_{order.id}'
+                    request.session[persistent_key] = {
+                        'type': 'order_ready',
+                        'title': '🎉 Order Ready for Pickup!',
+                        'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                        'order_id': order.id,
+                        'college_name': college.name,
+                        'timestamp': timezone.now().isoformat(),
+                        'persistent': True,
+                        'requires_action': True
+                    }
+                    
+                    # Also store in a user-specific persistent notifications list
+                    user_persistent_key = f'user_persistent_notifications_{order.user_phone}'
+                    user_persistent = request.session.get(user_persistent_key, [])
+                    user_persistent.append({
+                        'order_id': order.id,
+                        'type': 'order_ready',
+                        'title': '🎉 Order Ready for Pickup!',
+                        'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                        'college_name': college.name,
+                        'timestamp': timezone.now().isoformat(),
+                        'persistent': True,
+                        'requires_action': True
+                    })
+                    request.session[user_persistent_key] = user_persistent
+            
+            return JsonResponse(notification_data)
         else:
-            return JsonResponse({'success': False, 'error': 'Invalid status'})
+            return JsonResponse({'error': 'Invalid status'}, status=400)
+            
     except Exception as e:
-        return JsonResponse({'success': False, 'error': str(e)})
+        logger.error(f"Error updating order status: {str(e)}")
+        return JsonResponse({'error': 'Error updating order status'}, status=500)
 
 def help_center(request):
     """Help center page"""
@@ -1335,6 +1529,10 @@ def super_admin_dashboard(request):
     if not request.user.is_superuser:
         messages.error(request, "Access denied. Super admin privileges required.")
         return redirect('home')
+    
+    # Store user type in session for consistent behavior
+    request.session['user_type'] = 'super_admin'
+    request.session['user_email'] = request.user.email
     
     from datetime import datetime, timedelta
     import json
@@ -1435,11 +1633,24 @@ def super_admin_dashboard(request):
 @login_required(login_url='/admin/login/')
 def manage_college(request, college_id):
     """Manage individual college settings"""
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
-    
-    college = get_object_or_404(College, id=college_id)
+        # Check if user is the college admin for this college
+        try:
+            college = College.objects.get(id=college_id, admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to manage this college.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
+        college = get_object_or_404(College, id=college_id)
     
     if request.method == 'POST':
         # Update college settings using SecurityValidator
@@ -1471,9 +1682,23 @@ def manage_college(request, college_id):
 @login_required(login_url='/admin/login/')
 def manage_menu_items(request):
     """Manage all menu items across colleges"""
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
+        # Check if user is a college admin
+        try:
+            college = College.objects.get(admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to manage menu items.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
     
     if request.method == 'POST':
         action = request.POST.get('action')
@@ -1543,9 +1768,23 @@ def manage_menu_items(request):
 @login_required(login_url='/admin/login/')
 def delete_college(request, college_id):
     """Delete a college (emergency function)"""
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
+        # Check if user is the college admin for this college
+        try:
+            college = College.objects.get(id=college_id, admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to delete this college.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
     
     if request.method == 'POST':
         try:
@@ -1572,9 +1811,23 @@ def delete_college(request, college_id):
 @login_required(login_url='/admin/login/')
 def view_order_history(request):
     """View comprehensive order history with date filtering"""
+    # Check if user is superuser or college admin
     if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
+        # Check if user is a college admin
+        try:
+            college = College.objects.get(admin_email=request.user.email, is_active=True)
+            # Store user type and college info in session for consistent behavior
+            request.session['user_type'] = 'college_admin'
+            request.session['college_slug'] = college.slug
+            request.session['college_name'] = college.name
+            request.session['user_email'] = request.user.email
+        except College.DoesNotExist:
+            messages.error(request, "Access denied. You don't have permission to view order history.")
+            return redirect('home')
+    else:
+        # Superuser - store user type in session
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
     
     from datetime import datetime
     
@@ -1688,10 +1941,18 @@ def canteen_staff_login(request):
                 request.user.is_superuser = True
                 request.user.is_staff = True
                 request.user.save()
+            # Store user type in session for consistent behavior
+            request.session['user_type'] = 'super_admin'
+            request.session['user_email'] = user_email
             return redirect('super_admin_dashboard')
         
         try:
             canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            # Store user type and college info in session
+            request.session['user_type'] = 'canteen_staff'
+            request.session['college_slug'] = canteen_staff.college.slug
+            request.session['college_name'] = canteen_staff.college.name
+            request.session['user_email'] = user_email
             # Redirect to the assigned college dashboard
             return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
         except CanteenStaff.DoesNotExist:
@@ -1719,6 +1980,9 @@ def canteen_staff_login(request):
                         user.save()
                     login(request, user)
                     request.session.save()
+                    # Store user type in session for consistent behavior
+                    request.session['user_type'] = 'super_admin'
+                    request.session['user_email'] = user.email
                     messages.success(request, f"Welcome back, {user.first_name or user.username}!")
                     return redirect('super_admin_dashboard')
                 
@@ -1727,6 +1991,11 @@ def canteen_staff_login(request):
                     canteen_staff = CanteenStaff.objects.get(user=user, is_active=True)
                     login(request, user)
                     request.session.save()  # Force session save
+                    # Store user type and college info in session
+                    request.session['user_type'] = 'canteen_staff'
+                    request.session['college_slug'] = canteen_staff.college.slug
+                    request.session['college_name'] = canteen_staff.college.name
+                    request.session['user_email'] = user.email
                     messages.success(request, f"Welcome back, {user.first_name or user.username}!")
                     # Always redirect to the assigned college dashboard
                     return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
@@ -1752,6 +2021,9 @@ def canteen_staff_dashboard(request, college_slug):
             request.user.is_superuser = True
             request.user.is_staff = True
             request.user.save()
+        # Store user type in session for consistent behavior
+        request.session['user_type'] = 'super_admin'
+        request.session['user_email'] = request.user.email
         return redirect('super_admin_dashboard')
     
     try:
@@ -1775,6 +2047,12 @@ def canteen_staff_dashboard(request, college_slug):
             return redirect('canteen_staff_dashboard', college_slug=assigned_college.slug)
         
         college = assigned_college
+        
+        # Store user type and college info in session for consistent behavior
+        request.session['user_type'] = 'canteen_staff'
+        request.session['college_slug'] = college.slug
+        request.session['college_name'] = college.name
+        request.session['user_email'] = request.user.email
         
         # Check if user has permission (superuser can access any college)
         if not (request.user.is_superuser or is_canteen_staff(request.user, college)):
@@ -1901,7 +2179,7 @@ def canteen_decline_order(request, college_slug, order_id):
 @csrf_protect
 @rate_limit(max_requests=10, window=60)
 def canteen_update_order_status(request, college_slug, order_id):
-    """Update order status with enhanced security"""
+    """Update order status with enhanced security and notifications"""
     try:
         college = get_object_or_404(College, slug=college_slug)
         order = get_object_or_404(Order, id=order_id, college=college)
@@ -1920,38 +2198,123 @@ def canteen_update_order_status(request, college_slug, order_id):
                 return JsonResponse({'error': 'Permission denied'}, status=403)
         
         if new_status in ['In Progress', 'Ready', 'Completed']:
+            old_status = order.status
             order.status = new_status
             order.save()
             
-            # Prepare notification data for user
+            # Prepare comprehensive notification data for user
             notification_data = {
                 'success': True, 
                 'message': f'Order #{order.id} status updated to {new_status}!',
                 'order_id': order.id,
                 'new_status': new_status,
+                'old_status': old_status,
                 'user_name': order.user_name,
-                'college_name': college.name
+                'college_name': college.name,
+                'timestamp': timezone.now().isoformat(),
+                'requires_user_action': False,
+                'requires_notification': True
             }
             
-            # Add specific notification for ready status
+            # Add specific notification for ready status - requires user action
             if new_status == 'Ready':
                 notification_data['user_notification'] = {
-                    'title': 'Order Ready! 🎉',
-                    'message': f'Your order #{order.id} is ready for pickup at {college.name}!',
-                    'type': 'success'
+                    'title': '🎉 Order Ready for Pickup!',
+                    'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                    'type': 'success',
+                    'persistent': True,  # This notification won't auto-dismiss
+                    'action_required': True,
+                    'order_id': order.id,
+                    'college_name': college.name
                 }
+                notification_data['requires_user_action'] = True
+                notification_data['status_color'] = 'status-ready'
             elif new_status == 'In Progress':
                 notification_data['user_notification'] = {
-                    'title': 'Order Being Prepared 👨‍🍳',
-                    'message': f'Your order #{order.id} is being prepared at {college.name}.',
-                    'type': 'info'
+                    'title': '👨‍🍳 Order Being Prepared',
+                    'message': f'Your order #{order.id} is being prepared at {college.name}. We\'ll notify you when it\'s ready!',
+                    'type': 'info',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
                 }
+                notification_data['status_color'] = 'status-preparing'
+            elif new_status == 'Completed':
+                notification_data['user_notification'] = {
+                    'title': '✅ Order Completed',
+                    'message': f'Your order #{order.id} has been completed. Thank you for using SkipTheQueue!',
+                    'type': 'success',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['status_color'] = 'status-completed'
+            
+            # Store notification in session for the user to see
+            if order.user_phone:
+                # Create a session key for this user's notifications
+                notification_key = f'order_notification_{order.user_phone}_{order.id}'
+                request.session[notification_key] = notification_data
+                
+                # Also store in a general user notification key for easier retrieval
+                user_notification_key = f'user_notification_{order.user_phone}_{order.id}'
+                request.session[user_notification_key] = notification_data.get('user_notification', {})
+                
+                # Store the order in user's active orders for real-time tracking
+                active_orders_key = f'active_orders_{order.user_phone}'
+                active_orders = request.session.get(active_orders_key, [])
+                if order.id not in active_orders:
+                    active_orders.append(order.id)
+                    request.session[active_orders_key] = active_orders
+                
+                # Store notification in a global notifications list for real-time access
+                global_notifications_key = 'global_notifications'
+                global_notifications = request.session.get(global_notifications_key, [])
+                global_notifications.append({
+                    'user_phone': order.user_phone,
+                    'order_id': order.id,
+                    'notification': notification_data,
+                    'timestamp': timezone.now().isoformat()
+                })
+                request.session[global_notifications_key] = global_notifications
+                
+                # Store persistent notification for ready orders that won't auto-dismiss
+                if new_status == 'Ready':
+                    persistent_key = f'persistent_notification_{order.user_phone}_{order.id}'
+                    request.session[persistent_key] = {
+                        'type': 'order_ready',
+                        'title': '🎉 Order Ready for Pickup!',
+                        'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                        'order_id': order.id,
+                        'college_name': college.name,
+                        'timestamp': timezone.now().isoformat(),
+                        'persistent': True,
+                        'requires_action': True
+                    }
+                    
+                    # Also store in a user-specific persistent notifications list
+                    user_persistent_key = f'user_persistent_notifications_{order.user_phone}'
+                    user_persistent = request.session.get(user_persistent_key, [])
+                    user_persistent.append({
+                        'order_id': order.id,
+                        'type': 'order_ready',
+                        'title': '🎉 Order Ready for Pickup!',
+                        'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                        'college_name': college.name,
+                        'timestamp': timezone.now().isoformat(),
+                        'persistent': True,
+                        'requires_action': True
+                    })
+                    request.session[user_persistent_key] = user_persistent
             
             return JsonResponse(notification_data)
         else:
             return JsonResponse({'error': 'Invalid status'}, status=400)
             
     except Exception as e:
+        logger.error(f"Error updating order status: {str(e)}")
         return JsonResponse({'error': 'Error updating order status'}, status=500)
 
 @login_required(login_url='/canteen/login/')
@@ -2088,9 +2451,9 @@ def create_temp_superuser(request):
         User.objects.create_superuser(
             username='skipthequeue',
             email='skipthequeue.app@gmail.com',
-            password='Paras@999stq'
+            password='Paras@999'
         )
-        return HttpResponse("✅ Superuser created! Email: skipthequeue.app@gmail.com, Password: Paras@999stq")
+        return HttpResponse("✅ Superuser created! Email: skipthequeue.app@gmail.com, Password: Paras@999")
     return HttpResponse("❌ Superuser already exists with email: skipthequeue.app@gmail.com")
 
 def debug_canteen_staff(request):
@@ -2345,3 +2708,493 @@ def site_diagnostic(request):
         diagnostic_results['status'] = 'HEALTHY'
     
     return JsonResponse(diagnostic_results, status=200 if diagnostic_results['status'] != 'ERROR' else 500)
+
+@require_GET
+@rate_limit(max_requests=30, window=60)
+def check_order_status(request, order_id):
+    """Check order status and return notifications for real-time updates"""
+    try:
+        # Get user phone from session or request
+        user_phone = None
+        if request.user.is_authenticated:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                user_phone = user_profile.phone_number
+            except UserProfile.DoesNotExist:
+                pass
+        
+        # If no user phone, try to get from session
+        if not user_phone:
+            user_phone = request.session.get('user_phone')
+        
+        if not user_phone:
+            return JsonResponse({
+                'has_active_order': False,
+                'message': 'No user phone found'
+            })
+        
+        # Check for active orders for this user
+        active_orders = Order.objects.filter(
+            user_phone=user_phone,
+            status__in=['Paid', 'In Progress', 'Ready']
+        ).order_by('-created_at')
+        
+        if active_orders.exists():
+            current_order = active_orders.first()
+            
+            # Check for persistent notifications for this order
+            persistent_key = f'persistent_notification_{user_phone}_{current_order.id}'
+            persistent_notification = request.session.get(persistent_key)
+            
+            # Check for user-specific persistent notifications
+            user_persistent_key = f'user_persistent_notifications_{user_phone}'
+            user_persistent_notifications = request.session.get(user_persistent_key, [])
+            
+            # Find notification for current order
+            current_order_notification = None
+            for notification in user_persistent_notifications:
+                if notification.get('order_id') == current_order.id:
+                    current_order_notification = notification
+                    break
+            
+            response_data = {
+                'has_active_order': True,
+                'order': {
+                    'id': current_order.id,
+                    'status': current_order.status,
+                    'status_display': current_order.get_status_display(),
+                    'college_name': current_order.college.name,
+                    'created_at': current_order.created_at.isoformat(),
+                    'total_price': float(current_order.total_price()),
+                    'items': [
+                        {
+                            'name': item.item.name,
+                            'quantity': item.quantity,
+                            'price': float(item.item.price)
+                        } for item in current_order.order_items.all()
+                    ]
+                }
+            }
+            
+            # Add notification data if available
+            if persistent_notification:
+                response_data['persistent_notification'] = persistent_notification
+                response_data['requires_user_action'] = persistent_notification.get('requires_action', False)
+            
+            if current_order_notification:
+                response_data['user_notification'] = current_order_notification
+                response_data['requires_user_action'] = current_order_notification.get('requires_action', False)
+            
+            # Add status-specific information
+            if current_order.status == 'Ready':
+                response_data['order']['status_message'] = f'Your order #{current_order.id} is ready for pickup at {current_order.college.name}!'
+                response_data['order']['status_icon'] = '🎉'
+                response_data['order']['status_color'] = 'status-ready'
+            elif current_order.status == 'In Progress':
+                response_data['order']['status_message'] = f'Your order #{current_order.id} is being prepared at {current_order.college.name}.'
+                response_data['order']['status_icon'] = '👨‍🍳'
+                response_data['order']['status_color'] = 'status-preparing'
+            elif current_order.status == 'Paid':
+                response_data['order']['status_message'] = f'Your order #{current_order.id} has been confirmed and is being prepared.'
+                response_data['order']['status_icon'] = '✅'
+                response_data['order']['status_color'] = 'status-confirmed'
+            
+            return JsonResponse(response_data)
+        else:
+            # Check if there are any persistent notifications that should be shown
+            user_persistent_key = f'user_persistent_notifications_{user_phone}'
+            user_persistent_notifications = request.session.get(user_persistent_key, [])
+            
+            if user_persistent_notifications:
+                # Return the most recent persistent notification
+                latest_notification = user_persistent_notifications[-1]
+                return JsonResponse({
+                    'has_active_order': False,
+                    'has_persistent_notification': True,
+                    'persistent_notification': latest_notification,
+                    'requires_user_action': latest_notification.get('requires_action', False)
+                })
+            
+            return JsonResponse({
+                'has_active_order': False,
+                'message': 'No active orders found'
+            })
+            
+    except Exception as e:
+        logger.error(f"Error checking order status: {str(e)}")
+        return JsonResponse({
+            'error': 'Error checking order status',
+            'message': str(e)
+        }, status=500)
+
+@require_GET
+@rate_limit(max_requests=30, window=60)
+def check_notifications(request):
+    """Check for new notifications for the current user"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({
+                'notifications': [],
+                'has_notifications': False
+            })
+        
+        # Get user phone from session or user profile
+        user_phone = request.session.get('user_phone')
+        if not user_phone:
+            return JsonResponse({
+                'notifications': [],
+                'has_notifications': False
+            })
+        
+        # Get active orders for this user
+        active_orders = Order.objects.filter(
+            user_phone=user_phone,
+            status__in=['Pending', 'Payment Pending', 'Paid', 'In Progress', 'Ready']
+        ).order_by('-created_at')
+        
+        notifications = []
+        
+        for order in active_orders:
+            # Check if order status has changed recently
+            if order.updated_at and (timezone.now() - order.updated_at).seconds < 300:  # 5 minutes
+                notification = {
+                    'id': f'order_{order.id}',
+                    'type': 'info',
+                    'title': 'Order Update',
+                    'message': f'Order #{order.id} status: {order.status}',
+                    'order_id': order.id,
+                    'status': order.status,
+                    'timestamp': order.updated_at.isoformat(),
+                    'persistent': order.status == 'Ready'
+                }
+                notifications.append(notification)
+        
+        return JsonResponse({
+            'notifications': notifications,
+            'has_notifications': len(notifications) > 0
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking notifications: {str(e)}")
+        return JsonResponse({
+            'error': 'Failed to check notifications',
+            'notifications': [],
+            'has_notifications': False
+        }, status=500)
+
+@require_POST
+@rate_limit(max_requests=10, window=60)
+def dismiss_notification(request, order_id):
+    """Dismiss a notification for a specific order"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        # Get user phone from session
+        user_phone = request.session.get('user_phone')
+        if not user_phone:
+            return JsonResponse({'error': 'User phone not found'}, status=400)
+        
+        # Verify the order belongs to this user
+        try:
+            order = Order.objects.get(
+                id=order_id,
+                user_phone=user_phone
+            )
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Order not found'}, status=404)
+        
+        # Mark notification as dismissed in session
+        dismissed_notifications = request.session.get('dismissed_notifications', [])
+        if order_id not in dismissed_notifications:
+            dismissed_notifications.append(order_id)
+            request.session['dismissed_notifications'] = dismissed_notifications
+            request.session.modified = True
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Notification dismissed'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error dismissing notification: {str(e)}")
+        return JsonResponse({
+            'error': 'Failed to dismiss notification'
+        }, status=500)
+
+@require_POST
+@rate_limit(max_requests=20, window=60)
+def update_order_status(request, order_id):
+    """Update order status (for canteen staff)"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        # Check if user is canteen staff
+        if not hasattr(request.user, 'canteenstaff'):
+            return JsonResponse({'error': 'Access denied'}, status=403)
+        
+        # Get the order
+        try:
+            order = Order.objects.get(id=order_id)
+        except Order.DoesNotExist:
+            return JsonResponse({'error': 'Order not found'}, status=404)
+        
+        # Verify the order belongs to this canteen staff's college
+        if order.college != request.user.canteenstaff.college:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+        
+        # Get new status from request
+        new_status = request.POST.get('status')
+        if not new_status:
+            return JsonResponse({'error': 'Status is required'}, status=400)
+        
+        # Validate status
+        valid_statuses = ['Pending', 'Payment Pending', 'Paid', 'In Progress', 'Ready', 'Completed', 'Cancelled']
+        if new_status not in valid_statuses:
+            return JsonResponse({'error': 'Invalid status'}, status=400)
+        
+        # Update order status
+        old_status = order.status
+        order.status = new_status
+        order.updated_at = timezone.now()
+        order.save()
+        
+        # Log the status change
+        logger.info(f"Order {order_id} status changed from {old_status} to {new_status} by {request.user.email}")
+        
+        # Send notification to user if status is 'Ready'
+        if new_status == 'Ready':
+            # Store notification in session for the user
+            notification_data = {
+                'order_id': order.id,
+                'status': new_status,
+                'college_name': order.college.name,
+                'timestamp': order.updated_at.isoformat(),
+                'message': f'Order #{order.id} is ready for pickup!'
+            }
+            
+            # This will be picked up by the notification system when user checks
+            # Store in a way that can be accessed by the user's session
+            try:
+                # Try to store in a shared cache or database field
+                order.notification_data = notification_data
+                order.save(update_fields=['notification_data'])
+            except:
+                # Fallback: store in a simple way
+                pass
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Order status updated to {new_status}',
+            'order': {
+                'id': order.id,
+                'status': order.status,
+                'updated_at': order.updated_at.isoformat()
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error updating order status: {str(e)}")
+        return JsonResponse({
+            'error': 'Failed to update order status'
+        }, status=500)
+
+@login_required
+def check_order_status_main(request):
+    """Check order status for the current user's active orders"""
+    try:
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        # Get user's phone number from profile or session
+        user_phone = None
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            user_phone = user_profile.phone_number
+        except UserProfile.DoesNotExist:
+            user_phone = request.session.get('user_phone')
+        
+        if not user_phone:
+            return JsonResponse({'error': 'Phone number not found'}, status=400)
+        
+        # Check for active orders
+        active_orders = Order.objects.filter(
+            user_phone=user_phone,
+            status__in=['Pending', 'Payment_Pending', 'Paid', 'In Progress', 'Ready']
+        ).order_by('-created_at')
+        
+        if active_orders.exists():
+            # Get the most recent active order
+            current_order = active_orders.first()
+            
+            # Check for pending notifications
+            notification_key = f'order_notification_{user_phone}_{current_order.id}'
+            pending_notification = request.session.get(notification_key, None)
+            
+            response_data = {
+                'has_active_order': True,
+                'order': {
+                    'id': current_order.id,
+                    'status': current_order.status,
+                    'status_color': current_order.get_status_color(),
+                    'created_at': current_order.created_at.isoformat(),
+                    'college_name': current_order.college.name,
+                    'total_amount': float(current_order.total_price()),
+                    'items_count': current_order.order_items.count()
+                },
+                'requires_notification': False,
+                'notification_data': None
+            }
+            
+            # If there's a pending notification, include it
+            if pending_notification:
+                response_data['requires_notification'] = True
+                response_data['notification_data'] = pending_notification
+                
+                # Clear the notification from session after sending it (except for persistent ones)
+                if not pending_notification.get('persistent', False):
+                    request.session.pop(notification_key, None)
+            
+            # Check if order status requires immediate notification
+            elif current_order.status == 'Ready':
+                response_data['requires_notification'] = True
+                response_data['notification_data'] = {
+                    'title': '🎉 Order Ready for Pickup!',
+                    'message': f'Your order #{current_order.id} is ready for pickup at {current_order.college.name}. Please collect it from the canteen.',
+                    'type': 'success',
+                    'persistent': True,
+                    'action_required': True,
+                    'order_id': current_order.id,
+                    'college_name': current_order.college.name,
+                    'timestamp': timezone.now().isoformat()
+                }
+            
+            elif current_order.status == 'In Progress':
+                response_data['requires_notification'] = True
+                response_data['notification_data'] = {
+                    'title': '👨‍🍳 Order Being Prepared',
+                    'message': f'Your order #{current_order.id} is being prepared at {current_order.college.name}. We\'ll notify you when it\'s ready!',
+                    'type': 'info',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': current_order.id,
+                    'college_name': current_order.college.name,
+                    'timestamp': timezone.now().isoformat()
+                }
+            
+            return JsonResponse(response_data)
+        else:
+            # No active orders
+            return JsonResponse({
+                'has_active_order': False,
+                'order': None,
+                'requires_notification': False,
+                'notification_data': None
+            })
+            
+    except Exception as e:
+        logger.error(f"Error checking order status: {str(e)}")
+        return JsonResponse({'error': 'Error checking order status'}, status=500)
+
+@require_GET
+@rate_limit(max_requests=30, window=60)
+def check_order_status_by_phone(request, user_phone):
+    """Check order status by user phone number for real-time notifications"""
+    try:
+        # Get active orders for this user
+        active_orders = Order.objects.filter(
+            user_phone=user_phone,
+            status__in=['Pending', 'Payment Pending', 'Paid', 'In Progress', 'Ready']
+        ).order_by('-created_at')
+        
+        if not active_orders.exists():
+            return JsonResponse({
+                'has_active_order': False,
+                'notifications': []
+            })
+        
+        # Get the most recent active order
+        latest_order = active_orders.first()
+        
+        # Check for notifications in session
+        notifications = []
+        persistent_notifications = []
+        
+        # Check for persistent notifications (order ready)
+        persistent_key = f'persistent_notification_{user_phone}_{latest_order.id}'
+        if request.session.get(persistent_key):
+            persistent_notifications.append(request.session[persistent_key])
+        
+        # Check for regular notifications
+        notification_key = f'order_notification_{user_phone}_{latest_order.id}'
+        if request.session.get(notification_key):
+            notifications.append(request.session[notification_key])
+        
+        return JsonResponse({
+            'has_active_order': True,
+            'order_id': latest_order.id,
+            'order_status': latest_order.status,
+            'college_name': latest_order.college.name,
+            'notifications': notifications,
+            'persistent_notifications': persistent_notifications,
+            'status_color': latest_order.get_status_color() if hasattr(latest_order, 'get_status_color') else 'status-default'
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking order status by phone: {str(e)}")
+        return JsonResponse({
+            'error': 'Error checking order status',
+            'has_active_order': False
+        }, status=500)
+
+@require_GET
+@rate_limit(max_requests=30, window=60)
+def order_status_update(request, order_id):
+    """Get real-time order status update for a specific order"""
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user has permission to view this order
+        if not request.user.is_authenticated:
+            return JsonResponse({'error': 'Authentication required'}, status=401)
+        
+        # Allow canteen staff, college admin, super admin, or the order owner
+        can_view = False
+        if request.user.is_superuser:
+            can_view = True
+        elif hasattr(request.user, 'canteenstaff') and request.user.canteenstaff.college == order.college:
+            can_view = True
+        elif hasattr(order.college, 'admin_email') and order.college.admin_email == request.user.email:
+            can_view = True
+        elif hasattr(request.user, 'userprofile') and request.user.userprofile.phone_number == order.user_phone:
+            can_view = True
+        
+        if not can_view:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+        
+        return JsonResponse({
+            'order_id': order.id,
+            'status': order.status,
+            'status_color': order.get_status_color() if hasattr(order, 'get_status_color') else 'status-default',
+            'created_at': order.created_at.isoformat(),
+            'updated_at': order.updated_at.isoformat() if hasattr(order, 'updated_at') else order.created_at.isoformat(),
+            'college_name': order.college.name,
+            'user_name': order.user_name,
+            'total_price': float(order.total_price()),
+            'items': [
+                {
+                    'name': item.menu_item.name,
+                    'quantity': item.quantity,
+                    'price': float(item.menu_item.price)
+                } for item in order.orderitem_set.all()
+            ]
+        })
+        
+    except Exception as e:
+        logger.error(f"Error getting order status update: {str(e)}")
+        return JsonResponse({'error': 'Error getting order status'}, status=500)
+
+
+
+

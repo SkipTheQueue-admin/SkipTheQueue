@@ -16,10 +16,10 @@ class Command(BaseCommand):
         user = User.objects.create_superuser(
             username='skipthequeue',
             email='skipthequeue.app@gmail.com',
-            password='SkipTheQueue2024!'
+            password='Paras@999'
         )
         
         self.stdout.write(
             self.style.SUCCESS(f'Successfully created superuser: {user.username} ({user.email})')
         )
-        self.stdout.write('Password: SkipTheQueue2024!') 
+        self.stdout.write('Password: Paras@999') 

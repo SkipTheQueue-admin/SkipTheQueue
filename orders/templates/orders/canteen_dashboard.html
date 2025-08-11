@@ -277,7 +277,7 @@ function acceptOrder(orderId) {
 // Mark order as ready
 function markReady(orderId) {
   const formData = new FormData();
-  formData.append('status', 'Ready');
+  formData.append('status', 'ready');
   formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
   
   fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
@@ -285,24 +285,22 @@ function markReady(orderId) {
     body: formData
   }).then(response => {
     if (response.ok) {
-      showNotification('Order marked as ready!');
-      // Trigger global notification for user
-      if (typeof showGlobalNotification === 'function') {
-        showGlobalNotification(
-          'Order Ready! 🎉', 
-          'Your order is ready for pickup! Please collect it from the canteen.', 
-          'success'
-        );
-      }
+      showNotification('Order marked as ready! User will be notified.');
+      // The notification system will automatically show the order ready popup to the user
       setTimeout(() => location.reload(), 1000);
+    } else {
+      showNotification('Error updating order status. Please try again.');
     }
+  }).catch(error => {
+    console.error('Error:', error);
+    showNotification('Error updating order status. Please try again.');
   });
 }
 
-// Complete order
-function completeOrder(orderId) {
+// Mark order as preparing
+function markPreparing(orderId) {
   const formData = new FormData();
-  formData.append('status', 'Completed');
+  formData.append('status', 'preparing');
   formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
   
   fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
@@ -310,9 +308,36 @@ function completeOrder(orderId) {
     body: formData
   }).then(response => {
     if (response.ok) {
-      showNotification('Order completed!');
+      showNotification('Order marked as preparing!');
       setTimeout(() => location.reload(), 1000);
+    } else {
+      showNotification('Error updating order status. Please try again.');
     }
+  }).catch(error => {
+    console.error('Error:', error);
+    showNotification('Error updating order status. Please try again.');
+  });
+}
+
+// Mark order as completed
+function markCompleted(orderId) {
+  const formData = new FormData();
+  formData.append('status', 'completed');
+  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+  
+  fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
+    method: 'POST',
+    body: formData
+  }).then(response => {
+    if (response.ok) {
+      showNotification('Order marked as completed!');
+      setTimeout(() => location.reload(), 1000);
+    } else {
+      showNotification('Error updating order status. Please try again.');
+    }
+  }).catch(error => {
+    console.error('Error:', error);
+    showNotification('Error updating order status. Please try again.');
   });
 }
 
@@ -376,7 +401,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     var completeBtn = document.getElementById('complete-order-btn-' + id);
     if (completeBtn) {
-      completeBtn.addEventListener('click', function() { completeOrder(id); });
+      completeBtn.addEventListener('click', function() { markCompleted(id); });
     }
     var declineBtn = document.getElementById('decline-order-btn-' + id);
     if (declineBtn) {

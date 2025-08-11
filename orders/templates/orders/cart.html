@@ -7,7 +7,7 @@
 
 <!-- Fallback for non-JS users: visible remove/decrement/increment forms -->
 <noscript>
-  <div class="bg-red-100 text-red-800 p-4 rounded mb-4">JavaScript is required for cart updates. Please enable JavaScript.</div>
+  <div style="background-color: #fee2e2; color: #991b1b; padding: 1rem; border-radius: 0.25rem; margin-bottom: 1rem;">JavaScript is required for cart updates. Please enable JavaScript.</div>
   <div>
     {% for entry in cart_items %}
       <form method="post" action="{% url 'update_cart' entry.item.id %}" style="display:inline;">
@@ -30,90 +30,90 @@
 </noscript>
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
+<div style="min-height: 100vh; background-color: #f9fafb;">
   <!-- Hidden CSRF Token Form (duplicate for safety) -->
   <form id="csrf-form-2" style="display: none;">
     {% csrf_token %}
   </form>
 
   <!-- Header -->
-  <div class="bg-white shadow-sm border-b">
-    <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="flex items-center justify-between">
+  <div style="background-color: white; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border-bottom: 1px solid #e5e7eb;">
+    <div style="max-width: 80rem; margin: 0 auto; padding: 1.5rem 1rem;">
+      <div style="display: flex; align-items: center; justify-content: space-between;">
         <div>
-          <h1 class="text-3xl font-bold text-gray-900">Shopping Cart</h1>
-          <p class="text-gray-600 mt-1"><span id="cart-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }}</p>
+          <h1 style="font-size: 1.875rem; font-weight: 700; color: #111827;">Shopping Cart</h1>
+          <p style="color: #4b5563; margin-top: 0.25rem;"><span id="cart-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }}</p>
         </div>
         
-        <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+        <a href="{% url 'menu' %}" class="btn btn-primary">
           Continue Shopping
         </a>
       </div>
     </div>
   </div>
 
-  <div class="max-w-4xl mx-auto px-4 py-8">
+  <div style="max-width: 64rem; margin: 0 auto; padding: 2rem 1rem;">
     {% if cart_items %}
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div style="display: grid; grid-template-columns: 1fr; gap: 2rem;">
         <!-- Cart Items -->
-        <div class="lg:col-span-2">
-          <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-200">
-              <h2 class="text-xl font-semibold text-gray-900">Cart Items</h2>
+        <div style="grid-column: span 1;">
+          <div class="card">
+            <div style="padding: 1.5rem; border-bottom: 1px solid #e5e7eb;">
+              <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827;">Cart Items</h2>
             </div>
             
-            <div id="cart-items-container" class="divide-y divide-gray-200">
+            <div id="cart-items-container" style="border-top: 1px solid #e5e7eb;">
               {% for entry in cart_items %}
-                <div class="p-6 hover:bg-gray-50 transition duration-200" data-item-id="{{ entry.item.id }}">
-                  <div class="flex items-center space-x-4">
+                <div style="padding: 1.5rem; transition: background-color 0.2s ease;" data-item-id="{{ entry.item.id }}">
+                  <div style="display: flex; align-items: center; gap: 1rem;">
                     <!-- Item Image Placeholder -->
-                    <div class="w-20 h-20 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                      <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div style="width: 5rem; height: 5rem; background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 100%); border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                      <svg style="width: 2rem; height: 2rem; color: #60a5fa;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                       </svg>
                     </div>
                     
                     <!-- Item Details -->
-                    <div class="flex-1 min-w-0">
-                      <h3 class="text-lg font-semibold text-gray-900 truncate">{{ entry.item.name }}</h3>
+                    <div style="flex: 1; min-width: 0;">
+                      <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ entry.item.name }}</h3>
                       {% if entry.item.description %}
-                        <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ entry.item.description }}</p>
+                        <p style="font-size: 0.875rem; color: #4b5563; margin-top: 0.25rem; display: -webkit-box; -webkit-box-orient: vertical; overflow: hidden; -webkit-line-clamp: 2; line-clamp: 2;">{{ entry.item.description }}</p>
                       {% endif %}
-                      <p class="text-blue-600 font-semibold mt-2">₹{{ entry.item.price }} each</p>
+                      <p style="color: #2563eb; font-weight: 600; margin-top: 0.5rem;">₹{{ entry.item.price }} each</p>
                       
                       <!-- Stock Status -->
                       {% if entry.item.is_stock_managed %}
-                        <p class="text-xs text-gray-500 mt-1">
+                        <p style="font-size: 0.75rem; color: #6b7280; margin-top: 0.25rem;">
                           Stock: {{ entry.item.stock_quantity }} available
                         </p>
                       {% endif %}
                     </div>
                     
                     <!-- Quantity Controls -->
-                    <div class="flex items-center space-x-3">
-                      <button class="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-full flex items-center justify-center transition duration-200" data-action="decrease" data-item-id="{{ entry.item.id }}">
-                        <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                      <button style="width: 2rem; height: 2rem; background-color: #e5e7eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease;" data-action="decrease" data-item-id="{{ entry.item.id }}">
+                        <svg style="width: 1rem; height: 1rem; color: #4b5563;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
                         </svg>
                       </button>
                       
-                      <span class="text-lg font-semibold text-gray-900 min-w-[2rem] text-center quantity-display" data-item-id="{{ entry.item.id }}">{{ entry.quantity }}</span>
+                      <span style="font-size: 1.125rem; font-weight: 600; color: #111827; min-width: 2rem; text-align: center;" class="quantity-display" data-item-id="{{ entry.item.id }}">{{ entry.quantity }}</span>
                       
-                      <button class="w-8 h-8 bg-blue-100 hover:bg-blue-200 rounded-full flex items-center justify-center transition duration-200" data-action="increase" data-item-id="{{ entry.item.id }}">
-                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <button style="width: 2rem; height: 2rem; background-color: #dbeafe; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background-color 0.2s ease;" data-action="increase" data-item-id="{{ entry.item.id }}">
+                        <svg style="width: 1rem; height: 1rem; color: #2563eb;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
                       </button>
                     </div>
                     
                     <!-- Item Total -->
-                    <div class="text-right">
-                      <p class="text-lg font-bold text-gray-900 item-total" data-item-id="{{ entry.item.id }}">₹{{ entry.total|floatformat:2 }}</p>
+                    <div style="text-align: right;">
+                      <p style="font-size: 1.125rem; font-weight: 700; color: #111827;" class="item-total" data-item-id="{{ entry.item.id }}">₹{{ entry.total|floatformat:2 }}</p>
                     </div>
                     
                     <!-- Remove Button -->
-                    <button class="ml-4 text-red-500 hover:text-red-700 transition duration-200 p-2" data-action="remove" data-item-id="{{ entry.item.id }}">
-                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <button style="margin-left: 1rem; color: #ef4444; transition: color 0.2s ease; padding: 0.5rem;" data-action="remove" data-item-id="{{ entry.item.id }}">
+                      <svg style="width: 1.25rem; height: 1.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                       </svg>
                     </button>
@@ -125,37 +125,37 @@
         </div>
         
         <!-- Order Summary -->
-        <div class="lg:col-span-1">
-          <div class="bg-white rounded-lg shadow-md p-6 sticky top-4">
-            <h2 class="text-xl font-semibold text-gray-900 mb-4">Order Summary</h2>
+        <div style="grid-column: span 1;">
+          <div class="card" style="position: sticky; top: 1rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Order Summary</h2>
             
-            <div class="space-y-3 mb-6">
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Subtotal (<span id="summary-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }})</span>
-                <span class="font-medium">₹<span id="summary-total">{{ total|floatformat:2 }}</span></span>
+            <div style="margin-bottom: 1.5rem;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                <span style="color: #4b5563;">Subtotal (<span id="summary-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }})</span>
+                <span style="font-weight: 500;">₹<span id="summary-total">{{ total|floatformat:2 }}</span></span>
               </div>
               
-              <div class="flex justify-between text-sm">
-                <span class="text-gray-600">Service Charge</span>
-                <span class="font-medium">₹0.00</span>
+              <div style="display: flex; justify-content: space-between; font-size: 0.875rem; margin-bottom: 0.75rem;">
+                <span style="color: #4b5563;">Service Charge</span>
+                <span style="font-weight: 500;">₹0.00</span>
               </div>
               
-              <div class="border-t border-gray-200 pt-3">
-                <div class="flex justify-between text-lg font-bold">
+              <div style="border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
+                <div style="display: flex; justify-content: space-between; font-size: 1.125rem; font-weight: 700;">
                   <span>Total</span>
-                  <span class="text-blue-600">₹<span id="summary-grand-total">{{ total|floatformat:2 }}</span></span>
+                  <span style="color: #2563eb;">₹<span id="summary-grand-total">{{ total|floatformat:2 }}</span></span>
                 </div>
               </div>
             </div>
             
             <!-- Payment Options Info -->
             {% if college %}
-              <div class="bg-blue-50 rounded-lg p-4 mb-6">
-                <h3 class="text-sm font-semibold text-blue-900 mb-2">Payment Options</h3>
-                <div class="space-y-2 text-sm text-blue-800">
+              <div style="background-color: #eff6ff; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1.5rem;">
+                <h3 style="font-size: 0.875rem; font-weight: 600; color: #1e40af; margin-bottom: 0.5rem;">Payment Options</h3>
+                <div style="margin-bottom: 0.5rem; font-size: 0.875rem; color: #1e40af;">
                   {% if college.payment_gateway_enabled %}
-                    <div class="flex items-center">
-                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                      <svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                       Online Payment Available
@@ -163,8 +163,8 @@
                   {% endif %}
                   
                   {% if college.allow_pay_later %}
-                    <div class="flex items-center">
-                      <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div style="display: flex; align-items: center; margin-bottom: 0.5rem;">
+                      <svg style="width: 1rem; height: 1rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                       Pay Later with Cash Available
@@ -176,23 +176,23 @@
             
             <!-- Place Order Button -->
             {% if user_authenticated %}
-              <a href="{% url 'collect_phone' %}" class="w-full bg-green-600 text-white py-4 px-6 rounded-lg hover:bg-green-700 transition duration-300 font-semibold text-lg flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <a href="{% url 'collect_phone' %}" class="btn btn-success" style="width: 100%; padding: 1rem 1.5rem; font-weight: 600; font-size: 1.125rem; display: flex; align-items: center; justify-content: center;">
+                <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                 </svg>
                 Proceed to Order
               </a>
             {% else %}
-              <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                <div class="flex items-center">
-                  <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div style="background-color: #fef3c7; border: 1px solid #fde68a; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center;">
+                  <svg style="width: 1.25rem; height: 1.25rem; color: #d97706; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
                   </svg>
-                  <span class="text-sm text-yellow-800">Login required to place order</span>
+                  <span style="font-size: 0.875rem; color: #92400e;">Login required to place order</span>
                 </div>
               </div>
-              <a href="{% url 'custom_login' %}?next={{ request.path }}" class="w-full bg-blue-600 text-white py-4 px-6 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold text-lg flex items-center justify-center">
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <a href="{% url 'custom_login' %}?next={{ request.path }}" class="btn btn-primary" style="width: 100%; padding: 1rem 1.5rem; font-weight: 600; font-size: 1.125rem; display: flex; align-items: center; justify-content: center;">
+                <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path>
                 </svg>
                 Login to Continue
@@ -200,8 +200,8 @@
             {% endif %}
             
             <!-- Continue Shopping -->
-            <div class="mt-4 text-center">
-              <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+            <div style="margin-top: 1rem; text-align: center;">
+              <a href="{% url 'menu' %}" style="color: #2563eb; font-size: 0.875rem; font-weight: 500;">
                 ← Continue Shopping
               </a>
             </div>
@@ -210,17 +210,17 @@
       </div>
     {% else %}
       <!-- Empty Cart -->
-      <div class="text-center py-16">
-        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div style="text-align: center; padding: 4rem 0;">
+        <div style="width: 6rem; height: 6rem; background-color: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.5rem;">
+          <svg style="width: 3rem; height: 3rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
           </svg>
         </div>
         
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">Your cart is empty</h3>
-        <p class="text-gray-500 mb-8">Looks like you haven't added any items to your cart yet.</p>
+        <h3 style="font-size: 1.25rem; font-weight: 600; color: #4b5563; margin-bottom: 0.5rem;">Your cart is empty</h3>
+        <p style="color: #6b7280; margin-bottom: 2rem;">Looks like you haven't added any items to your cart yet.</p>
         
-        <a href="{% url 'menu' %}" class="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-semibold">
+        <a href="{% url 'menu' %}" class="btn btn-primary" style="display: inline-block; padding: 0.75rem 2rem;">
           Start Shopping
         </a>
       </div>
@@ -229,9 +229,9 @@
 </div>
 
 <!-- Success Notification -->
-<div id="successNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
-  <div class="flex items-center">
-    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="successNotification" style="position: fixed; top: 1rem; right: 1rem; background-color: #10b981; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: translateX(100%); transition: transform 0.3s ease; z-index: 50;">
+  <div style="display: flex; align-items: center;">
+    <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
     </svg>
     <span id="successMessage">Action completed successfully!</span>
@@ -239,9 +239,9 @@
 </div>
 
 <!-- Error Notification -->
-<div id="errorNotification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
-  <div class="flex items-center">
-    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div id="errorNotification" style="position: fixed; top: 1rem; right: 1rem; background-color: #dc2626; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); transform: translateX(100%); transition: transform 0.3s ease; z-index: 50;">
+  <div style="display: flex; align-items: center;">
+    <svg style="width: 1.25rem; height: 1.25rem; margin-right: 0.5rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
     </svg>
     <span id="errorMessage">An error occurred!</span>
@@ -364,22 +364,13 @@ function showNotification(type, message) {
     document.getElementById('errorMessage');
   
   messageElement.textContent = message;
-  notification.classList.remove('translate-x-full');
+  notification.style.transform = 'translateX(0)';
   
   setTimeout(() => {
-    notification.classList.add('translate-x-full');
+    notification.style.transform = 'translateX(100%)';
   }, 3000);
 }
 </script>
 
-<style>
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-}
-</style>
 {% endblock %}
 

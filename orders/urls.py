@@ -54,6 +54,16 @@ urlpatterns = [
     # API endpoints
     path('api/orders/<slug:college_slug>/', views.get_orders_json, name='get_orders_json'),
     path('api/update_cart/<int:item_id>/', views.update_cart_api, name='update_cart_api'),
+    path('api/check-order-status/<int:order_id>/', views.check_order_status, name='check_order_status'),
+    path('check-order-status/', views.check_order_status_main, name='check_order_status_main'),
+    path('check-notifications/', views.check_notifications, name='check_notifications'),
+    path('api/update-order-status/<int:order_id>/', views.update_order_status, name='update_order_status'),
+    path('api/dismiss-notification/<int:order_id>/', views.dismiss_notification, name='dismiss_notification'),
+    
+    # Notification and order status endpoints
+    path('check-order-status/<str:user_phone>/', views.check_order_status_by_phone, name='check_order_status_by_phone'),
+    path('dismiss-notification/<int:order_id>/', views.dismiss_notification, name='dismiss_notification'),
+    path('order-status-update/<int:order_id>/', views.order_status_update, name='order_status_update'),
     
     # PWA
     path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
