@@ -1,15 +1,15 @@
 // SkipTheQueue Service Worker
-// Version: 1.0.0
+// Version: 1.0.1 - Fixed static file references
 
-const CACHE_NAME = 'skipthequeue-v1';
+const CACHE_NAME = 'skipthequeue-v1.1';
 const STATIC_CACHE = 'skipqueue-static-v1.0.0';
 const DYNAMIC_CACHE = 'skipqueue-dynamic-v1.0.0';
 
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/static/css/style.css',
-  '/static/js/app.js',
+  '/static/css/main.css',
+  '/static/js/notifications.js',
   '/static/images/zap-icon.svg',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
@@ -43,6 +43,13 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
+    }).then(() => {
+      // Force all clients to reload to get the new service worker
+      return self.clients.matchAll().then(clients => {
+        clients.forEach(client => {
+          client.postMessage({ type: 'RELOAD_PAGE' });
+        });
+      });
     })
   );
 });
@@ -142,6 +149,13 @@ async function syncOrder(order) {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === 'RELOAD_PAGE') {
+    self.clients.matchAll().then(clients => {
+      clients.forEach(client => {
+        client.navigate(client.url);
+      });
+    });
   }
 });
 

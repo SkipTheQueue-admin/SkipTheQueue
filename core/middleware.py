@@ -65,20 +65,20 @@ class SecurityMiddleware(MiddlewareMixin):
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
         response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
         
-        # Content Security Policy
+        # Content Security Policy - allow Font Awesome CDN and inline for our templates
         csp_policy = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.google-analytics.com https://www.googletagmanager.com; "
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-            "font-src 'self' https://fonts.gstatic.com; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
+            "font-src 'self' https://cdnjs.cloudflare.com data:; "
             "img-src 'self' data: https:; "
-            "connect-src 'self' https://www.google-analytics.com; "
+            "connect-src 'self'; "
             "frame-ancestors 'none';"
         )
         response['Content-Security-Policy'] = csp_policy
         
         # HSTS header (only for HTTPS)
-        if not settings.DEBUG and request.is_secure():
+        if not settings.DEBUG and getattr(request, 'is_secure', lambda: False)():
             response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
         
         return response
@@ -115,71 +115,14 @@ class AuthenticationMiddleware(MiddlewareMixin):
         
         # Check for SQL injection attempts
         suspicious_patterns = [
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)',
-            r'(\b(and|or)\b\s+\d+\s*=\s*\d+)',
-            r'(\b(and|or)\b\s+\'\w+\'\s*=\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\w+)',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\w+)',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s+\w+\s+and\s+\w+)',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*is\s+null)',
-            r'(\b(and|or)\b\s+\w+\s*is\s+not\s+null)',
-            r'(\b(and|or)\b\s+\w+\s*=\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(\'\w+\'\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(\'\w+\'\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s+\'\w+\'\s+and\s+\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s+\'\w+\'\s+and\s+\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)'
         ]
         
-        # Check query parameters
         for key, value in request.GET.items():
             for pattern in suspicious_patterns:
                 if re.search(pattern, str(value), re.IGNORECASE):
                     return True
         
-        # Check POST data
         if request.method == 'POST':
             for key, value in request.POST.items():
                 for pattern in suspicious_patterns:
@@ -191,16 +134,13 @@ class AuthenticationMiddleware(MiddlewareMixin):
     def _validate_user_session(self, request):
         """Validate user session security"""
         
-        # Check if user is still active
         if not request.user.is_active:
             return False
         
-        # Check session security hash
         security_hash = request.session.get('_security_hash')
         if not security_hash:
             return False
         
-        # Verify security hash
         expected_hash = SecurityValidator.generate_secure_token({
             'user_id': request.user.id,
             'ip': request.META.get('REMOTE_ADDR', ''),
@@ -213,38 +153,28 @@ class LoggingMiddleware(MiddlewareMixin):
     """Enhanced logging middleware"""
     
     def process_request(self, request):
-        """Log incoming requests"""
         request.start_time = time.time()
-        
-        # Log request details
         logger.info(
             f"Request: {request.method} {request.path} "
             f"from {request.META.get('REMOTE_ADDR', 'unknown')} "
             f"User: {request.user.username if request.user.is_authenticated else 'Anonymous'}"
         )
-        
         return None
     
     def process_response(self, request, response):
-        """Log response details"""
-        
         if hasattr(request, 'start_time'):
             duration = time.time() - request.start_time
-            
             logger.info(
                 f"Response: {response.status_code} "
                 f"Duration: {duration:.3f}s "
                 f"for {request.method} {request.path}"
             )
-        
         return response
     
     def process_exception(self, request, exception):
-        """Log exceptions"""
         logger.error(
             f"Exception: {type(exception).__name__}: {str(exception)} "
             f"for {request.method} {request.path} "
             f"from {request.META.get('REMOTE_ADDR', 'unknown')}"
         )
-        
         return None 

@@ -12,8 +12,8 @@
     <meta name="apple-mobile-web-app-title" content="SkipTheQueue">
     <title>{% block title %}SkipTheQueue{% endblock %}</title>
     
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="{% static 'manifest.json' %}">
+    <!-- PWA Manifest via routed endpoint -->
+    <link rel="manifest" href="{% url 'pwa_manifest' %}">
     
     <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="96x96" href="{% static 'images/icon-96x96.png' %}">
@@ -82,9 +82,15 @@
                                         <i class="fas fa-crown"></i> Super Admin
                                     </a>
                                 {% elif user.is_staff %}
-                                    <a href="{% url 'canteen_dashboard' %}" class="dropdown-item">
-                                        <i class="fas fa-utensils"></i> Canteen Dashboard
-                                    </a>
+                                    {% if request.session.college_slug %}
+                                        <a href="{% url 'canteen_staff_dashboard' college_slug=request.session.college_slug %}" class="dropdown-item">
+                                            <i class="fas fa-utensils"></i> Canteen Dashboard
+                                        </a>
+                                    {% else %}
+                                        <a href="{% url 'canteen_staff_login' %}" class="dropdown-item">
+                                            <i class="fas fa-utensils"></i> Canteen Login
+                                        </a>
+                                    {% endif %}
                                 {% else %}
                                     <a href="{% url 'order_history' %}" class="dropdown-item">
                                         <i class="fas fa-history"></i> Order History
@@ -335,10 +341,10 @@
             });
         }
 
-        // Service Worker Registration for PWA
+        // Service Worker Registration for PWA (use routed endpoint at root)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
-                navigator.serviceWorker.register('{% static "sw.js" %}')
+                navigator.serviceWorker.register('{% url "pwa_service_worker" %}')
                     .then(function(registration) {
                         console.log('ServiceWorker registration successful');
                         

@@ -1,6 +1,7 @@
 from django.urls import path, include
 from . import views
-from .views import test_auth, collect_phone, create_temp_superuser, debug_canteen_staff
+from django.conf import settings
+from .views import test_auth, collect_phone
 
 urlpatterns = [
     # Core pages
@@ -16,6 +17,7 @@ urlpatterns = [
     # Cart operations
     path('add-to-cart/<int:item_id>/', views.add_to_cart, name='add_to_cart'),
     path('remove_from_cart/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
+    path('update-cart/<int:item_id>/', views.update_cart, name='update_cart'),
     
     # Favorite operations
     path('toggle-favorite/<int:item_id>/', views.toggle_favorite, name='toggle_favorite'),
@@ -88,11 +90,15 @@ urlpatterns = [
     path('admin-dashboard/order-history/', views.view_order_history, name='view_order_history'),
 ]
 
-urlpatterns += [
-    path('create-temp-superuser/', create_temp_superuser),
-    path('debug-canteen-staff/', debug_canteen_staff),
-    path('security-test/', views.security_test, name='security_test'),
-    path('debug-home/', views.debug_home, name='debug_home'),
-    path('health/', views.health_check, name='health_check'),
-    path('diagnostic/', views.site_diagnostic, name='site_diagnostic'),
-]
+# Debug and diagnostic routes only in DEBUG
+if settings.DEBUG:
+    from . import views as _views
+    from .views import create_temp_superuser, debug_canteen_staff
+    urlpatterns += [
+        path('create-temp-superuser/', create_temp_superuser),
+        path('debug-canteen-staff/', debug_canteen_staff),
+        path('security-test/', _views.security_test, name='security_test'),
+        path('debug-home/', _views.debug_home, name='debug_home'),
+        path('health/', _views.health_check, name='health_check'),
+        path('diagnostic/', _views.site_diagnostic, name='site_diagnostic'),
+    ]

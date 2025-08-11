@@ -852,6 +852,49 @@ def remove_from_cart(request, item_id):
         messages.success(request, "Item removed from cart!")
     return redirect('view_cart')
 
+@require_POST
+@csrf_protect
+def update_cart(request, item_id):
+    """Form-friendly cart update that redirects back to cart page"""
+    action = request.POST.get('action')
+    cart = request.session.get('cart', {})
+    item_id_str = str(item_id)
+
+    try:
+        item = MenuItem.objects.get(id=item_id)
+    except MenuItem.DoesNotExist:
+        messages.error(request, "Item not found.")
+        return redirect('view_cart')
+
+    current_quantity = int(cart.get(item_id_str, 0))
+
+    if action == 'increase':
+        if not item.is_available:
+            messages.error(request, f"{item.name} is currently unavailable.")
+            return redirect('view_cart')
+        if item.is_stock_managed and current_quantity >= item.stock_quantity:
+            messages.warning(request, f"Only {item.stock_quantity} {item.name} available in stock.")
+            return redirect('view_cart')
+        cart[item_id_str] = current_quantity + 1
+        messages.success(request, f"Added one more {item.name}.")
+    elif action == 'decrease':
+        if current_quantity > 1:
+            cart[item_id_str] = current_quantity - 1
+            messages.info(request, f"Decreased quantity for {item.name}.")
+        else:
+            cart.pop(item_id_str, None)
+            messages.info(request, f"Removed {item.name} from cart.")
+    elif action == 'remove':
+        cart.pop(item_id_str, None)
+        messages.info(request, f"Removed {item.name} from cart.")
+    else:
+        messages.error(request, "Invalid action.")
+        return redirect('view_cart')
+
+    request.session['cart'] = cart
+    request.session.modified = True
+    return redirect('view_cart')
+
 @login_required(login_url='/admin/login/')
 @never_cache
 @canteen_staff_required

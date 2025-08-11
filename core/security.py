@@ -326,6 +326,11 @@ class SessionSecurity:
             request.path.startswith('/sw.js')):
             return True, "PWA/Static file - skipping session validation"
         
+        # Allow anonymous users to browse without enforcing a session key
+        # Strict session integrity is enforced only for authenticated users
+        if not getattr(request, 'user', None) or not request.user.is_authenticated:
+            return True, "Anonymous user - session validation relaxed"
+
         # Check if session is valid
         if not request.session.session_key:
             return False, "No active session"

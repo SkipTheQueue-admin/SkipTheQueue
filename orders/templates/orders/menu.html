@@ -1,350 +1,142 @@
 {% extends "orders/base.html" %}
-<!-- eslint-disable -->
-
 {% block content %}
-<div style="min-height: 100vh; background-color: #f9fafb;">
-  <!-- Header Section -->
-  <div style="background: white; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border-bottom: 1px solid #e5e7eb;">
-    <div style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 1rem;">
-        <div style="text-align: center;">
-          <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827;">Menu</h1>
-          {% if college %}
-            <p style="color: #4b5563; margin-top: 0.25rem; font-size: 0.875rem;">{{ college.name }}</p>
-          {% endif %}
-        </div>
-        
-        <div style="display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; width: 100%;">
-          <!-- Search Bar -->
-          <form method="get" style="display: flex; align-items: center; width: 100%;">
-            <div style="position: relative; flex: 1;">
-              <input type="text" name="search" value="{{ search_query }}" 
-                     placeholder="Search menu items..." 
-                     style="width: 100%; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.5rem;">
-              <button type="submit" style="position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: none; border: none; cursor: pointer; padding: 0.5rem;">
-                <svg style="width: 1.25rem; height: 1.25rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                </svg>
-              </button>
-            </div>
-          </form>
-          
-          <!-- Action Buttons -->
-          <div style="display: flex; gap: 0.5rem;">
-            <!-- Favorites Link -->
-            {% if user.is_authenticated %}
-              <a href="{% url 'favorites' %}" style="background-color: #eab308; color: white; padding: 0.75rem 1rem; border-radius: 0.5rem; text-decoration: none; display: flex; align-items: center; justify-content: center; flex: 1; font-size: 0.875rem;">
-                <span style="display: flex; align-items: center; justify-content: center;">
-                  <svg style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                  </svg>
-                  <span>Favorites</span>
-                </span>
-              </a>
-            {% endif %}
-            
-            <!-- Cart Link -->
-            <a href="{% url 'view_cart' %}" style="background-color: #2563eb; color: white; position: relative; padding: 0.75rem 1rem; border-radius: 0.5rem; text-decoration: none; display: flex; align-items: center; justify-content: center; flex: 1; font-size: 0.875rem;">
-              <span style="display: flex; align-items: center; justify-content: center;">
-                <svg style="width: 1rem; height: 1rem; margin-right: 0.25rem;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                </svg>
-                <span>Cart</span>
-                {% if cart_count > 0 %}
-                  <span style="margin-left: 0.25rem; background-color: #dc2626; color: white; font-size: 0.75rem; border-radius: 9999px; padding: 0.125rem 0.375rem; min-width: 1.25rem; text-align: center;">{{ cart_count }}</span>
-                {% endif %}
-              </span>
-            </a>
-          </div>
-        </div>
-      </div>
+<!-- Hidden CSRF Token Form for JS fetches -->
+<form id="csrf-form" style="display:none">{% csrf_token %}</form>
+<main class="container">
+  <section class="card mb-8">
+    <header class="mb-8 text-center">
+      <h1 style="font-size: 2rem; font-weight: 700; color: #2563eb;">Menu</h1>
+      {% if college %}
+        <p style="color: #4b5563; margin-top: 0.25rem; font-size: 1rem;">{{ college.name }}</p>
+      {% endif %}
+    </header>
+    <form method="get" class="form-group" style="display: flex; gap: 0.5rem;">
+      <input type="text" name="search" value="{{ search_query }}" placeholder="Search menu items..." class="input" style="flex: 1;">
+      <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    <div class="mb-8" style="display: flex; gap: 0.5rem;">
+      {% if user.is_authenticated %}
+        <a href="{% url 'favorites' %}" class="btn btn-secondary w-full">Favorites</a>
+      {% endif %}
+      <a href="{% url 'view_cart' %}" class="btn btn-primary w-full">Cart{% if cart_count > 0 %} <span style="background: #dc2626; color: #fff; border-radius: 9999px; padding: 0 0.5rem; margin-left: 0.5rem;">{{ cart_count }}</span>{% endif %}</a>
     </div>
-  </div>
-
-  <!-- Menu Content -->
-  <div style="max-width: 1200px; margin: 0 auto; padding: 1rem;">
-    <!-- Search Results Info -->
     {% if search_query %}
-      <div style="margin-bottom: 1.5rem;">
-        <p style="color: #4b5563; font-size: 0.875rem;">
-          Search results for "<strong>{{ search_query }}</strong>" 
-          ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
-          <a href="{% url 'menu' %}" style="color: #2563eb; margin-left: 0.5rem;">Clear search</a>
-        </p>
+      <div class="mb-8 text-center" style="color: #4b5563; font-size: 1rem;">
+        Search results for <strong>{{ search_query }}</strong> ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
+        <a href="{% url 'menu' %}" style="color: #2563eb; margin-left: 0.5rem;">Clear search</a>
       </div>
     {% endif %}
-    
-    <!-- Favorite Items Section -->
     {% if favorite_items %}
-        <div style="margin-bottom: 3rem;">
-          <div style="display: flex; align-items: center; margin-bottom: 1.5rem;">
-            <div style="width: 2rem; height: 2rem; background-color: #fef3c7; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center; margin-right: 0.75rem;">
-              <svg style="width: 1.25rem; height: 1.25rem; color: #d97706;" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827;">Your Favorites</h2>
-          </div>
-        
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
-            {% for item in favorite_items %}
-              <div style="background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); overflow: hidden; transition: all 0.3s ease;" data-item-id="{{ item.id }}">
-                {% if item.image_url %}
-                  <div style="height: 12rem; background-color: #e5e7eb;">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                  </div>
-                {% else %}
-                  <div style="height: 12rem; background: linear-gradient(135deg, #fef3c7 0%, #fed7aa 100%); display: flex; align-items: center; justify-content: center;">
-                    <svg style="width: 4rem; height: 4rem; color: #fbbf24;" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  </div>
-                {% endif %}
-                
-                <div style="padding: 1rem;">
-                  <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                    <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">{{ item.name }}</h3>
-                    <button onclick="toggleFavorite('{{ item.id }}')" style="background: none; border: none; padding: 0.25rem; color: #fbbf24; cursor: pointer;">
-                      <svg style="width: 1.25rem; height: 1.25rem;" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                      </svg>
-                    </button>
-                  </div>
-                  
-                  <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem; line-height: 1.4;">{{ item.description|default:"Delicious item from our menu." }}</p>
-                  
-                  <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 1.25rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
-                    <button onclick="addToCart('{{ item.id }}')" style="background-color: #2563eb; color: white; padding: 0.5rem 1rem; font-size: 0.875rem; border: none; border-radius: 0.375rem; cursor: pointer;">
-                      Add to Cart
-                    </button>
-                  </div>
-                </div>
+      <section class="mb-8">
+        <h2 class="mb-4" style="font-size: 1.25rem; font-weight: 700; color: #111827;">Your Favorites</h2>
+        <div class="college-grid">
+          {% for item in favorite_items %}
+            <div class="card" style="padding: 1rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 600; color: #111827;">{{ item.name }}</h3>
+              <p style="color: #6b7280; font-size: 0.95rem;">{{ item.description|default:"Delicious item from our menu." }}</p>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 1.1rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
+                <button onclick="addToCart('{{ item.id }}')" class="btn btn-primary">Add to Cart</button>
               </div>
-            {% endfor %}
-          </div>
+            </div>
+          {% endfor %}
         </div>
+      </section>
     {% endif %}
-    
-    <!-- All Menu Items -->
-    <div>
-      <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827; margin-bottom: 1.5rem;">All Menu Items</h2>
-      
+    <section>
+      <h2 class="mb-4" style="font-size: 1.25rem; font-weight: 700; color: #111827;">All Menu Items</h2>
       {% if menu_items %}
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+        <div class="college-grid">
           {% for item in menu_items %}
-            <div style="background: white; border-radius: 0.5rem; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); overflow: hidden; transition: all 0.3s ease;" data-item-id="{{ item.id }}">
-              {% if item.image_url %}
-                <div style="height: 12rem; background-color: #e5e7eb;">
-                  <img src="{{ item.image_url }}" alt="{{ item.name }}" style="width: 100%; height: 100%; object-fit: cover;">
-                </div>
-              {% else %}
-                <div style="height: 12rem; background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); display: flex; align-items: center; justify-content: center;">
-                  <svg style="width: 4rem; height: 4rem; color: #3b82f6;" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                  </svg>
-                </div>
-              {% endif %}
-              
-              <div style="padding: 1rem;">
-                                                                     <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem;">
-                     <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin: 0;">{{ item.name }}</h3>
-                     <button onclick="toggleFavorite('{{ item.id }}')" style="background: none; border: none; padding: 0.25rem; color: #d1d5db; cursor: pointer; transition: color 0.2s;">
-                    <svg style="width: 1.25rem; height: 1.25rem;" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  </button>
-                </div>
-                
-                <p style="color: #6b7280; font-size: 0.875rem; margin-bottom: 1rem; line-height: 1.4;">{{ item.description|default:"Delicious item from our menu." }}</p>
-                
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="font-size: 1.25rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
-                  <button onclick="addToCart('{{ item.id }}')" style="background-color: #2563eb; color: white; padding: 0.5rem 1rem; font-size: 0.875rem; border: none; border-radius: 0.375rem; cursor: pointer;">
-                    Add to Cart
-                  </button>
-                </div>
+            <div class="card" style="padding: 1rem;">
+              <h3 style="font-size: 1.1rem; font-weight: 600; color: #111827;">{{ item.name }}</h3>
+              <p style="color: #6b7280; font-size: 0.95rem;">{{ item.description|default:"Delicious item from our menu." }}</p>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="font-size: 1.1rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
+                <button onclick="addToCart('{{ item.id }}')" class="btn btn-primary">Add to Cart</button>
               </div>
             </div>
           {% endfor %}
         </div>
       {% else %}
-        <div style="text-align: center; padding: 3rem 1rem;">
-          <div style="width: 4rem; height: 4rem; background-color: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-            <svg style="width: 2rem; height: 2rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-          </div>
-          <h3 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem;">No Menu Items Found</h3>
-          <p style="color: #6b7280; margin-bottom: 1.5rem;">No menu items are currently available.</p>
-        </div>
+        <div class="text-center mb-8">No menu items found.</div>
       {% endif %}
-    </div>
-  </div>
-</div>
+    </section>
+  </section>
+</main>
 
 <script>
-/* eslint-disable */
 function getCSRFToken() {
-  const name = 'csrftoken';
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    const cookies = document.cookie.split(';');
-    for (let i = 0; i < cookies.length; i++) {
-      const cookie = cookies[i].trim();
-      if (cookie.substring(0, name.length + 1) === (name + '=')) {
-        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-        break;
-      }
-    }
+  // Prefer reading CSRF token from the hidden form rendered by Django
+  const tokenInput = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]');
+  if (tokenInput) {
+    return tokenInput.value;
   }
-  return cookieValue;
+  // Fallback to cookie scan if available
+  const name = 'csrftoken=';
+  const cookies = document.cookie.split(';');
+  for (let c of cookies) {
+    c = c.trim();
+    if (c.indexOf(name) === 0) return decodeURIComponent(c.substring(name.length));
+  }
+  return null;
 }
 
 function addToCart(itemId) {
-  const button = event.target;
+  const button = event.target.closest('button');
   const originalText = button.textContent;
-  
-  // Show loading state
   button.disabled = true;
   button.textContent = 'Adding...';
-  
   fetch(`/add-to-cart/${itemId}/`, {
     method: 'POST',
     headers: {
-      'X-CSRFToken': getCSRFToken(),
-      'Content-Type': 'application/json',
-    },
+      'X-CSRFToken': getCSRFToken() || '',
+      'Content-Type': 'application/json'
+    }
   })
-  .then(response => response.json())
+  .then(r => r.json())
   .then(data => {
     if (data.success) {
-      // Update cart count globally
       if (typeof updateGlobalCartCount === 'function') {
         updateGlobalCartCount(data.cart_count);
       }
-      
-      // Show success notification
       if (typeof showGlobalNotification === 'function') {
-        showGlobalNotification('Added to Cart', data.message, 'success');
+        showGlobalNotification('Added to Cart', data.message || 'Item added', 'success');
       }
-      
-      // Update button text temporarily
       button.textContent = 'Added!';
-      button.style.backgroundColor = '#10b981';
-      
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.style.backgroundColor = '';
-        button.disabled = false;
-      }, 2000);
+      setTimeout(() => { button.textContent = originalText; button.disabled = false; }, 1200);
     } else {
-      throw new Error(data.error || 'Failed to add item to cart');
+      throw new Error(data.error || 'Failed to add item');
     }
   })
-  .catch(error => {
-    console.error('Error:', error);
-    
-    // Show error notification
+  .catch(err => {
     if (typeof showGlobalNotification === 'function') {
-      showGlobalNotification('Error', error.message || 'Failed to add item to cart', 'error');
+      showGlobalNotification('Error', err.message || 'Failed to add item', 'error');
     }
-    
-    // Reset button
     button.textContent = originalText;
     button.disabled = false;
   });
 }
 
 function toggleFavorite(itemId) {
-  const button = event.target.closest('button');
-  const star = button.querySelector('svg');
-  
   fetch(`/toggle-favorite/${itemId}/`, {
     method: 'POST',
     headers: {
-      'X-CSRFToken': getCSRFToken(),
-      'Content-Type': 'application/json',
-    },
-  })
-  .then(response => response.json())
-  .then(data => {
-    if (data.success) {
-      // Toggle star color
-      if (data.is_favorite) {
-        star.style.color = '#fbbf24';
-      } else {
-        star.style.color = '#d1d5db';
-      }
-      
-      // Show notification
-      if (typeof showGlobalNotification === 'function') {
-        showGlobalNotification('Favorites', data.message, 'success');
-      }
-    } else {
-      throw new Error(data.error || 'Failed to update favorites');
+      'X-CSRFToken': getCSRFToken() || '',
+      'Content-Type': 'application/json'
     }
   })
-  .catch(error => {
-    console.error('Error:', error);
-    
+  .then(r => r.json())
+  .then(data => {
     if (typeof showGlobalNotification === 'function') {
-      showGlobalNotification('Error', error.message || 'Failed to update favorites', 'error');
+      showGlobalNotification('Favorites', data.message || 'Updated favorites', data.success ? 'success' : 'info');
+    }
+  })
+  .catch(err => {
+    if (typeof showGlobalNotification === 'function') {
+      showGlobalNotification('Error', err.message || 'Failed to update favorites', 'error');
     }
   });
 }
 </script>
-
-<style>
-@media (max-width: 768px) {
-  .container {
-    padding: 0 0.75rem;
-  }
-  
-  .card {
-    margin: 0.5rem;
-  }
-  
-  .btn {
-    padding: 0.75rem 1rem;
-    font-size: 0.875rem;
-  }
-  
-  h1 {
-    font-size: 1.25rem;
-  }
-  
-  h2 {
-    font-size: 1.125rem;
-  }
-  
-  h3 {
-    font-size: 1rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .container {
-    padding: 0 0.5rem;
-  }
-  
-  .card {
-    margin: 0.25rem;
-  }
-  
-  .btn {
-    padding: 0.875rem 1rem;
-    font-size: 0.875rem;
-    width: 100%;
-  }
-  
-  .card > div {
-    padding: 0.75rem;
-  }
-  
-  .card > div > div {
-    padding: 0.75rem;
-  }
-}
-</style>
 {% endblock %}
