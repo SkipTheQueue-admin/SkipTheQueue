@@ -153,12 +153,12 @@
                 <div class="mb-4">
                   <h4 class="text-blue-200 font-medium mb-2">Items:</h4>
                   <div class="space-y-2">
-                    {% for item in order.order_items.all %}
+                    {% for item in order.orderitem_set.all %}
                       <div class="flex justify-between items-center bg-white/5 rounded-lg px-3 py-2">
-                        <span class="text-white">{{ item.item.name }}</span>
+                        <span class="text-white">{{ item.menu_item.name }}</span>
                         <div class="flex items-center space-x-2">
                           <span class="text-blue-200 text-sm">×{{ item.quantity }}</span>
-                          <span class="text-white font-medium">₹{{ item.price_at_time|floatformat:2 }}</span>
+                          <span class="text-white font-medium">₹{{ item.menu_item.price }}</span>
                         </div>
                       </div>
                     {% endfor %}
@@ -188,21 +188,21 @@
                 <!-- Action Buttons -->
                 <div class="flex space-x-3">
                   {% if order.status == 'Paid' %}
-                    <button id="accept-order-btn-{{ order.id }}" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button onclick="acceptOrder({{ order.id }})" id="accept-order-btn-{{ order.id }}" class="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                       </svg>
                       Accept Order
                     </button>
                   {% elif order.status == 'In Progress' %}
-                    <button id="mark-ready-btn-{{ order.id }}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button onclick="markOrderReady({{ order.id }})" id="mark-ready-btn-{{ order.id }}" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                       </svg>
                       Mark Ready
                     </button>
                   {% elif order.status == 'Ready' %}
-                    <button id="complete-order-btn-{{ order.id }}" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                    <button onclick="markOrderReady({{ order.id }})" id="complete-order-btn-{{ order.id }}" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                       <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                       </svg>
@@ -210,7 +210,7 @@
                     </button>
                   {% endif %}
                   
-                  <button id="decline-order-btn-{{ order.id }}" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
+                  <button onclick="declineOrder({{ order.id }})" id="decline-order-btn-{{ order.id }}" class="bg-red-600 hover:bg-red-700 text-white py-3 px-4 rounded-lg font-semibold transition duration-200 flex items-center justify-center">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -233,6 +233,139 @@
       </div>
     </div>
   </div>
+
+  <!-- Pending Orders Section -->
+  <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
+    <div class="flex items-center justify-between mb-6">
+      <h2 class="text-2xl font-bold text-white">Pending Orders</h2>
+      <div class="flex items-center space-x-2">
+        <span class="text-blue-200 text-sm">Auto-refresh every 30s</span>
+        <button onclick="location.reload()" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg p-2 transition duration-200">
+          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    
+    {% if pending_orders %}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for order in pending_orders %}
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition duration-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
+              <span class="text-xs text-blue-200">{{ order.created_at|timesince }} ago</span>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+              <p class="text-blue-200 text-sm">
+                <i class="fas fa-user mr-1"></i>{{ order.user_name }}
+              </p>
+              <p class="text-blue-200 text-sm">
+                <i class="fas fa-phone mr-1"></i>{{ order.user_phone }}
+              </p>
+              <p class="text-blue-200 text-sm">
+                <i class="fas fa-clock mr-1"></i>Est. {{ order.estimated_time }} min
+              </p>
+            </div>
+            
+            <div class="mb-4">
+              <h4 class="text-white font-medium mb-2">Items:</h4>
+              <div class="space-y-1">
+                {% for item in order.order_items.all %}
+                  <div class="flex justify-between text-sm">
+                    <span class="text-blue-200">{{ item.quantity }}x {{ item.item.name }}</span>
+                    <span class="text-white">₹{{ item.price_at_time }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-lg font-bold text-white">Total: ₹{{ order.total_price }}</span>
+              <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full">
+                {{ order.status }}
+              </span>
+            </div>
+            
+            {% if order.special_instructions %}
+              <div class="mb-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
+                <p class="text-yellow-200 text-sm">
+                  <i class="fas fa-info-circle mr-1"></i>{{ order.special_instructions }}
+                </p>
+              </div>
+            {% endif %}
+            
+            <div class="flex space-x-2">
+              <button onclick="acceptOrder({{ order.id }})" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
+                <i class="fas fa-check mr-1"></i>Accept
+              </button>
+              <button onclick="declineOrder({{ order.id }})" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
+                <i class="fas fa-times mr-1"></i>Decline
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="text-center py-8">
+        <svg class="w-16 h-16 text-blue-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+        </svg>
+        <p class="text-blue-200 text-lg">No pending orders</p>
+        <p class="text-blue-300 text-sm">New orders will appear here automatically</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- In Progress Orders Section -->
+  {% if in_progress_orders %}
+    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
+      <h2 class="text-2xl font-bold text-white mb-6">In Progress Orders</h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for order in in_progress_orders %}
+          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition duration-200">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
+              <span class="text-xs text-blue-200">{{ order.created_at|timesince }} ago</span>
+            </div>
+            
+            <div class="space-y-2 mb-4">
+              <p class="text-blue-200 text-sm">
+                <i class="fas fa-user mr-1"></i>{{ order.user_name }}
+              </p>
+              <p class="text-blue-200 text-sm">
+                <i class="fas fa-phone mr-1"></i>{{ order.user_phone }}
+              </p>
+            </div>
+            
+            <div class="mb-4">
+              <h4 class="text-white font-medium mb-2">Items:</h4>
+              <div class="space-y-1">
+                {% for item in order.order_items.all %}
+                  <div class="flex justify-between text-sm">
+                    <span class="text-blue-200">{{ item.quantity }}x {{ item.item.name }}</span>
+                    <span class="text-white">₹{{ item.price_at_time }}</span>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+            
+            <div class="flex items-center justify-between mb-4">
+              <span class="text-lg font-bold text-white">Total: ₹{{ order.total_price }}</span>
+              <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded-full">
+                {{ order.status }}
+              </span>
+            </div>
+            
+            <button onclick="markOrderReady({{ order.id }})" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
+              <i class="fas fa-check-circle mr-1"></i>Mark Ready
+            </button>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
 </div>
 
 <!-- Success Notification -->
@@ -245,170 +378,148 @@
   </div>
 </div>
 
+<!-- JavaScript for Canteen Dashboard -->
 <script>
-// Show success notification
-function showNotification(message) {
-  const notification = document.getElementById('successNotification');
-  const messageElement = document.getElementById('successMessage');
-  messageElement.textContent = message;
-  
-  notification.classList.remove('translate-x-full');
-  
-  setTimeout(() => {
-    notification.classList.add('translate-x-full');
-  }, 3000);
-}
-
-// Accept order
-function acceptOrder(orderId) {
-  fetch(`/canteen/dashboard/{{ college.slug }}/accept-order/${orderId}/`, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-    }
-  }).then(response => {
-    if (response.ok) {
-      showNotification('Order accepted successfully!');
-      setTimeout(() => location.reload(), 1000);
-    }
-  });
-}
-
-// Mark order as ready
-function markReady(orderId) {
-  const formData = new FormData();
-  formData.append('status', 'ready');
-  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-  
-  fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
-    method: 'POST',
-    body: formData
-  }).then(response => {
-    if (response.ok) {
-      showNotification('Order marked as ready! User will be notified.');
-      // The notification system will automatically show the order ready popup to the user
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showNotification('Error updating order status. Please try again.');
-    }
-  }).catch(error => {
-    console.error('Error:', error);
-    showNotification('Error updating order status. Please try again.');
-  });
-}
-
-// Mark order as preparing
-function markPreparing(orderId) {
-  const formData = new FormData();
-  formData.append('status', 'preparing');
-  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-  
-  fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
-    method: 'POST',
-    body: formData
-  }).then(response => {
-    if (response.ok) {
-      showNotification('Order marked as preparing!');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showNotification('Error updating order status. Please try again.');
-    }
-  }).catch(error => {
-    console.error('Error:', error);
-    showNotification('Error updating order status. Please try again.');
-  });
-}
-
-// Mark order as completed
-function markCompleted(orderId) {
-  const formData = new FormData();
-  formData.append('status', 'completed');
-  formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
-  
-  fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
-    method: 'POST',
-    body: formData
-  }).then(response => {
-    if (response.ok) {
-      showNotification('Order marked as completed!');
-      setTimeout(() => location.reload(), 1000);
-    } else {
-      showNotification('Error updating order status. Please try again.');
-    }
-  }).catch(error => {
-    console.error('Error:', error);
-    showNotification('Error updating order status. Please try again.');
-  });
-}
-
-// Decline order
-function declineOrder(orderId) {
-  if (confirm('Are you sure you want to decline this order?')) {
-    fetch(`/canteen/dashboard/{{ college.slug }}/decline-order/${orderId}/`, {
-      method: 'POST',
-      headers: {
-        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-      }
-    }).then(response => {
-      if (response.ok) {
-        showNotification('Order declined');
-        setTimeout(() => location.reload(), 1000);
-      }
-    });
-  }
-}
-
-// Auto-refresh every 30 seconds
-setInterval(() => {
-  location.reload();
-}, 30000);
-
-// Add CSRF token to all forms
-document.addEventListener('DOMContentLoaded', function() {
-  const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-  document.querySelectorAll('form').forEach(form => {
-    if (!form.querySelector('[name=csrfmiddlewaretoken]')) {
-      const csrfInput = document.createElement('input');
-      csrfInput.type = 'hidden';
-      csrfInput.name = 'csrfmiddlewaretoken';
-      csrfInput.value = csrfToken;
-      form.appendChild(csrfInput);
-    }
-  });
-});
-</script>
-
-<div id="active-order-ids" data-ids='[{% for order in active_orders %}{{ order.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-  var orderIdsDiv = document.getElementById('active-order-ids');
-  var orderIds = [];
-  if (orderIdsDiv) {
+  // Function to accept an order
+  async function acceptOrder(orderId) {
     try {
-      orderIds = JSON.parse(orderIdsDiv.getAttribute('data-ids'));
-    } catch (e) {
-      orderIds = [];
+      const response = await fetch(`/canteen/dashboard/{{ college.slug }}/accept-order/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Order accepted successfully!', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification(data.error || 'Failed to accept order', 'error');
+        }
+      } else {
+        showNotification('Failed to accept order', 'error');
+      }
+    } catch (error) {
+      console.error('Error accepting order:', error);
+      showNotification('Error accepting order', 'error');
     }
   }
-  orderIds.forEach(function(id) {
-    var acceptBtn = document.getElementById('accept-order-btn-' + id);
-    if (acceptBtn) {
-      acceptBtn.addEventListener('click', function() { acceptOrder(id); });
+
+  // Function to decline an order
+  async function declineOrder(orderId) {
+    if (!confirm('Are you sure you want to decline this order?')) {
+      return;
     }
-    var markReadyBtn = document.getElementById('mark-ready-btn-' + id);
-    if (markReadyBtn) {
-      markReadyBtn.addEventListener('click', function() { markReady(id); });
+    
+    try {
+      const response = await fetch(`/canteen/dashboard/{{ college.slug }}/decline-order/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/json',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Order declined successfully!', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification(data.error || 'Failed to decline order', 'error');
+        }
+      } else {
+        showNotification('Failed to decline order', 'error');
+      }
+    } catch (error) {
+      console.error('Error declining order:', error);
+      showNotification('Error declining order', 'error');
     }
-    var completeBtn = document.getElementById('complete-order-btn-' + id);
-    if (completeBtn) {
-      completeBtn.addEventListener('click', function() { markCompleted(id); });
+  }
+
+  // Function to mark order as ready
+  async function markOrderReady(orderId) {
+    try {
+      const response = await fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: `status=Ready`,
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Order marked as ready! Customer will be notified.', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification(data.error || 'Failed to update order status', 'error');
+        }
+      } else {
+        showNotification('Failed to update order status', 'error');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      showNotification('Error updating order status', 'error');
     }
-    var declineBtn = document.getElementById('decline-order-btn-' + id);
-    if (declineBtn) {
-      declineBtn.addEventListener('click', function() { declineOrder(id); });
+  }
+
+  // Function to show notifications
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+    
+    if (type === 'success') {
+      notification.className += ' bg-green-500 text-white';
+    } else if (type === 'error') {
+      notification.className += ' bg-red-500 text-white';
+    } else {
+      notification.className += ' bg-blue-500 text-white';
     }
-  });
-});
+    
+    notification.innerHTML = `
+      <div class="flex items-center">
+        <span class="flex-1">${message}</span>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+      notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        if (notification.parentElement) {
+          notification.remove();
+        }
+      }, 300);
+    }, 5000);
+  }
+
+  // Auto-refresh dashboard every 30 seconds
+  setInterval(() => {
+    location.reload();
+  }, 30000);
 </script>
+
 {% csrf_token %}
 {% endblock %}

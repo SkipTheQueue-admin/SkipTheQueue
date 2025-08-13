@@ -6,6 +6,7 @@
  * - Mobile-optimized UI
  * - Auto-dismiss and manual dismiss options
  * - Order status bars on all pages
+ * - Better error handling and performance
  */
 
 class NotificationManager {
@@ -17,6 +18,7 @@ class NotificationManager {
         this.checkInterval = null;
         this.userPhone = null;
         this.currentOrderId = null;
+        this.isOnline = navigator.onLine;
         
         this.init();
     }
@@ -24,118 +26,171 @@ class NotificationManager {
     init() {
         if (this.isInitialized) return;
         
-        // Get user phone from session storage or page data
-        this.userPhone = this.getUserPhone();
-        
-        // Initialize notification container
-        this.createNotificationContainer();
-        
-        // Start real-time order status checking
-        this.startOrderStatusChecking();
-        
-        // Initialize existing notifications
-        this.initializeExistingNotifications();
-        
-        // Set up event listeners
-        this.setupEventListeners();
-        
-        this.isInitialized = true;
-        console.log('NotificationManager initialized');
+        try {
+            // Get user phone from session storage or page data
+            this.userPhone = this.getUserPhone();
+            
+            // Initialize notification container
+            this.createNotificationContainer();
+            
+            // Start real-time order status checking
+            this.startOrderStatusChecking();
+            
+            // Initialize existing notifications
+            this.initializeExistingNotifications();
+            
+            // Set up event listeners
+            this.setupEventListeners();
+            
+            this.isInitialized = true;
+            console.log('NotificationManager initialized successfully');
+        } catch (error) {
+            console.error('Error initializing NotificationManager:', error);
+        }
     }
 
     getUserPhone() {
-        // Try to get phone from various sources
-        const phoneFromStorage = sessionStorage.getItem('user_phone');
-        if (phoneFromStorage) return phoneFromStorage;
-        
-        // Try to get from page data
-        const phoneElement = document.querySelector('[data-user-phone]');
-        if (phoneElement) return phoneElement.dataset.userPhone;
-        
-        // Try to get from order data
-        const orderElement = document.querySelector('[data-order-phone]');
-        if (orderElement) return orderElement.dataset.orderPhone;
-        
-        return null;
+        try {
+            // Try to get phone from various sources
+            const phoneFromStorage = sessionStorage.getItem('user_phone');
+            if (phoneFromStorage) return phoneFromStorage;
+            
+            // Try to get from page data
+            const phoneElement = document.querySelector('[data-user-phone]');
+            if (phoneElement) return phoneElement.dataset.userPhone;
+            
+            // Try to get from order data
+            const orderElement = document.querySelector('[data-order-phone]');
+            if (orderElement) return orderElement.dataset.orderPhone;
+            
+            return null;
+        } catch (error) {
+            console.error('Error getting user phone:', error);
+            return null;
+        }
     }
 
     createNotificationContainer() {
-        // Create main notification container
-        if (!document.getElementById('notification-container')) {
-            const container = document.createElement('div');
-            container.id = 'notification-container';
-            container.className = 'notification-container';
-            document.body.appendChild(container);
-        }
+        try {
+            // Create main notification container
+            if (!document.getElementById('notification-container')) {
+                const container = document.createElement('div');
+                container.id = 'notification-container';
+                container.className = 'notification-container';
+                document.body.appendChild(container);
+            }
 
-        // Create order status bar container
-        if (!document.getElementById('order-status-container')) {
-            const statusContainer = document.createElement('div');
-            statusContainer.id = 'order-status-container';
-            document.body.appendChild(statusContainer);
-        }
+            // Create order status bar container
+            if (!document.getElementById('order-status-container')) {
+                const statusContainer = document.createElement('div');
+                statusContainer.id = 'order-status-container';
+                document.body.appendChild(statusContainer);
+            }
 
-        // Create order ready notification container
-        if (!document.getElementById('order-ready-container')) {
-            const readyContainer = document.createElement('div');
-            readyContainer.id = 'order-ready-container';
-            document.body.appendChild(readyContainer);
+            // Create order ready notification container
+            if (!document.getElementById('order-ready-container')) {
+                const readyContainer = document.createElement('div');
+                readyContainer.id = 'order-ready-container';
+                document.body.appendChild(readyContainer);
+            }
+        } catch (error) {
+            console.error('Error creating notification containers:', error);
         }
     }
 
     initializeExistingNotifications() {
-        // Initialize any existing Django messages
-        const messages = document.querySelectorAll('.messages .message');
-        messages.forEach(message => {
-            this.showMessage(message);
-        });
+        try {
+            // Initialize any existing Django messages
+            const messages = document.querySelectorAll('.messages .message');
+            messages.forEach(message => {
+                this.showMessage(message);
+            });
 
-        // Initialize any existing order status
-        this.checkCurrentOrderStatus();
+            // Initialize any existing order status
+            this.checkCurrentOrderStatus();
+        } catch (error) {
+            console.error('Error initializing existing notifications:', error);
+        }
     }
 
     setupEventListeners() {
-        // Listen for order status updates
-        document.addEventListener('orderStatusUpdated', (e) => {
-            this.handleOrderStatusUpdate(e.detail);
-        });
+        try {
+            // Listen for order status updates
+            document.addEventListener('orderStatusUpdated', (e) => {
+                this.handleOrderStatusUpdate(e.detail);
+            });
 
-        // Listen for order ready notifications
-        document.addEventListener('orderReady', (e) => {
-            this.showOrderReadyNotification(e.detail);
-        });
+            // Listen for order ready notifications
+            document.addEventListener('orderReady', (e) => {
+                this.showOrderReadyNotification(e.detail);
+            });
 
-        // Listen for page visibility changes
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden) {
+            // Listen for page visibility changes
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) {
+                    this.refreshOrderStatus();
+                }
+            });
+
+            // Listen for focus events
+            window.addEventListener('focus', () => {
                 this.refreshOrderStatus();
-            }
-        });
+            });
 
-        // Listen for focus events
-        window.addEventListener('focus', () => {
-            this.refreshOrderStatus();
-        });
+            // Listen for online/offline events
+            window.addEventListener('online', () => {
+                this.isOnline = true;
+                this.refreshOrderStatus();
+            });
+
+            window.addEventListener('offline', () => {
+                this.isOnline = false;
+                this.stopOrderStatusChecking();
+            });
+        } catch (error) {
+            console.error('Error setting up event listeners:', error);
+        }
     }
 
     startOrderStatusChecking() {
-        if (!this.userPhone) return;
+        if (!this.userPhone || !this.isOnline) return;
         
-        // Check immediately
-        this.checkOrderStatus();
-        
-        // Set up periodic checking
-        this.checkInterval = setInterval(() => {
+        try {
+            // Check immediately
             this.checkOrderStatus();
-        }, 10000); // Check every 10 seconds
+            
+            // Set up periodic checking
+            this.checkInterval = setInterval(() => {
+                if (this.isOnline) {
+                    this.checkOrderStatus();
+                }
+            }, 10000); // Check every 10 seconds
+        } catch (error) {
+            console.error('Error starting order status checking:', error);
+        }
+    }
+
+    stopOrderStatusChecking() {
+        if (this.checkInterval) {
+            clearInterval(this.checkInterval);
+            this.checkInterval = null;
+        }
     }
 
     async checkOrderStatus() {
-        if (!this.userPhone) return;
+        if (!this.userPhone || !this.isOnline) return;
         
         try {
-            const response = await fetch(`/check-order-status/${this.userPhone}/`);
-            if (!response.ok) throw new Error('Failed to check order status');
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+            
+            const response = await fetch(`/check-order-status/${this.userPhone}/`, {
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             
             const data = await response.json();
             
@@ -153,220 +208,278 @@ class NotificationManager {
             }
             
         } catch (error) {
-            console.error('Error checking order status:', error);
+            if (error.name === 'AbortError') {
+                console.log('Order status check timed out');
+            } else {
+                console.error('Error checking order status:', error);
+            }
         }
     }
 
     updateOrderStatusBar(order) {
-        const container = document.getElementById('order-status-container');
-        if (!container) return;
-        
-        // Remove existing status bar
-        this.removeOrderStatusBar();
-        
-        // Create new status bar
-        const statusBar = this.createOrderStatusBar(order);
-        container.appendChild(statusBar);
-        
-        // Store reference
-        this.orderStatusBars.set(order.id, statusBar);
-        
-        // Add to page
-        document.body.insertBefore(statusBar, document.body.firstChild);
+        try {
+            const container = document.getElementById('order-status-container');
+            if (!container) return;
+            
+            // Remove existing status bar
+            this.removeOrderStatusBar();
+            
+            // Create new status bar
+            const statusBar = this.createOrderStatusBar(order);
+            if (statusBar) {
+                container.appendChild(statusBar);
+                
+                // Store reference
+                this.orderStatusBars.set(order.id, statusBar);
+                
+                // Add to page
+                document.body.insertBefore(statusBar, document.body.firstChild);
+            }
+        } catch (error) {
+            console.error('Error updating order status bar:', error);
+        }
     }
 
     createOrderStatusBar(order) {
-        const statusBar = document.createElement('div');
-        statusBar.className = 'order-status-bar';
-        statusBar.dataset.orderId = order.id;
-        
-        const statusColor = this.getStatusColor(order.status);
-        const statusIcon = this.getStatusIcon(order.status);
-        
-        statusBar.innerHTML = `
-            <div class="status-content">
-                <div class="status-info">
-                    <div class="status-icon" style="color: ${statusColor}">
-                        ${statusIcon}
+        try {
+            const statusBar = document.createElement('div');
+            statusBar.className = 'order-status-bar';
+            statusBar.dataset.orderId = order.id;
+            
+            const statusColor = this.getStatusColor(order.status);
+            const statusIcon = this.getStatusIcon(order.status);
+            
+            statusBar.innerHTML = `
+                <div class="status-content">
+                    <div class="status-info">
+                        <div class="status-icon" style="color: ${statusColor}">
+                            ${statusIcon}
+                        </div>
+                        <div class="status-details">
+                            <div class="status-title">Order #${order.id}</div>
+                            <div class="status-message">${this.getStatusMessage(order.status)}</div>
+                            <div class="status-time">${this.formatTime(order.updated_at)}</div>
+                        </div>
                     </div>
-                    <div class="status-details">
-                        <div class="status-title">Order #${order.id}</div>
-                        <div class="status-message">${this.getStatusMessage(order.status)}</div>
-                        <div class="status-time">${this.formatTime(order.updated_at)}</div>
-                    </div>
+                    <button class="status-close" onclick="notificationManager.removeOrderStatusBar()">
+                        ×
+                    </button>
                 </div>
-                <button class="status-close" onclick="notificationManager.removeOrderStatusBar()">
-                    ×
-                </button>
-            </div>
-        `;
-        
-        return statusBar;
+            `;
+            
+            return statusBar;
+        } catch (error) {
+            console.error('Error creating order status bar:', error);
+            return null;
+        }
     }
 
     removeOrderStatusBar() {
-        const statusBars = document.querySelectorAll('.order-status-bar');
-        statusBars.forEach(bar => {
-            bar.classList.add('removing');
-            setTimeout(() => {
-                if (bar.parentNode) {
-                    bar.parentNode.removeChild(bar);
-                }
-            }, 300);
-        });
-        
-        this.orderStatusBars.clear();
+        try {
+            const statusBars = document.querySelectorAll('.order-status-bar');
+            statusBars.forEach(bar => {
+                bar.classList.add('removing');
+                setTimeout(() => {
+                    if (bar.parentNode) {
+                        bar.parentNode.removeChild(bar);
+                    }
+                }, 300);
+            });
+            
+            this.orderStatusBars.clear();
+        } catch (error) {
+            console.error('Error removing order status bar:', error);
+        }
     }
 
     showOrderReadyNotification(order) {
-        const container = document.getElementById('order-ready-container');
-        if (!container) return;
-        
-        // Remove existing notification
-        this.removeOrderReadyNotification();
-        
-        // Create new notification
-        const notification = this.createOrderReadyNotification(order);
-        container.appendChild(notification);
-        
-        // Store reference
-        this.orderReadyNotifications.set(order.id, notification);
-        
-        // Add to page
-        document.body.insertBefore(notification, document.body.firstChild);
-        
-        // Play notification sound if available
-        this.playNotificationSound();
-        
-        // Send browser notification
-        this.sendBrowserNotification(order);
+        try {
+            const container = document.getElementById('order-ready-container');
+            if (!container) return;
+            
+            // Remove existing notification
+            this.removeOrderReadyNotification();
+            
+            // Create new notification
+            const notification = this.createOrderReadyNotification(order);
+            if (notification) {
+                container.appendChild(notification);
+                
+                // Store reference
+                this.orderReadyNotifications.set(order.id, notification);
+                
+                // Add to page
+                document.body.insertBefore(notification, document.body.firstChild);
+                
+                // Play notification sound if available
+                this.playNotificationSound();
+                
+                // Send browser notification
+                this.sendBrowserNotification(order);
+            }
+        } catch (error) {
+            console.error('Error showing order ready notification:', error);
+        }
     }
 
     createOrderReadyNotification(order) {
-        const notification = document.createElement('div');
-        notification.className = 'order-ready-notification';
-        notification.dataset.orderId = order.id;
-        
-        notification.innerHTML = `
-            <div class="notification-header">
-                <div class="notification-title">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    Order Ready!
+        try {
+            const notification = document.createElement('div');
+            notification.className = 'order-ready-notification';
+            notification.dataset.orderId = order.id;
+            
+            notification.innerHTML = `
+                <div class="notification-header">
+                    <div class="notification-title">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                        </svg>
+                        Order Ready!
+                    </div>
+                    <div class="notification-message">
+                        Your order #${order.id} is ready for pickup at ${order.college_name || 'the canteen'}.
+                    </div>
                 </div>
-                <div class="notification-message">
-                    Your order #${order.id} is ready for pickup at ${order.college_name || 'the canteen'}.
-                </div>
-            </div>
-            <button class="notification-close" onclick="notificationManager.removeOrderReadyNotification()">
-                ×
-            </button>
-        `;
-        
-        return notification;
+                <button class="notification-close" onclick="notificationManager.removeOrderReadyNotification()">
+                    ×
+                </button>
+            `;
+            
+            return notification;
+        } catch (error) {
+            console.error('Error creating order ready notification:', error);
+            return null;
+        }
     }
 
     removeOrderReadyNotification() {
-        const notifications = document.querySelectorAll('.order-ready-notification');
-        notifications.forEach(notification => {
-            notification.classList.add('removing');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 400);
-        });
-        
-        this.orderReadyNotifications.clear();
+        try {
+            const notifications = document.querySelectorAll('.order-ready-notification');
+            notifications.forEach(notification => {
+                notification.classList.add('removing');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 400);
+            });
+            
+            this.orderReadyNotifications.clear();
+        } catch (error) {
+            console.error('Error removing order ready notification:', error);
+        }
     }
 
     showNotification(notificationData) {
-        const container = document.getElementById('notification-container');
-        if (!container) return;
-        
-        const notification = this.createNotification(notificationData);
-        container.appendChild(notification);
-        
-        // Auto-dismiss after 5 seconds (unless it's a persistent notification)
-        if (!notificationData.persistent) {
-            setTimeout(() => {
-                this.dismissNotification(notification);
-            }, 5000);
+        try {
+            const container = document.getElementById('notification-container');
+            if (!container) return;
+            
+            const notification = this.createNotification(notificationData);
+            if (notification) {
+                container.appendChild(notification);
+                
+                // Auto-dismiss after 5 seconds (unless it's a persistent notification)
+                if (!notificationData.persistent) {
+                    setTimeout(() => {
+                        this.dismissNotification(notification);
+                    }, 5000);
+                }
+                
+                // Store reference
+                this.notifications.push(notification);
+                
+                return notification;
+            }
+        } catch (error) {
+            console.error('Error showing notification:', error);
         }
-        
-        // Store reference
-        this.notifications.push(notification);
-        
-        return notification;
+        return null;
     }
 
     createNotification(notificationData) {
-        const notification = document.createElement('div');
-        notification.className = `notification ${notificationData.type || 'info'}`;
-        notification.dataset.notificationId = notificationData.id || Date.now();
-        
-        const icon = this.getNotificationIcon(notificationData.type);
-        
-        notification.innerHTML = `
-            <div class="notification-content">
-                <div class="notification-icon">
-                    ${icon}
+        try {
+            const notification = document.createElement('div');
+            notification.className = `notification ${notificationData.type || 'info'}`;
+            notification.dataset.notificationId = notificationData.id || Date.now();
+            
+            const icon = this.getNotificationIcon(notificationData.type);
+            
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <div class="notification-icon">
+                        ${icon}
+                    </div>
+                    <div class="notification-text">
+                        <div class="notification-title">${this.escapeHtml(notificationData.title || 'Notification')}</div>
+                        <div class="notification-message">${this.escapeHtml(notificationData.message || '')}</div>
+                    </div>
+                    <button class="notification-close" onclick="notificationManager.dismissNotification(this.parentElement.parentElement)">
+                        ×
+                    </button>
                 </div>
-                <div class="notification-text">
-                    <div class="notification-title">${notificationData.title || 'Notification'}</div>
-                    <div class="notification-message">${notificationData.message || ''}</div>
-                </div>
-                <button class="notification-close" onclick="notificationManager.dismissNotification(this.parentElement.parentElement)">
-                    ×
-                </button>
-            </div>
-        `;
-        
-        return notification;
+            `;
+            
+            return notification;
+        } catch (error) {
+            console.error('Error creating notification:', error);
+            return null;
+        }
     }
 
     dismissNotification(notification) {
         if (!notification) return;
         
-        notification.classList.add('removing');
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.parentNode.removeChild(notification);
-            }
-            
-            // Remove from array
-            const index = this.notifications.indexOf(notification);
-            if (index > -1) {
-                this.notifications.splice(index, 1);
-            }
-        }, 300);
+        try {
+            notification.classList.add('removing');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+                
+                // Remove from array
+                const index = this.notifications.indexOf(notification);
+                if (index > -1) {
+                    this.notifications.splice(index, 1);
+                }
+            }, 300);
+        } catch (error) {
+            console.error('Error dismissing notification:', error);
+        }
     }
 
     showMessage(messageElement) {
         if (!messageElement) return;
         
-        const type = this.getMessageType(messageElement);
-        const title = this.getMessageTitle(type);
-        const message = messageElement.textContent.trim();
-        
-        this.showNotification({
-            type: type,
-            title: title,
-            message: message,
-            persistent: false
-        });
-        
-        // Remove the original message
-        messageElement.remove();
+        try {
+            const type = this.getMessageType(messageElement);
+            const title = this.getMessageTitle(type);
+            const message = messageElement.textContent.trim();
+            
+            this.showNotification({
+                type: type,
+                title: title,
+                message: message,
+                persistent: false
+            });
+            
+            // Remove the original message
+            messageElement.remove();
+        } catch (error) {
+            console.error('Error showing message:', error);
+        }
     }
 
     getMessageType(messageElement) {
-        if (messageElement.classList.contains('success')) return 'success';
-        if (messageElement.classList.contains('error')) return 'error';
-        if (messageElement.classList.contains('warning')) return 'warning';
-        if (messageElement.classList.contains('info')) return 'info';
-        return 'info';
+        try {
+            if (messageElement.classList.contains('success')) return 'success';
+            if (messageElement.classList.contains('error')) return 'error';
+            if (messageElement.classList.contains('warning')) return 'warning';
+            if (messageElement.classList.contains('info')) return 'info';
+            return 'info';
+        } catch (error) {
+            return 'info';
+        }
     }
 
     getMessageTitle(type) {
@@ -431,20 +544,32 @@ class NotificationManager {
     formatTime(timestamp) {
         if (!timestamp) return '';
         
-        const date = new Date(timestamp);
-        const now = new Date();
-        const diff = now - date;
-        
-        if (diff < 60000) return 'Just now';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-        
-        return date.toLocaleDateString();
+        try {
+            const date = new Date(timestamp);
+            if (isNaN(date.getTime())) return '';
+            
+            const now = new Date();
+            const diff = now - date;
+            
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+            
+            return date.toLocaleDateString();
+        } catch (error) {
+            return '';
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     playNotificationSound() {
-        // Try to play notification sound
         try {
+            // Try to play notification sound
             const audio = new Audio('/static/sounds/notification.mp3');
             audio.volume = 0.5;
             audio.play().catch(() => {
@@ -457,8 +582,8 @@ class NotificationManager {
     }
 
     createBeepSound() {
-        // Create a simple beep sound using Web Audio API
         try {
+            // Create a simple beep sound using Web Audio API
             const audioContext = new (window.AudioContext || window.webkitAudioContext)();
             const oscillator = audioContext.createOscillator();
             const gainNode = audioContext.createGain();
@@ -482,36 +607,46 @@ class NotificationManager {
     sendBrowserNotification(order) {
         if (!('Notification' in window)) return;
         
-        if (Notification.permission === 'granted') {
-            new Notification('Order Ready!', {
-                body: `Your order #${order.id} is ready for pickup.`,
-                icon: '/static/images/icon-192x192.png',
-                badge: '/static/images/badge-72x72.png',
-                tag: `order-${order.id}`,
-                requireInteraction: true
-            });
-        } else if (Notification.permission !== 'denied') {
-            Notification.requestPermission().then(permission => {
-                if (permission === 'granted') {
-                    this.sendBrowserNotification(order);
-                }
-            });
+        try {
+            if (Notification.permission === 'granted') {
+                new Notification('Order Ready!', {
+                    body: `Your order #${order.id} is ready for pickup.`,
+                    icon: '/static/images/icon-192x192.png',
+                    badge: '/static/images/badge-72x72.png',
+                    tag: `order-${order.id}`,
+                    requireInteraction: true
+                });
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        this.sendBrowserNotification(order);
+                    }
+                });
+            }
+        } catch (error) {
+            console.error('Error sending browser notification:', error);
         }
     }
 
     refreshOrderStatus() {
-        this.checkOrderStatus();
+        if (this.isOnline) {
+            this.checkOrderStatus();
+        }
     }
 
     handleOrderStatusUpdate(orderData) {
-        // Update status bar if exists
-        if (this.orderStatusBars.has(orderData.id)) {
-            this.updateOrderStatusBar(orderData);
-        }
-        
-        // Show order ready notification if status is 'Ready'
-        if (orderData.status === 'Ready') {
-            this.showOrderReadyNotification(orderData);
+        try {
+            // Update status bar if exists
+            if (this.orderStatusBars.has(orderData.id)) {
+                this.updateOrderStatusBar(orderData);
+            }
+            
+            // Show order ready notification if status is 'Ready'
+            if (orderData.status === 'Ready') {
+                this.showOrderReadyNotification(orderData);
+            }
+        } catch (error) {
+            console.error('Error handling order status update:', error);
         }
     }
 
@@ -550,22 +685,24 @@ class NotificationManager {
 
     // Cleanup method
     destroy() {
-        if (this.checkInterval) {
-            clearInterval(this.checkInterval);
+        try {
+            this.stopOrderStatusChecking();
+            
+            // Remove all notifications
+            this.notifications.forEach(notification => {
+                this.dismissNotification(notification);
+            });
+            
+            // Remove order status bars
+            this.removeOrderStatusBar();
+            
+            // Remove order ready notifications
+            this.removeOrderReadyNotification();
+            
+            this.isInitialized = false;
+        } catch (error) {
+            console.error('Error destroying NotificationManager:', error);
         }
-        
-        // Remove all notifications
-        this.notifications.forEach(notification => {
-            this.dismissNotification(notification);
-        });
-        
-        // Remove order status bars
-        this.removeOrderStatusBar();
-        
-        // Remove order ready notifications
-        this.removeOrderReadyNotification();
-        
-        this.isInitialized = false;
     }
 }
 
@@ -573,7 +710,11 @@ class NotificationManager {
 let notificationManager;
 
 document.addEventListener('DOMContentLoaded', () => {
-    notificationManager = new NotificationManager();
+    try {
+        notificationManager = new NotificationManager();
+    } catch (error) {
+        console.error('Error creating NotificationManager:', error);
+    }
 });
 
 // Make it globally available

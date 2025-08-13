@@ -127,33 +127,17 @@ def canteen_staff_required(view_func):
 @csrf_protect
 def collect_phone(request):
     """Collect phone number for order with profile update"""
-    cart = request.session.get('cart', {})
-    if not cart:
-        messages.error(request, "Your cart is empty.")
-        return redirect('menu')
-    valid_items = []
-    for item_id, quantity in cart.items():
-        try:
-            item = MenuItem.objects.get(id=item_id)
-            if item.is_available:
-                valid_items.append((item, quantity))
-        except MenuItem.DoesNotExist:
-            continue
-    if not valid_items:
-        messages.error(request, "No valid items in your cart.")
-        return redirect('menu')
-    if request.method == 'POST':
-        phone = SecurityValidator.sanitize_input(request.POST.get('phone'))
-        payment_method = request.POST.get('payment_method', 'Online')
-        is_valid, phone_result = SecurityValidator.validate_phone_number(phone)
-        if not is_valid:
-            messages.error(request, f"Please enter a valid phone number: {phone_result}")
-            cart = request.session.get('cart', {})
-            menu_items = []
-            total = 0
-            for item_id, quantity in cart.items():
-                try:
-                    item = MenuItem.objects.get(id=item_id)
+    
+    def get_cart_context():
+        """Helper function to get cart context data"""
+        cart = request.session.get('cart', {})
+        menu_items = []
+        total = 0
+        
+        for item_id, quantity in cart.items():
+            try:
+                item = MenuItem.objects.get(id=item_id)
+                if item.is_available:
                     item_total = item.price * quantity
                     menu_items.append({
                         'id': item.id,
@@ -163,64 +147,80 @@ def collect_phone(request):
                         'total': item_total
                     })
                     total += item_total
-                except MenuItem.DoesNotExist:
-                    continue
-            selected_college = request.session.get('selected_college')
-            college = None
-            if selected_college and isinstance(selected_college, dict) and 'id' in selected_college:
-                try:
-                    college = College.objects.get(id=selected_college['id'])
-                except College.DoesNotExist:
-                    pass
-            return render(request, 'orders/collect_phone.html', {
-                'menu_items': menu_items,
-                'total': total,
-                'college': college
-            })
-        # Save phone number to user profile
-        user_profile, created = UserProfile.objects.get_or_create(user=request.user)
-        user_profile.phone_number = phone
-        user_profile.save()
-        # Store in session for order
-        request.session['user_phone'] = phone
-        request.session['payment_method'] = payment_method
-        request.session.modified = True
-        # Get special instructions if any
-        special_instructions = sanitize_input(request.POST.get('special_instructions', ''))
-        if special_instructions:
-            request.session['special_instructions'] = special_instructions
-        # Redirect to place order
-        return redirect('place_order')
-    # GET request: render form with context
+            except MenuItem.DoesNotExist:
+                continue
+        
+        # Get college information
+        selected_college = request.session.get('selected_college')
+        college = None
+        if selected_college and isinstance(selected_college, dict) and 'id' in selected_college:
+            try:
+                college = College.objects.get(id=selected_college['id'])
+            except College.DoesNotExist:
+                pass
+        
+        return {
+            'menu_items': menu_items,
+            'total': total,
+            'college': college
+        }
+    
+    # Validate cart
     cart = request.session.get('cart', {})
-    menu_items = []
-    total = 0
+    if not cart:
+        messages.error(request, "Your cart is empty.")
+        return redirect('menu')
+    
+    # Check if cart has valid items
+    valid_items = []
     for item_id, quantity in cart.items():
         try:
             item = MenuItem.objects.get(id=item_id)
-            item_total = item.price * quantity
-            menu_items.append({
-                'id': item.id,
-                'name': item.name,
-                'price': item.price,
-                'quantity': quantity,
-                'total': item_total
-            })
-            total += item_total
+            if item.is_available:
+                valid_items.append((item, quantity))
         except MenuItem.DoesNotExist:
             continue
-    selected_college = request.session.get('selected_college')
-    college = None
-    if selected_college and isinstance(selected_college, dict) and 'id' in selected_college:
+    
+    if not valid_items:
+        messages.error(request, "No valid items in your cart.")
+        return redirect('menu')
+    
+    if request.method == 'POST':
+        phone = SecurityValidator.sanitize_input(request.POST.get('phone'))
+        payment_method = request.POST.get('payment_method', 'Online')
+        
+        # Validate phone number
+        is_valid, phone_result = SecurityValidator.validate_phone_number(phone)
+        if not is_valid:
+            messages.error(request, f"Please enter a valid phone number: {phone_result}")
+            return render(request, 'orders/collect_phone.html', get_cart_context())
+        
         try:
-            college = College.objects.get(id=selected_college['id'])
-        except College.DoesNotExist:
-            pass
-    return render(request, 'orders/collect_phone.html', {
-        'menu_items': menu_items,
-        'total': total,
-        'college': college
-    })
+            # Save phone number to user profile
+            user_profile, created = UserProfile.objects.get_or_create(user=request.user)
+            user_profile.phone_number = phone
+            user_profile.save()
+            
+            # Store in session for order
+            request.session['user_phone'] = phone
+            request.session['payment_method'] = payment_method
+            request.session.modified = True
+            
+            # Get special instructions if any
+            special_instructions = sanitize_input(request.POST.get('special_instructions', ''))
+            if special_instructions:
+                request.session['special_instructions'] = special_instructions
+            
+            # Redirect to place order
+            return redirect('place_order')
+            
+        except Exception as e:
+            logger.error(f"Error saving user profile: {e}")
+            messages.error(request, "An error occurred while saving your information. Please try again.")
+            return render(request, 'orders/collect_phone.html', get_cart_context())
+    
+    # GET request: render form with context
+    return render(request, 'orders/collect_phone.html', get_cart_context())
 
 def test_collect_phone(request):
     """Test view to debug collect phone issues"""
@@ -282,47 +282,67 @@ def test_auth(request):
 @csrf_exempt
 @require_POST
 def update_cart_api(request, item_id):
+    """Enhanced cart update API with better error handling"""
     import logging
     logger = logging.getLogger(__name__)
+    
     try:
+        # Get cart from session
         cart = request.session.get('cart', {})
         if not isinstance(cart, dict):
             logger.warning('Cart session corrupted: not a dict')
             cart = {}
+        
+        # Convert all keys to strings for consistency
         cart = {str(k): v for k, v in cart.items()}
+        
         action = request.POST.get('action')
         logger.info(f'Cart action: {action} for item {item_id}')
+        
+        # Get the menu item
         try:
             item = MenuItem.objects.get(id=item_id)
         except MenuItem.DoesNotExist:
             logger.error(f'Item {item_id} not found')
             return JsonResponse({'error': 'Item not found'}, status=404)
+        
         item_id_str = str(item_id)
+        
         if action == 'increase':
             if not item.is_available:
                 logger.warning(f'{item.name} unavailable')
                 return JsonResponse({'error': f'{item.name} is currently unavailable.'}, status=400)
+            
             if item.is_stock_managed:
                 current_quantity = cart.get(item_id_str, 0)
                 if current_quantity >= item.stock_quantity:
                     logger.warning(f'Stock exceeded for {item.name}')
                     return JsonResponse({'error': f'Only {item.stock_quantity} {item.name} available in stock.'}, status=400)
+            
             cart[item_id_str] = cart.get(item_id_str, 0) + 1
+            
         elif action == 'decrease':
             current_quantity = cart.get(item_id_str, 0)
             if current_quantity > 1:
                 cart[item_id_str] = current_quantity - 1
             else:
                 cart.pop(item_id_str, None)
+                
         elif action == 'remove':
             cart.pop(item_id_str, None)
+            
         else:
             logger.error('Invalid action')
             return JsonResponse({'error': 'Invalid action'}, status=400)
+        
+        # Update session
         request.session['cart'] = cart
         request.session.modified = True
+        
+        # Calculate cart totals
         cart_items = []
         cart_total = 0
+        
         for cart_item_id, quantity in cart.items():
             try:
                 cart_item = MenuItem.objects.get(id=cart_item_id)
@@ -335,8 +355,16 @@ def update_cart_api(request, item_id):
                 })
                 cart_total += cart_item.price * quantity
             except MenuItem.DoesNotExist:
+                # Remove invalid item from cart
+                cart.pop(cart_item_id, None)
                 continue
-        logger.info(f'Cart updated: {cart}')
+        
+        # Update session again in case invalid items were removed
+        request.session['cart'] = cart
+        request.session.modified = True
+        
+        logger.info(f'Cart updated successfully: {cart}')
+        
         return JsonResponse({
             'success': True,
             'cart_items': cart_items,
@@ -344,8 +372,10 @@ def update_cart_api(request, item_id):
             'cart_count': len(cart_items),
             'message': 'Cart updated successfully'
         })
+        
     except Exception as e:
         logger.error(f'Cart update error: {str(e)}')
+        # Reset cart on error
         request.session['cart'] = {}
         request.session.modified = True
         return JsonResponse({
@@ -357,7 +387,6 @@ def update_cart_api(request, item_id):
 
 @login_required(login_url='/login/?next=/place-order/')
 @csrf_protect
-@rate_limit(max_requests=10, window=300)  # 10 orders per 5 minutes
 def place_order(request):
     """Place order with payment processing and security"""
     cart = request.session.get('cart', {})
@@ -616,9 +645,13 @@ def order_success(request, order_id):
 
 @login_required(login_url='/login/?next=/register-college/')
 @csrf_protect
-@rate_limit(max_requests=5, window=300)  # 5 requests per 5 minutes
 def register_college(request):
-    """College registration form with security"""
+    """College registration form with security - Only for super admins"""
+    # Check if user is super admin
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied. Only administrators can register colleges.")
+        return redirect('home')
+    
     if request.method == 'POST':
         # Sanitize all inputs using SecurityValidator
         name = SecurityValidator.sanitize_input(request.POST.get('name'))
@@ -699,7 +732,6 @@ def select_college(request, college_slug):
 
 @never_cache
 @csrf_protect
-@rate_limit(max_requests=20, window=60)  # 20 requests per minute
 def add_to_cart(request, item_id):
     """Add item to cart - no login required, login only needed for checkout"""
     # Check if college is selected
@@ -842,7 +874,6 @@ def view_cart(request):
 
 @require_POST
 @csrf_protect
-@rate_limit(max_requests=30, window=60)
 def remove_from_cart(request, item_id):
     """Remove item from cart"""
     cart = request.session.get('cart', {})
@@ -1032,7 +1063,6 @@ def custom_logout(request):
 # API Views for real-time updates with security
 @login_required(login_url='/admin/login/')
 @require_GET
-@rate_limit(max_requests=60, window=60)  # 60 requests per minute
 def get_orders_json(request, college_slug):
     """API endpoint for real-time order updates with security"""
     # Check if user is superuser
@@ -2159,7 +2189,6 @@ def canteen_staff_dashboard(request, college_slug):
 @login_required(login_url='/canteen/login/')
 @require_POST
 @csrf_protect
-@rate_limit(max_requests=10, window=60)
 def canteen_accept_order(request, college_slug, order_id):
     """Accept order with enhanced security"""
     try:
@@ -2191,7 +2220,6 @@ def canteen_accept_order(request, college_slug, order_id):
 @login_required(login_url='/canteen/login/')
 @require_POST
 @csrf_protect
-@rate_limit(max_requests=10, window=60)
 def canteen_decline_order(request, college_slug, order_id):
     """Decline order with enhanced security"""
     try:
@@ -2220,7 +2248,6 @@ def canteen_decline_order(request, college_slug, order_id):
 @login_required(login_url='/canteen/login/')
 @require_POST
 @csrf_protect
-@rate_limit(max_requests=10, window=60)
 def canteen_update_order_status(request, college_slug, order_id):
     """Update order status with enhanced security and notifications"""
     try:
@@ -2753,7 +2780,6 @@ def site_diagnostic(request):
     return JsonResponse(diagnostic_results, status=200 if diagnostic_results['status'] != 'ERROR' else 500)
 
 @require_GET
-@rate_limit(max_requests=30, window=60)
 def check_order_status(request, order_id):
     """Check order status and return notifications for real-time updates"""
     try:
@@ -2871,7 +2897,6 @@ def check_order_status(request, order_id):
         }, status=500)
 
 @require_GET
-@rate_limit(max_requests=30, window=60)
 def check_notifications(request):
     """Check for new notifications for the current user"""
     try:
@@ -2926,7 +2951,6 @@ def check_notifications(request):
         }, status=500)
 
 @require_POST
-@rate_limit(max_requests=10, window=60)
 def dismiss_notification(request, order_id):
     """Dismiss a notification for a specific order"""
     try:
@@ -2966,7 +2990,6 @@ def dismiss_notification(request, order_id):
         }, status=500)
 
 @require_POST
-@rate_limit(max_requests=20, window=60)
 def update_order_status(request, order_id):
     """Update order status (for canteen staff)"""
     try:
@@ -3141,7 +3164,6 @@ def check_order_status_main(request):
         return JsonResponse({'error': 'Error checking order status'}, status=500)
 
 @require_GET
-@rate_limit(max_requests=30, window=60)
 def check_order_status_by_phone(request, user_phone):
     """Check order status by user phone number for real-time notifications"""
     try:
@@ -3192,7 +3214,6 @@ def check_order_status_by_phone(request, user_phone):
         }, status=500)
 
 @require_GET
-@rate_limit(max_requests=30, window=60)
 def order_status_update(request, order_id):
     """Get real-time order status update for a specific order"""
     try:
@@ -3237,6 +3258,159 @@ def order_status_update(request, order_id):
     except Exception as e:
         logger.error(f"Error getting order status update: {str(e)}")
         return JsonResponse({'error': 'Error getting order status'}, status=500)
+
+@login_required
+def user_profile(request):
+    """User profile view with comprehensive information"""
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+        
+        # Get user's recent orders
+        recent_orders = Order.objects.filter(
+            user_phone=user_profile.phone_number
+        ).order_by('-created_at')[:10]
+        
+        # Get user's favorite items
+        favorite_items = user_profile.favorite_items.all()
+        
+        # Get user's preferred college
+        preferred_college = user_profile.preferred_college
+        
+        context = {
+            'user_profile': user_profile,
+            'recent_orders': recent_orders,
+            'favorite_items': favorite_items,
+            'preferred_college': preferred_college,
+            'total_orders': Order.objects.filter(user_phone=user_profile.phone_number).count(),
+            'total_spent': sum(order.total_price() for order in Order.objects.filter(
+                user_phone=user_profile.phone_number, 
+                status='Completed'
+            )),
+        }
+        
+        return render(request, 'orders/user_profile.html', context)
+        
+    except UserProfile.DoesNotExist:
+        # Create profile if it doesn't exist
+        user_profile = UserProfile.objects.create(user=request.user)
+        messages.info(request, "Profile created successfully!")
+        return redirect('user_profile')
+    except Exception as e:
+        logger.error(f"Error in user profile view: {str(e)}")
+        messages.error(request, "Error loading profile. Please try again.")
+        return redirect('home')
+
+@login_required
+def edit_profile(request):
+    """Edit user profile"""
+    if request.method == 'POST':
+        try:
+            user_profile = UserProfile.objects.get(user=request.user)
+            
+            # Update phone number
+            phone = request.POST.get('phone_number')
+            if phone and phone != user_profile.phone_number:
+                if validate_phone_number(phone):
+                    user_profile.phone_number = phone
+                    user_profile.save()
+                    messages.success(request, "Phone number updated successfully!")
+                else:
+                    messages.error(request, "Invalid phone number format.")
+            
+            # Update preferred college
+            college_id = request.POST.get('preferred_college')
+            if college_id:
+                try:
+                    college = College.objects.get(id=college_id)
+                    user_profile.preferred_college = college
+                    user_profile.save()
+                    messages.success(request, "Preferred college updated successfully!")
+                except College.DoesNotExist:
+                    messages.error(request, "Selected college not found.")
+            
+            return redirect('user_profile')
+            
+        except UserProfile.DoesNotExist:
+            messages.error(request, "Profile not found.")
+            return redirect('home')
+        except Exception as e:
+            logger.error(f"Error updating profile: {str(e)}")
+            messages.error(request, "Error updating profile. Please try again.")
+            return redirect('user_profile')
+    
+    # GET request - show edit form
+    colleges = College.objects.filter(is_active=True)
+    try:
+        user_profile = UserProfile.objects.get(user=request.user)
+    except UserProfile.DoesNotExist:
+        user_profile = None
+    
+    return render(request, 'orders/edit_profile.html', {
+        'user_profile': user_profile,
+        'colleges': colleges
+    })
+
+@require_GET
+def check_active_orders(request):
+    """Check if user has any active orders for the tracking bar"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'has_active_order': False})
+    
+    try:
+        # Get the most recent active order for the user
+        active_order = Order.objects.filter(
+            user=request.user,
+            status__in=['Pending', 'Accepted', 'In Progress', 'Ready']
+        ).order_by('-created_at').first()
+        
+        if active_order:
+            order_data = {
+                'id': active_order.id,
+                'status': active_order.status,
+                'created_at': active_order.created_at.isoformat(),
+                'estimated_time': active_order.estimated_time,
+                'college_name': active_order.college.name if active_order.college else 'Unknown',
+                'total_amount': float(active_order.total_amount) if active_order.total_amount else 0.0
+            }
+            
+            return JsonResponse({
+                'has_active_order': True,
+                'order': order_data
+            })
+        else:
+            return JsonResponse({'has_active_order': False})
+            
+    except Exception as e:
+        logger.error(f"Error checking active orders: {e}")
+        return JsonResponse({'has_active_order': False})
+
+@require_GET
+def check_order_status(request, order_id):
+    """Check order status for tracking updates"""
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user has permission to view this order
+        if not request.user.is_authenticated or order.user != request.user:
+            return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        order_data = {
+            'id': order.id,
+            'status': order.status,
+            'created_at': order.created_at.isoformat(),
+            'estimated_time': order.estimated_time,
+            'college_name': order.college.name if order.college else 'Unknown',
+            'total_amount': float(order.total_amount) if order.total_amount else 0.0
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'order': order_data
+        })
+        
+    except Exception as e:
+        logger.error(f"Error checking order status: {e}")
+        return JsonResponse({'error': 'Order not found'}, status=404)
 
 
 

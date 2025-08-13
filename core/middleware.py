@@ -31,24 +31,12 @@ class SecurityMiddleware(MiddlewareMixin):
         # Update session security
         SessionSecurity.update_session_security(request)
         
-        # Rate limiting for all requests
-        if hasattr(settings, 'RATE_LIMIT_ENABLED') and settings.RATE_LIMIT_ENABLED:
-            is_allowed, message = RateLimiter.check_rate_limit(
-                request, 
-                'global', 
-                getattr(settings, 'RATE_LIMIT_REQUESTS', 100),
-                getattr(settings, 'RATE_LIMIT_WINDOW', 60)
-            )
-            
-            if not is_allowed:
-                logger.warning(f"Rate limit exceeded for {request.META.get('REMOTE_ADDR', 'unknown')}")
-                return HttpResponseForbidden("Rate limit exceeded. Please try again later.")
-        
-        # Validate session security
-        is_valid, message = SessionSecurity.validate_session(request)
-        if not is_valid:
-            logger.warning(f"Invalid session for {request.META.get('REMOTE_ADDR', 'unknown')}: {message}")
-            return HttpResponseForbidden("Invalid session. Please login again.")
+        # Validate session security only for authenticated endpoints
+        if request.path.startswith('/canteen/') or request.path.startswith('/admin-dashboard/'):
+            is_valid, message = SessionSecurity.validate_session(request)
+            if not is_valid:
+                logger.warning(f"Invalid session for {request.META.get('REMOTE_ADDR', 'unknown')}: {message}")
+                return HttpResponseForbidden("Invalid session. Please login again.")
         
         # Add security headers
         request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
@@ -68,11 +56,11 @@ class SecurityMiddleware(MiddlewareMixin):
         # Content Security Policy - allow Font Awesome CDN and inline for our templates
         csp_policy = (
             "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://www.googletagmanager.com; "
             "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; "
             "font-src 'self' https://cdnjs.cloudflare.com data:; "
-            "img-src 'self' data: https:; "
-            "connect-src 'self'; "
+            "img-src 'self' data: https: https://www.google-analytics.com; "
+            "connect-src 'self' https://www.google-analytics.com https://embed.tawk.to; "
             "frame-ancestors 'none';"
         )
         response['Content-Security-Policy'] = csp_policy

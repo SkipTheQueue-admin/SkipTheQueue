@@ -98,7 +98,39 @@ class SecurityValidator:
         if len(slug) < 2 or len(slug) > 20:
             return False, "College code must be 2-20 characters long"
         
-        return True, slug.lower()
+        return True, slug
+    
+    @staticmethod
+    def validate_price(price):
+        """Validate price format and range"""
+        if not price:
+            return False, "Price is required"
+        
+        try:
+            price_float = float(price)
+            if price_float < 0:
+                return False, "Price cannot be negative"
+            if price_float > 9999.99:
+                return False, "Price cannot exceed 9999.99"
+            return True, price_float
+        except (ValueError, TypeError):
+            return False, "Invalid price format"
+    
+    @staticmethod
+    def validate_quantity(quantity):
+        """Validate quantity format and range"""
+        if not quantity:
+            return False, "Quantity is required"
+        
+        try:
+            quantity_int = int(quantity)
+            if quantity_int <= 0:
+                return False, "Quantity must be greater than 0"
+            if quantity_int > 100:
+                return False, "Quantity cannot exceed 100"
+            return True, quantity_int
+        except (ValueError, TypeError):
+            return False, "Invalid quantity format"
     
     @staticmethod
     def validate_price(price):

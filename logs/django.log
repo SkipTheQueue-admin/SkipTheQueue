@@ -5818,3 +5818,90 @@ INFO 2025-06-24 17:49:41,952 basehttp 3984 21564 "GET /place-order/ HTTP/1.1" 30
 INFO 2025-06-24 17:49:41,971 basehttp 3984 21564 "GET /order-success/73/ HTTP/1.1" 200 24207
 INFO 2025-06-24 18:06:38,567 autoreload 3984 12100 D:\SkipTheQueue\core\settings.py changed, reloading.
 INFO 2025-06-24 18:06:39,177 autoreload 6960 26168 Watching for file changes with StatReloader
+INFO 2025-08-14 01:30:09,563 autoreload 532 2060 Watching for file changes with StatReloader
+INFO 2025-08-14 01:30:40,011 autoreload 532 2060 D:\SkipTheQueue\orders\urls.py changed, reloading.
+INFO 2025-08-14 01:30:40,689 autoreload 7720 21996 Watching for file changes with StatReloader
+INFO 2025-08-14 01:33:40,580 autoreload 7720 21996 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:33:41,969 autoreload 6616 23092 Watching for file changes with StatReloader
+INFO 2025-08-14 01:33:55,747 autoreload 6616 23092 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:33:57,353 autoreload 20808 17872 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:01,892 autoreload 20808 17872 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:02,658 autoreload 21440 15640 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:09,164 autoreload 21440 15640 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:10,271 autoreload 6080 19540 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:15,779 autoreload 6080 19540 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:16,433 autoreload 17648 22888 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:28,074 autoreload 17648 22888 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:28,651 autoreload 6440 22028 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:45,388 autoreload 6440 22028 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:46,046 autoreload 16876 23528 Watching for file changes with StatReloader
+INFO 2025-08-14 01:34:56,652 autoreload 16876 23528 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:34:57,302 autoreload 22308 2392 Watching for file changes with StatReloader
+INFO 2025-08-14 01:35:04,779 autoreload 22308 2392 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:35:05,412 autoreload 20912 22888 Watching for file changes with StatReloader
+INFO 2025-08-14 01:35:12,970 autoreload 20912 22888 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:35:13,574 autoreload 2888 21400 Watching for file changes with StatReloader
+INFO 2025-08-14 01:35:27,255 autoreload 2888 21400 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:35:27,838 autoreload 5244 16408 Watching for file changes with StatReloader
+INFO 2025-08-14 01:35:37,452 autoreload 5244 16408 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:35:38,046 autoreload 2392 22308 Watching for file changes with StatReloader
+INFO 2025-08-14 01:35:51,693 autoreload 2392 22308 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:35:52,316 autoreload 7456 2524 Watching for file changes with StatReloader
+INFO 2025-08-14 01:36:01,947 autoreload 7456 2524 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:36:02,560 autoreload 23420 21176 Watching for file changes with StatReloader
+INFO 2025-08-14 01:36:16,326 autoreload 23420 21176 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:36:16,931 autoreload 3836 17892 Watching for file changes with StatReloader
+INFO 2025-08-14 01:36:27,509 autoreload 3836 17892 D:\SkipTheQueue\orders\views.py changed, reloading.
+INFO 2025-08-14 01:36:28,209 autoreload 8940 4584 Watching for file changes with StatReloader
+ERROR 2025-08-14 01:54:50,337 exception 18876 2108 Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+Traceback (most recent call last):
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\utils\deprecation.py", line 119, in __call__
+    response = self.process_request(request)
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\middleware\security.py", line 28, in process_request
+    host = self.redirect_host or request.get_host()
+                                 ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\hp\AppData\Local\Programs\Python\Python313\Lib\site-packages\django\http\request.py", line 186, in get_host
+    raise DisallowedHost(msg)
+django.core.exceptions.DisallowedHost: Invalid HTTP_HOST header: 'testserver'. You may need to add 'testserver' to ALLOWED_HOSTS.
+WARNING 2025-08-14 01:54:50,570 log 18876 2108 Bad Request: /
+INFO 2025-08-14 01:55:07,278 autoreload 8940 4584 D:\SkipTheQueue\core\settings.py changed, reloading.
+INFO 2025-08-14 01:55:07,968 autoreload 21744 6252 Watching for file changes with StatReloader
+INFO 2025-08-14 01:55:42,129 middleware 18792 11608 Request: GET / from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:55:42,209 middleware 18792 11608 Response: 200 Duration: 0.080s for GET /
+INFO 2025-08-14 01:56:06,952 middleware 7356 21600 Request: GET / from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,055 middleware 7356 21600 Response: 200 Duration: 0.102s for GET /
+INFO 2025-08-14 01:56:07,073 middleware 7356 21600 Request: GET /manifest.json from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,074 middleware 7356 21600 Response: 200 Duration: 0.001s for GET /manifest.json
+INFO 2025-08-14 01:56:07,076 middleware 7356 21600 Request: GET /sw.js from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,077 middleware 7356 21600 Response: 200 Duration: 0.001s for GET /sw.js
+INFO 2025-08-14 01:56:07,079 middleware 7356 21600 Request: GET /college/ramdeo-baba-college/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,081 middleware 7356 21600 Response: 302 Duration: 0.002s for GET /college/ramdeo-baba-college/
+INFO 2025-08-14 01:56:07,095 middleware 7356 21600 Request: GET /menu/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,110 middleware 7356 21600 Response: 200 Duration: 0.016s for GET /menu/
+INFO 2025-08-14 01:56:07,120 middleware 7356 21600 Request: GET /menu/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,128 middleware 7356 21600 Response: 200 Duration: 0.008s for GET /menu/
+INFO 2025-08-14 01:56:07,157 middleware 7356 21600 Request: GET /cart/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,173 middleware 7356 21600 Response: 200 Duration: 0.016s for GET /cart/
+INFO 2025-08-14 01:56:07,198 middleware 7356 21600 Request: GET /api/check-active-orders/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,200 middleware 7356 21600 Response: 200 Duration: 0.001s for GET /api/check-active-orders/
+INFO 2025-08-14 01:56:07,223 middleware 7356 21600 Request: GET /admin-dashboard/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,224 middleware 7356 21600 Response: 302 Duration: 0.002s for GET /admin-dashboard/
+INFO 2025-08-14 01:56:07,246 middleware 7356 21600 Request: GET /canteen/login/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,248 middleware 7356 21600 Response: 302 Duration: 0.001s for GET /canteen/login/
+INFO 2025-08-14 01:56:07,265 middleware 7356 21600 Request: GET /admin/login/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,475 middleware 7356 21600 Response: 200 Duration: 0.212s for GET /admin/login/
+INFO 2025-08-14 01:56:07,479 middleware 7356 21600 Request: GET /profile/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,481 middleware 7356 21600 Response: 302 Duration: 0.001s for GET /profile/
+INFO 2025-08-14 01:56:07,498 middleware 7356 21600 Request: GET /login/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,501 middleware 7356 21600 Response: 302 Duration: 0.003s for GET /login/
+INFO 2025-08-14 01:56:07,520 middleware 7356 21600 Request: GET /auth/login/google-oauth2/ from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,525 middleware 7356 21600 Response: 302 Duration: 0.004s for GET /auth/login/google-oauth2/
+INFO 2025-08-14 01:56:07,541 middleware 7356 21600 Request: GET /o/oauth2/auth from 127.0.0.1 User: Anonymous
+INFO 2025-08-14 01:56:07,543 middleware 7356 21600 Response: 404 Duration: 0.002s for GET /o/oauth2/auth
+WARNING 2025-08-14 01:56:07,557 log 7356 21600 Not Found: /o/oauth2/auth
+INFO 2025-08-14 02:16:01,525 autoreload 21744 6252 D:\SkipTheQueue\core\settings.py changed, reloading.
+INFO 2025-08-14 02:16:02,343 autoreload 2736 4536 Watching for file changes with StatReloader
+INFO 2025-08-14 02:22:24,625 autoreload 21816 8692 Watching for file changes with StatReloader
+INFO 2025-08-14 02:22:51,753 autoreload 10924 3464 Watching for file changes with StatReloader
