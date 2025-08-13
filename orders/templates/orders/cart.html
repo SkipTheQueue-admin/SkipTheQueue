@@ -50,7 +50,7 @@
         </a>
       </div>
     </div>
-  </div>
+    </div>
 
   <div class="max-w-4xl mx-auto px-4 py-8">
     {% if cart_items %}
@@ -63,7 +63,7 @@
             </div>
             
             <div id="cart-items-container" class="divide-y divide-gray-200">
-              {% for entry in cart_items %}
+        {% for entry in cart_items %}
                 <div class="p-6 hover:bg-gray-50 transition duration-200" data-item-id="{{ entry.item.id }}">
                   <div class="flex items-center space-x-4">
                     <!-- Item Image Placeholder -->
@@ -133,12 +133,12 @@
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Subtotal (<span id="summary-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }})</span>
                 <span class="font-medium">₹<span id="summary-total">{{ total|floatformat:2 }}</span></span>
-              </div>
+          </div>
               
               <div class="flex justify-between text-sm">
                 <span class="text-gray-600">Service Charge</span>
                 <span class="font-medium">₹0.00</span>
-              </div>
+        </div>
               
               <div class="border-t border-gray-200 pt-3">
                 <div class="flex justify-between text-lg font-bold">
@@ -171,7 +171,7 @@
                     </div>
                   {% endif %}
                 </div>
-              </div>
+                </div>
             {% endif %}
             
             <!-- Place Order Button -->

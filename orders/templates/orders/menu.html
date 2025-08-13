@@ -74,8 +74,8 @@
     
     <!-- Favorite Items Section -->
     {% if favorite_items %}
-        <div class="mb-12">
-          <div class="flex items-center mb-6">
+      <div class="mb-12">
+        <div class="flex items-center mb-6">
           <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
             <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -91,7 +91,7 @@
                 <div class="h-48 bg-gray-200">
                   <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
                 </div>
-                {% else %}
+              {% else %}
                 <div class="h-48 bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
                   <svg class="w-16 h-16 text-yellow-300" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -99,253 +99,197 @@
                 </div>
               {% endif %}
               
-              <div class="p-6">
-                <div class="flex justify-between items-start mb-2">
+              <div class="p-4">
+                <div class="flex items-start justify-between mb-2">
                   <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
-                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                  <button onclick="toggleFavorite({{ item.id }})" class="text-yellow-500 hover:text-yellow-600 transition duration-200">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </button>
                 </div>
                 
                 {% if item.description %}
-                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                  <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ item.description }}</p>
                 {% endif %}
                 
-                <div class="flex space-x-2">
-                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
-                    {% csrf_token %}
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
-                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                      </svg>
-                      Add to Cart
-                    </button>
-                  </form>
-                  
-                  <button onclick="toggleFavorite({{ item.id }})" class="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-                  </button>
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                  {% if item.is_stock_managed %}
+                    <span class="text-sm text-gray-500">Stock: {{ item.stock_quantity }}</span>
+                  {% endif %}
                 </div>
+                
+                <button onclick="addToCart({{ item.id }})" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                  Add to Cart
+                </button>
               </div>
             </div>
           {% endfor %}
         </div>
       </div>
     {% endif %}
-    
+
     <!-- All Menu Items -->
-    {% if menu_items %}
-      <div class="mb-12">
-        <div class="flex items-center mb-6">
-          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
-            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
-            </svg>
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900">All Items</h2>
-          </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {% for item in menu_items %}
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+          {% if item.image_url %}
+            <div class="h-48 bg-gray-200">
+              <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+            </div>
+          {% else %}
+            <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+              <svg class="w-16 h-16 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+              </svg>
+            </div>
+          {% endif %}
           
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {% for item in menu_items %}
-              <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
-                {% if item.image_url %}
-                  <div class="h-48 bg-gray-200">
-                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
-                  </div>
-                {% else %}
-                  <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                    <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                    </svg>
-                  </div>
-                {% endif %}
-                
-                <div class="p-6">
-                  <div class="flex justify-between items-start mb-2">
-                    <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
-                    <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
-                  </div>
-                  
-                  {% if item.description %}
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
-                  {% endif %}
-                  
-                <div class="flex space-x-2">
-                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
-                    {% csrf_token %}
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
-                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                      </svg>
-                      Add to Cart
-                    </button>
-                  </form>
-                  
-                  {% if user.is_authenticated %}
-                    <button onclick="toggleFavorite({{ item.id }})" class="bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
-                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                      </svg>
-                    </button>
-                  {% endif %}
-                </div>
-                </div>
-              </div>
-            {% endfor %}
+          <div class="p-4">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+              <button onclick="toggleFavorite({{ item.id }})" class="text-gray-400 hover:text-yellow-500 transition duration-200">
+                <svg class="w-5 h-5" fill="{% if item.id in favorite_item_ids %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              </button>
+            </div>
+            
+            {% if item.description %}
+              <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ item.description }}</p>
+            {% endif %}
+            
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+              {% if item.is_stock_managed %}
+                <span class="text-sm text-gray-500">Stock: {{ item.stock_quantity }}</span>
+              {% endif %}
+            </div>
+            
+            <button onclick="addToCart({{ item.id }})" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+              Add to Cart
+            </button>
           </div>
         </div>
-    {% else %}
+      {% endfor %}
+    </div>
+
+    <!-- Empty State -->
+    {% if not menu_items %}
       <div class="text-center py-16">
         <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
           </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Menu Items Available</h3>
-        <p class="text-gray-500">Check back later for available menu items.</p>
+        
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No menu items found</h3>
+        <p class="text-gray-500 mb-8">
+          {% if search_query %}
+            No items match your search criteria.
+          {% else %}
+            This college doesn't have any menu items yet.
+          {% endif %}
+        </p>
+        
+        {% if search_query %}
+          <a href="{% url 'menu' %}" class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-300 font-medium">
+            View All Items
+          </a>
+        {% endif %}
       </div>
     {% endif %}
   </div>
 </div>
 
-<!-- Add to Cart Animation -->
-<div id="cartNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
-  <div class="flex items-center">
-    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-    </svg>
-    <span id="cartMessage">Item added to cart!</span>
-  </div>
-</div>
+<!-- Hidden CSRF Token Form -->
+<form id="csrf-form" style="display: none;">
+  {% csrf_token %}
+</form>
 
 <script>
-// Add to cart functionality
-document.querySelectorAll('.add-to-cart-form').forEach(form => {
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    const formData = new FormData(this);
-    const itemCard = this.closest('[data-item-id]');
-    const itemName = itemCard.querySelector('h3').textContent;
-    const button = this.querySelector('button');
-    const originalText = button.innerHTML;
-    
-    // Show loading state
-    button.disabled = true;
-    button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Adding...';
-    
-    // Show notification
-    const notification = document.getElementById('cartNotification');
-    const message = document.getElementById('cartMessage');
-    message.textContent = `Adding ${itemName} to cart...`;
-    
-    notification.classList.remove('translate-x-full');
-    
-    // Submit form
-    fetch(this.action, {
-      method: 'POST',
-      body: formData,
-      headers: {
-        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    }).then(response => {
-      if (response.redirected) {
-        // Redirect to login page
-        window.location.href = response.url;
-        return;
-      }
-      
-      if (response.ok) {
-        return response.json().then(data => {
-          if (data.success) {
-        // Success animation
-            message.textContent = data.message;
-        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
-        
-        // Add success animation to card
-        itemCard.style.transform = 'scale(1.05)';
-        setTimeout(() => {
-          itemCard.style.transform = '';
-        }, 200);
-        
-            // Update cart count
-            if (typeof updateGlobalCartCount === 'function') {
-              updateGlobalCartCount(data.cart_count);
-            }
-            
-            // Reset button
-            button.disabled = false;
-            button.innerHTML = originalText;
-          } else {
-            // Error from server
-            message.textContent = data.error || `Error adding ${itemName} to cart`;
-        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
-        button.disabled = false;
-        button.innerHTML = originalText;
-          }
-        });
-      } else {
-        // HTTP error
-        message.textContent = `Error adding ${itemName} to cart`;
-        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
-        button.disabled = false;
-        button.innerHTML = originalText;
-      }
-    }).catch(error => {
-      console.error('Error:', error);
-      message.textContent = 'Network error. Please try again.';
-      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
-      button.disabled = false;
-      button.innerHTML = originalText;
-});
+function getCSRFToken() {
+  return document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]').value;
+}
 
-    // Hide notification after 3 seconds
-    setTimeout(() => {
-      notification.classList.add('translate-x-full');
-    }, 3000);
-  });
-});
+function addToCart(itemId) {
+  const formData = new FormData();
+  formData.append('item_id', itemId);
+  formData.append('quantity', 1);
+  formData.append('csrfmiddlewaretoken', getCSRFToken());
 
-// Toggle favorite functionality
-function toggleFavorite(itemId) {
-  const button = document.querySelector(`[data-item-id="${itemId}"].favorite-btn`);
-  const originalHTML = button.innerHTML;
-  
-  fetch(`/toggle-favorite/${itemId}/`, {
+  fetch('/add-to-cart/', {
     method: 'POST',
+    body: formData,
     headers: {
-      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
-      'Content-Type': 'application/json',
+      'X-CSRFToken': getCSRFToken()
     }
   })
   .then(response => response.json())
   .then(data => {
     if (data.success) {
-      if (data.is_favorite) {
-        button.className = 'bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn';
-        button.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-      } else {
-        button.className = 'bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn';
-        button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>';
+      // Update cart count globally
+      if (window.updateGlobalCartCount) {
+        window.updateGlobalCartCount(data.cart_count);
       }
       
-      // Show notification
-    const notification = document.getElementById('cartNotification');
-    const message = document.getElementById('cartMessage');
-      message.textContent = data.message;
-      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
-    notification.classList.remove('translate-x-full');
-      
-    setTimeout(() => {
-      notification.classList.add('translate-x-full');
-    }, 3000);
+      // Show success message
+      showNotification('Item added to cart!', 'success');
+    } else {
+      showNotification(data.error || 'Failed to add item to cart', 'error');
     }
   })
   .catch(error => {
     console.error('Error:', error);
-    button.innerHTML = originalHTML;
+    showNotification('Failed to add item to cart', 'error');
   });
+}
+
+function toggleFavorite(itemId) {
+  const formData = new FormData();
+  formData.append('item_id', itemId);
+  formData.append('csrfmiddlewaretoken', getCSRFToken());
+
+  fetch('/toggle-favorite/', {
+    method: 'POST',
+    body: formData,
+    headers: {
+      'X-CSRFToken': getCSRFToken()
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      // Reload page to update favorite status
+      location.reload();
+    } else {
+      showNotification(data.error || 'Failed to update favorite', 'error');
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    showNotification('Failed to update favorite', 'error');
+  });
+}
+
+function showNotification(message, type = 'info') {
+  // Create notification element
+  const notification = document.createElement('div');
+  notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+    type === 'success' ? 'bg-green-500 text-white' :
+    type === 'error' ? 'bg-red-500 text-white' :
+    'bg-blue-500 text-white'
+  }`;
+  notification.textContent = message;
+  
+  // Add to page
+  document.body.appendChild(notification);
+  
+  // Remove after 3 seconds
+  setTimeout(() => {
+    notification.remove();
+  }, 3000);
 }
 </script>
 
