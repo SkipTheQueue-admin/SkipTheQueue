@@ -1,142 +1,360 @@
 {% extends "orders/base.html" %}
+
 {% block content %}
-<!-- Hidden CSRF Token Form for JS fetches -->
-<form id="csrf-form" style="display:none">{% csrf_token %}</form>
-<main class="container">
-  <section class="card mb-8">
-    <header class="mb-8 text-center">
-      <h1 style="font-size: 2rem; font-weight: 700; color: #2563eb;">Menu</h1>
-      {% if college %}
-        <p style="color: #4b5563; margin-top: 0.25rem; font-size: 1rem;">{{ college.name }}</p>
-      {% endif %}
-    </header>
-    <form method="get" class="form-group" style="display: flex; gap: 0.5rem;">
-      <input type="text" name="search" value="{{ search_query }}" placeholder="Search menu items..." class="input" style="flex: 1;">
-      <button type="submit" class="btn btn-primary">Search</button>
-    </form>
-    <div class="mb-8" style="display: flex; gap: 0.5rem;">
-      {% if user.is_authenticated %}
-        <a href="{% url 'favorites' %}" class="btn btn-secondary w-full">Favorites</a>
-      {% endif %}
-      <a href="{% url 'view_cart' %}" class="btn btn-primary w-full">Cart{% if cart_count > 0 %} <span style="background: #dc2626; color: #fff; border-radius: 9999px; padding: 0 0.5rem; margin-left: 0.5rem;">{{ cart_count }}</span>{% endif %}</a>
+<div class="min-h-screen bg-gray-50">
+  <!-- Header Section -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="max-w-7xl mx-auto px-4 py-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">Menu</h1>
+          {% if college %}
+            <p class="text-gray-600 mt-1">{{ college.name }}</p>
+          {% endif %}
+        </div>
+        
+        <div class="flex items-center space-x-4">
+          <!-- Search Bar -->
+          <form method="get" class="flex items-center">
+            <div class="relative">
+              <input type="text" name="search" value="{{ search_query }}" 
+                     placeholder="Search menu items..." 
+                     class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+              </button>
+            </div>
+          </form>
+          
+          <!-- Favorites Link -->
+          {% if user.is_authenticated %}
+            <a href="{% url 'favorites' %}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition duration-300">
+              <span class="flex items-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+                Favorites
+              </span>
+            </a>
+          {% endif %}
+          
+          <!-- Cart Link -->
+          <a href="{% url 'view_cart' %}" class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+            <span class="flex items-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+              </svg>
+              <span class="cart-text">Cart</span>
+              {% if cart_count > 0 %}
+                <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge">{{ cart_count }}</span>
+              {% else %}
+                <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge hidden">0</span>
+              {% endif %}
+            </span>
+          </a>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- Menu Content -->
+  <div class="max-w-7xl mx-auto px-4 py-8">
+    <!-- Search Results Info -->
     {% if search_query %}
-      <div class="mb-8 text-center" style="color: #4b5563; font-size: 1rem;">
-        Search results for <strong>{{ search_query }}</strong> ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
-        <a href="{% url 'menu' %}" style="color: #2563eb; margin-left: 0.5rem;">Clear search</a>
+      <div class="mb-6">
+        <p class="text-gray-600">
+          Search results for "<strong>{{ search_query }}</strong>" 
+          ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
+          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 ml-2">Clear search</a>
+        </p>
       </div>
     {% endif %}
+    
+    <!-- Favorite Items Section -->
     {% if favorite_items %}
-      <section class="mb-8">
-        <h2 class="mb-4" style="font-size: 1.25rem; font-weight: 700; color: #111827;">Your Favorites</h2>
-        <div class="college-grid">
+        <div class="mb-12">
+          <div class="flex items-center mb-6">
+          <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900">Your Favorites</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {% for item in favorite_items %}
-            <div class="card" style="padding: 1rem;">
-              <h3 style="font-size: 1.1rem; font-weight: 600; color: #111827;">{{ item.name }}</h3>
-              <p style="color: #6b7280; font-size: 0.95rem;">{{ item.description|default:"Delicious item from our menu." }}</p>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 1.1rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
-                <button onclick="addToCart('{{ item.id }}')" class="btn btn-primary">Add to Cart</button>
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+              {% if item.image_url %}
+                <div class="h-48 bg-gray-200">
+                  <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                </div>
+                {% else %}
+                <div class="h-48 bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
+                  <svg class="w-16 h-16 text-yellow-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                </div>
+              {% endif %}
+              
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                </div>
+                
+                {% if item.description %}
+                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                {% endif %}
+                
+                <div class="flex space-x-2">
+                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add to Cart
+                    </button>
+                  </form>
+                  
+                  <button onclick="toggleFavorite({{ item.id }})" class="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+                  </button>
+                </div>
               </div>
             </div>
           {% endfor %}
         </div>
-      </section>
+      </div>
     {% endif %}
-    <section>
-      <h2 class="mb-4" style="font-size: 1.25rem; font-weight: 700; color: #111827;">All Menu Items</h2>
-      {% if menu_items %}
-        <div class="college-grid">
+    
+    <!-- All Menu Items -->
+    {% if menu_items %}
+      <div class="mb-12">
+        <div class="flex items-center mb-6">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900">All Items</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {% for item in menu_items %}
-            <div class="card" style="padding: 1rem;">
-              <h3 style="font-size: 1.1rem; font-weight: 600; color: #111827;">{{ item.name }}</h3>
-              <p style="color: #6b7280; font-size: 0.95rem;">{{ item.description|default:"Delicious item from our menu." }}</p>
-              <div style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="font-size: 1.1rem; font-weight: 700; color: #059669;">₹{{ item.price }}</span>
-                <button onclick="addToCart('{{ item.id }}')" class="btn btn-primary">Add to Cart</button>
+              <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+                {% if item.image_url %}
+                  <div class="h-48 bg-gray-200">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                  </div>
+                {% else %}
+                  <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                {% endif %}
+                
+                <div class="p-6">
+                  <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+                    <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                  </div>
+                  
+                  {% if item.description %}
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                  {% endif %}
+                  
+                <div class="flex space-x-2">
+                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add to Cart
+                    </button>
+                  </form>
+                  
+                  {% if user.is_authenticated %}
+                    <button onclick="toggleFavorite({{ item.id }})" class="bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
+                  {% endif %}
+                </div>
+                </div>
               </div>
-            </div>
-          {% endfor %}
+            {% endfor %}
+          </div>
         </div>
-      {% else %}
-        <div class="text-center mb-8">No menu items found.</div>
-      {% endif %}
-    </section>
-  </section>
-</main>
+    {% else %}
+      <div class="text-center py-16">
+        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Menu Items Available</h3>
+        <p class="text-gray-500">Check back later for available menu items.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Add to Cart Animation -->
+<div id="cartNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span id="cartMessage">Item added to cart!</span>
+  </div>
+</div>
 
 <script>
-function getCSRFToken() {
-  // Prefer reading CSRF token from the hidden form rendered by Django
-  const tokenInput = document.querySelector('#csrf-form input[name="csrfmiddlewaretoken"]');
-  if (tokenInput) {
-    return tokenInput.value;
-  }
-  // Fallback to cookie scan if available
-  const name = 'csrftoken=';
-  const cookies = document.cookie.split(';');
-  for (let c of cookies) {
-    c = c.trim();
-    if (c.indexOf(name) === 0) return decodeURIComponent(c.substring(name.length));
-  }
-  return null;
-}
+// Add to cart functionality
+document.querySelectorAll('.add-to-cart-form').forEach(form => {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const itemCard = this.closest('[data-item-id]');
+    const itemName = itemCard.querySelector('h3').textContent;
+    const button = this.querySelector('button');
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Adding...';
+    
+    // Show notification
+    const notification = document.getElementById('cartNotification');
+    const message = document.getElementById('cartMessage');
+    message.textContent = `Adding ${itemName} to cart...`;
+    
+    notification.classList.remove('translate-x-full');
+    
+    // Submit form
+    fetch(this.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }).then(response => {
+      if (response.redirected) {
+        // Redirect to login page
+        window.location.href = response.url;
+        return;
+      }
+      
+      if (response.ok) {
+        return response.json().then(data => {
+          if (data.success) {
+        // Success animation
+            message.textContent = data.message;
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        
+        // Add success animation to card
+        itemCard.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          itemCard.style.transform = '';
+        }, 200);
+        
+            // Update cart count
+            if (typeof updateGlobalCartCount === 'function') {
+              updateGlobalCartCount(data.cart_count);
+            }
+            
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = originalText;
+          } else {
+            // Error from server
+            message.textContent = data.error || `Error adding ${itemName} to cart`;
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        button.disabled = false;
+        button.innerHTML = originalText;
+          }
+        });
+      } else {
+        // HTTP error
+        message.textContent = `Error adding ${itemName} to cart`;
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    }).catch(error => {
+      console.error('Error:', error);
+      message.textContent = 'Network error. Please try again.';
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+      button.disabled = false;
+      button.innerHTML = originalText;
+});
 
-function addToCart(itemId) {
-  const button = event.target.closest('button');
-  const originalText = button.textContent;
-  button.disabled = true;
-  button.textContent = 'Adding...';
-  fetch(`/add-to-cart/${itemId}/`, {
-    method: 'POST',
-    headers: {
-      'X-CSRFToken': getCSRFToken() || '',
-      'Content-Type': 'application/json'
-    }
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      if (typeof updateGlobalCartCount === 'function') {
-        updateGlobalCartCount(data.cart_count);
-      }
-      if (typeof showGlobalNotification === 'function') {
-        showGlobalNotification('Added to Cart', data.message || 'Item added', 'success');
-      }
-      button.textContent = 'Added!';
-      setTimeout(() => { button.textContent = originalText; button.disabled = false; }, 1200);
-    } else {
-      throw new Error(data.error || 'Failed to add item');
-    }
-  })
-  .catch(err => {
-    if (typeof showGlobalNotification === 'function') {
-      showGlobalNotification('Error', err.message || 'Failed to add item', 'error');
-    }
-    button.textContent = originalText;
-    button.disabled = false;
+    // Hide notification after 3 seconds
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+    }, 3000);
   });
-}
+});
 
+// Toggle favorite functionality
 function toggleFavorite(itemId) {
+  const button = document.querySelector(`[data-item-id="${itemId}"].favorite-btn`);
+  const originalHTML = button.innerHTML;
+  
   fetch(`/toggle-favorite/${itemId}/`, {
     method: 'POST',
     headers: {
-      'X-CSRFToken': getCSRFToken() || '',
-      'Content-Type': 'application/json'
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+      'Content-Type': 'application/json',
     }
   })
-  .then(r => r.json())
+  .then(response => response.json())
   .then(data => {
-    if (typeof showGlobalNotification === 'function') {
-      showGlobalNotification('Favorites', data.message || 'Updated favorites', data.success ? 'success' : 'info');
+    if (data.success) {
+      if (data.is_favorite) {
+        button.className = 'bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn';
+        button.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+      } else {
+        button.className = 'bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn';
+        button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>';
+      }
+      
+      // Show notification
+    const notification = document.getElementById('cartNotification');
+    const message = document.getElementById('cartMessage');
+      message.textContent = data.message;
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+    notification.classList.remove('translate-x-full');
+      
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+    }, 3000);
     }
   })
-  .catch(err => {
-    if (typeof showGlobalNotification === 'function') {
-      showGlobalNotification('Error', err.message || 'Failed to update favorites', 'error');
-    }
+  .catch(error => {
+    console.error('Error:', error);
+    button.innerHTML = originalHTML;
   });
 }
 </script>
+
+<style>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
 {% endblock %}

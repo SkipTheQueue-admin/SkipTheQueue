@@ -1,16 +1,17 @@
 // SkipTheQueue Service Worker
-// Version: 1.0.1 - Fixed static file references
+// Version: 1.0.0
 
-const CACHE_NAME = 'skipthequeue-v1.1';
+const CACHE_NAME = 'skipthequeue-v1';
 const STATIC_CACHE = 'skipqueue-static-v1.0.0';
 const DYNAMIC_CACHE = 'skipqueue-dynamic-v1.0.0';
 
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/static/css/main.css',
-  '/static/js/notifications.js',
-  '/static/images/zap-icon.svg',
+  '/static/css/style.css',
+  '/static/js/app.js',
+  '/static/images/icon-192x192.png',
+  '/static/images/icon-512x512.png',
   'https://cdn.tailwindcss.com',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   '/manifest.json'
@@ -43,13 +44,6 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => {
-      // Force all clients to reload to get the new service worker
-      return self.clients.matchAll().then(clients => {
-        clients.forEach(client => {
-          client.postMessage({ type: 'RELOAD_PAGE' });
-        });
-      });
     })
   );
 });
@@ -75,8 +69,8 @@ self.addEventListener('fetch', (event) => {
 self.addEventListener('push', (event) => {
   const options = {
     body: event.data ? event.data.text() : 'New order received!',
-    icon: '/static/images/zap-icon.svg',
-          badge: '/static/images/zap-icon.svg',
+    icon: '/static/images/icon-192x192.png',
+    badge: '/static/images/badge-72x72.png',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
@@ -86,12 +80,12 @@ self.addEventListener('push', (event) => {
       {
         action: 'explore',
         title: 'View Order',
-        icon: '/static/images/zap-icon.svg'
+        icon: '/static/images/icon-192x192.png'
       },
       {
         action: 'close',
         title: 'Close',
-        icon: '/static/images/zap-icon.svg'
+        icon: '/static/images/icon-192x192.png'
       }
     ]
   };
@@ -149,13 +143,6 @@ async function syncOrder(order) {
 self.addEventListener('message', (event) => {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'RELOAD_PAGE') {
-    self.clients.matchAll().then(clients => {
-      clients.forEach(client => {
-        client.navigate(client.url);
-      });
-    });
   }
 });
 
