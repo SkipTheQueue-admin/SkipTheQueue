@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>{% block title %}SkipTheQueue - Smart Canteen Ordering{% endblock %}</title>
   
   <!-- PWA Meta Tags -->
@@ -30,6 +30,17 @@
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            'inter': ['Inter', 'sans-serif'],
+          },
+        }
+      }
+    }
+  </script>
   
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,8 +49,76 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
   
   <style>
+    /* Critical fallback styles in case Tailwind fails to load */
+    * {
+      box-sizing: border-box;
+    }
+    
     body {
-      font-family: 'Inter', sans-serif;
+      font-family: 'Inter', 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+    }
+    
+    /* Ensure basic responsive behavior */
+    .max-w-7xl { max-width: 80rem; }
+    .max-w-4xl { max-width: 56rem; }
+    .max-w-5xl { max-width: 64rem; }
+    
+    /* Basic grid fallbacks */
+    .grid { display: grid; }
+    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    
+    /* Basic spacing fallbacks */
+    .gap-6 { gap: 1.5rem; }
+    .gap-8 { gap: 2rem; }
+    
+    /* Basic responsive breakpoints */
+    @media (max-width: 768px) {
+      .md\\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+      .md\\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+    }
+    
+    @media (max-width: 1024px) {
+      .lg\\:grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    
+    /* Fix for oversized elements */
+    .text-4xl { font-size: 2.25rem; }
+    .text-6xl { font-size: 3.75rem; }
+    .text-xl { font-size: 1.25rem; }
+    .text-2xl { font-size: 1.5rem; }
+    .text-lg { font-size: 1.125rem; }
+    .text-sm { font-size: 0.875rem; }
+    
+    /* Fix for spacing */
+    .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
+    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
+    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
+    .px-4 { padding-left: 1rem; padding-right: 1rem; }
+    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .px-8 { padding-left: 2rem; padding-right: 2rem; }
+    
+    /* Fix for margins */
+    .mb-6 { margin-bottom: 1.5rem; }
+    .mb-8 { margin-bottom: 2rem; }
+    .mt-16 { margin-top: 4rem; }
+    
+    /* Fix for container widths */
+    .mx-auto { margin-left: auto; margin-right: auto; }
+    
+    /* Mobile-specific fixes */
+    @media (max-width: 640px) {
+      .py-24 { padding-top: 3rem; padding-bottom: 3rem; }
+      .text-4xl { font-size: 1.875rem; }
+      .text-6xl { font-size: 2.25rem; }
+      .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
+      .px-6 { padding-left: 1rem; padding-right: 1rem; }
+      .px-8 { padding-left: 1.5rem; padding-right: 1.5rem; }
     }
     
     /* Custom scrollbar */
