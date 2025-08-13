@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>{% block title %}SkipTheQueue - Smart Canteen Ordering{% endblock %}</title>
   
   <!-- PWA Meta Tags -->
@@ -27,6 +27,56 @@
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-96x96.png' %}">
   <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-96x96.png' %}">
+  
+  <!-- Critical CSS to prevent oversized UI -->
+  <style>
+    /* Reset and prevent oversized elements */
+    * {
+      box-sizing: border-box;
+    }
+    
+    html {
+      font-size: 16px;
+      -webkit-text-size-adjust: 100%;
+      -ms-text-size-adjust: 100%;
+    }
+    
+    body {
+      font-family: 'Inter', 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+      line-height: 1.6;
+      font-size: 16px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    
+    /* Prevent text from being oversized */
+    h1 { font-size: 2.25rem !important; }
+    h2 { font-size: 1.875rem !important; }
+    h3 { font-size: 1.5rem !important; }
+    h4 { font-size: 1.25rem !important; }
+    p { font-size: 1rem !important; }
+    span { font-size: inherit !important; }
+    
+    /* Ensure proper container sizing */
+    .max-w-7xl { max-width: 80rem !important; }
+    .max-w-4xl { max-width: 56rem !important; }
+    .max-w-5xl { max-width: 64rem !important; }
+    .max-w-3xl { max-width: 48rem !important; }
+    
+    /* Fix mobile scaling */
+    @media (max-width: 640px) {
+      html { font-size: 14px; }
+      .px-4 { padding-left: 1rem !important; padding-right: 1rem !important; }
+      .py-24 { padding-top: 3rem !important; padding-bottom: 3rem !important; }
+    }
+    
+    @media (max-width: 768px) {
+      .text-4xl { font-size: 1.875rem !important; }
+      .text-6xl { font-size: 2.25rem !important; }
+    }
+  </style>
   
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
