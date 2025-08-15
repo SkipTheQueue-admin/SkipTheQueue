@@ -239,7 +239,7 @@
 </div>
 
 <!-- Error Notification -->
-<div id="errorNotification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+<div id="errorNotification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50 hidden">
   <div class="flex items-center">
     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -363,12 +363,17 @@ function showNotification(type, message) {
     document.getElementById('successMessage') : 
     document.getElementById('errorMessage');
   
-  messageElement.textContent = message;
-  notification.classList.remove('translate-x-full');
-  
-  setTimeout(() => {
-    notification.classList.add('translate-x-full');
-  }, 3000);
+  if (notification && messageElement) {
+    messageElement.textContent = message;
+    notification.classList.remove('hidden', 'translate-x-full');
+    
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+      setTimeout(() => {
+        notification.classList.add('hidden');
+      }, 300);
+    }, 3000);
+  }
 }
 </script>
 

@@ -5906,3 +5906,7 @@ INFO 2025-08-14 02:16:02,343 autoreload 2736 4536 Watching for file changes with
 INFO 2025-08-14 02:22:24,625 autoreload 21816 8692 Watching for file changes with StatReloader
 INFO 2025-08-14 02:22:51,753 autoreload 10924 3464 Watching for file changes with StatReloader
 INFO 2025-08-15 20:20:21,800 autoreload 10004 16676 Watching for file changes with StatReloader
+INFO 2025-08-15 20:50:23,056 autoreload 10004 16676 D:\SkipTheQueue\core\settings.py changed, reloading.
+INFO 2025-08-15 20:50:24,851 autoreload 19216 10544 Watching for file changes with StatReloader
+INFO 2025-08-15 20:52:38,366 autoreload 19216 10544 D:\SkipTheQueue\core\settings.py changed, reloading.
+INFO 2025-08-15 20:52:40,249 autoreload 12048 20936 Watching for file changes with StatReloader
