@@ -74,6 +74,8 @@
       align-items: center;
       justify-content: space-between;
       min-height: 60px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
     }
     
     .order-tracking-bar.show {
@@ -128,7 +130,38 @@
       padding: 8px 16px;
       border-radius: 20px;
       text-decoration: none;
+      display: inline-flex;
+      align-items: center;
       font-size: 14px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .track-order-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-1px);
+    }
+    
+    .close-tracking {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+    }
+    
+          .close-tracking:hover {
+        background: rgba(255, 255, 255, 0.2);
+        border-color: rgba(255, 255, 255, 0.4);
+      }
       font-weight: 500;
       transition: all 0.2s ease;
       white-space: nowrap;
@@ -570,6 +603,9 @@
       transform: translateY(100%);
       transition: transform 0.3s ease;
       z-index: 1000;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
     }
     
     .pwa-install-prompt.show {
@@ -588,10 +624,25 @@
       z-index: 50;
       transform: translateX(100%);
       transition: transform 0.3s ease;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      max-width: 24rem;
+      word-wrap: break-word;
     }
     
     .notification.show {
       transform: translateX(0);
+    }
+    
+    .notification.success {
+      background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .notification.error {
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+    
+    .notification.info {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
     }
     
     /* Custom scrollbar */
@@ -651,6 +702,357 @@
       font-size: 0.75rem;
       color: #64748b;
       margin-bottom: 0.5rem;
+    }
+    
+    /* Cart badge styles */
+    .cart-badge {
+      background: #ef4444;
+      color: white;
+      border-radius: 9999px;
+      height: 1.25rem;
+      width: 1.25rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      line-height: 1;
+      transition: all 0.2s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+      }
+    }
+    
+    .cart-badge.hidden {
+      display: none;
+    }
+    
+    /* Status-specific styles for order tracking */
+    .status-pending {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    
+    .status-preparing {
+      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    .status-ready {
+      background: linear-gradient(135deg, #10b981, #059669);
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .status-completed {
+      background: linear-gradient(135deg, #6b7280, #4b5563);
+      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
+    }
+    
+    /* Status-specific animations */
+    .status-pending .order-status-icon {
+      animation: pulse 2s infinite;
+    }
+    
+    .status-preparing .order-status-icon {
+      animation: spin 2s linear infinite;
+    }
+    
+    .status-ready .order-status-icon {
+      animation: bounce 1s infinite;
+    }
+    
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-5px);
+      }
+      60% {
+        transform: translateY(-3px);
+      }
+    }
+    
+    /* Mobile responsiveness improvements */
+    @media (max-width: 768px) {
+      .order-tracking-bar {
+        padding: 8px 12px;
+        min-height: 45px;
+      }
+      
+      .order-info {
+        gap: 8px;
+      }
+      
+      .order-status-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+      
+      .order-details h4 {
+        font-size: 13px;
+      }
+      
+      .order-details p {
+        font-size: 11px;
+      }
+      
+      .track-order-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+      }
+      
+      .pwa-install-prompt {
+        padding: 0.75rem;
+      }
+      
+      .pwa-install-prompt .flex {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .pwa-install-prompt button {
+        width: 100%;
+        margin: 0.25rem 0;
+      }
+      
+      /* Mobile navigation improvements */
+      .nav-link::after {
+        display: none;
+      }
+      
+      .nav-link:hover {
+        transform: none;
+      }
+      
+      /* Mobile logo improvements */
+      .logo-container:hover {
+        transform: none;
+      }
+      
+      /* Mobile cart badge improvements */
+      .cart-badge {
+        animation: none;
+      }
+      
+      /* Mobile order tracking improvements */
+      .order-actions {
+        flex-direction: column;
+        gap: 0.5rem;
+      }
+      
+      .track-order-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      
+      .close-tracking {
+        align-self: flex-end;
+    }
+    
+    /* Mobile navigation improvements */
+    .mobile-menu {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #e5e7eb;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+      z-index: 40;
+      transform: translateY(-100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .mobile-menu.show {
+      transform: translateY(0);
+    }
+    
+    .mobile-menu a {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #f3f4f6;
+      transition: background-color 0.2s ease;
+      display: block;
+      color: #374151;
+      text-decoration: none;
+    }
+    
+    .mobile-menu a:hover {
+      background-color: #f9fafb;
+      color: #1d4ed8;
+    }
+    
+    .mobile-menu a:last-child {
+      border-bottom: none;
+    }
+    
+    /* Mobile menu button improvements */
+    .mobile-menu-btn {
+      transition: all 0.2s ease;
+    }
+    
+    .mobile-menu-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .mobile-menu-btn:active {
+      transform: scale(0.95);
+    }
+      
+          /* Mobile user menu improvements */
+    .user-dropdown {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      margin-top: 0.5rem;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      min-width: 12rem;
+      transform: translateY(-10px);
+      opacity: 0;
+      transition: all 0.2s ease;
+      pointer-events: none;
+    }
+    
+    .user-dropdown.show {
+      transform: translateY(0);
+      opacity: 1;
+      pointer-events: auto;
+    }
+    
+    .user-dropdown a {
+      display: block;
+      padding: 0.75rem 1rem;
+      color: #374151;
+      text-decoration: none;
+      transition: background-color 0.2s ease;
+      border-radius: 0.25rem;
+      margin: 0.25rem;
+    }
+    
+    .user-dropdown a:hover {
+      background-color: #f9fafb;
+      color: #1d4ed8;
+    }
+    
+    .user-dropdown hr {
+      margin: 0.5rem 0;
+      border: none;
+      border-top: 1px solid #e5e7eb;
+    }
+    
+    /* User menu button improvements */
+    .user-menu-btn {
+      transition: all 0.2s ease;
+      border-radius: 0.5rem;
+      padding: 0.5rem;
+    }
+    
+    .user-menu-btn:hover {
+      background-color: #f3f4f6;
+      transform: translateY(-1px);
+    }
+    
+    .user-menu-btn:active {
+      transform: translateY(0);
+    }
+    }
+    
+    /* Enhanced hover effects */
+    .hover\:shadow-xl:hover {
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    .hover\:bg-blue-50:hover {
+      background-color: #eff6ff;
+    }
+    
+    .hover\:bg-gray-100:hover {
+      background-color: #f3f4f6;
+    }
+    
+    /* Logo and navigation improvements */
+    .logo-container {
+      transition: all 0.2s ease;
+    }
+    
+    .logo-container:hover {
+      transform: scale(1.05);
+    }
+    
+    .nav-link {
+      position: relative;
+      transition: all 0.2s ease;
+    }
+    
+    .nav-link::after {
+      content: '';
+      position: absolute;
+      bottom: -4px;
+      left: 0;
+      width: 0;
+      height: 2px;
+      background: #3b82f6;
+      transition: width 0.2s ease;
+    }
+    
+    .nav-link:hover::after {
+      width: 100%;
+    }
+    
+    .nav-link:hover {
+      color: #1d4ed8;
+      transform: translateY(-1px);
+    }
+    
+    /* Smooth transitions */
+    .transition-all {
+      transition: all 0.3s ease;
+    }
+    
+    .duration-200 {
+      transition-duration: 200ms;
+    }
+    
+    .duration-300 {
+      transition-duration: 300ms;
+    }
+    
+    /* Loading states */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid #f3f4f6;
+      border-top: 2px solid #3b82f6;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
   </style>
     
@@ -719,7 +1121,7 @@
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
         <div class="flex items-center space-x-3">
-          <a href="{% url 'home' %}" class="flex items-center space-x-2">
+          <a href="{% url 'home' %}" class="flex items-center space-x-2 logo-container">
             <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
               <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
@@ -734,21 +1136,21 @@
 
         <!-- Navigation Links -->
         <div class="hidden md:flex items-center space-x-6">
-          <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Home</a>
-          <a href="{% url 'menu' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Menu</a>
-          <a href="{% url 'view_cart' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 relative">
+          <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Home</a>
+          <a href="{% url 'menu' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Menu</a>
+          <a href="{% url 'view_cart' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 relative nav-link">
             Cart
             <span id="cart-badge" class="cart-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
           </a>
           {% if user.is_authenticated %}
-            <a href="{% url 'order_history' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">My Orders</a>
-            <a href="{% url 'track_order' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Track Order</a>
+            <a href="{% url 'order_history' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">My Orders</a>
+            <a href="{% url 'track_order' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Track Order</a>
           {% endif %}
         </div>
                 
                 <!-- Mobile Menu Button -->
         <div class="md:hidden">
-          <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600">
+          <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600 mobile-menu-btn">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
@@ -759,7 +1161,7 @@
         <div class="flex items-center space-x-4">
                     {% if user.is_authenticated %}
             <div class="relative">
-              <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
+                                          <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 user-menu-btn">
                 <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                   <span class="text-blue-600 font-semibold text-sm">{{ user.first_name|first|upper }}</span>
                 </div>
@@ -767,7 +1169,7 @@
                             </button>
               
                             <!-- User Dropdown -->
-              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden">
+              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden user-dropdown">
                 <div class="py-2">
                   <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Profile</a>
                   <a href="{% url 'order_history' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
@@ -787,7 +1189,7 @@
         </div>
         
         <!-- Mobile Menu -->
-    <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-200">
+    <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-200 mobile-menu">
       <div class="px-4 py-2 space-y-1">
         <a href="{% url 'home' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Home</a>
         <a href="{% url 'menu' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Menu</a>
@@ -889,7 +1291,7 @@
 
     // PWA Install Prompt
     let deferredPrompt;
-    const pwaInstallPrompt = document.getElementById('pwaInstallPrompt');
+    let pwaInstallPrompt;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -897,7 +1299,7 @@
       
       // Show install prompt after 5 seconds
       setTimeout(() => {
-        if (deferredPrompt && !localStorage.getItem('pwaDismissed')) {
+        if (deferredPrompt && !localStorage.getItem('pwaDismissed') && pwaInstallPrompt) {
           pwaInstallPrompt.classList.add('show');
         }
       }, 5000);
@@ -927,6 +1329,11 @@
 
     mobileMenuBtn.addEventListener('click', () => {
       mobileMenu.classList.toggle('hidden');
+      if (!mobileMenu.classList.contains('hidden')) {
+        mobileMenu.classList.add('show');
+      } else {
+        mobileMenu.classList.remove('show');
+      }
     });
 
     // User dropdown toggle
@@ -936,21 +1343,37 @@
     if (userMenuBtn) {
       userMenuBtn.addEventListener('click', () => {
         userDropdown.classList.toggle('hidden');
+        if (!userDropdown.classList.contains('hidden')) {
+          userDropdown.classList.add('show');
+        } else {
+          userDropdown.classList.remove('show');
+        }
       });
 
       // Close dropdown when clicking outside
       document.addEventListener('click', (e) => {
         if (!userMenuBtn.contains(e.target)) {
           userDropdown.classList.add('hidden');
+          userDropdown.classList.remove('show');
         }
       });
     }
 
-    // Add slide-up animation to main content
+    // Add slide-up animation to main content and initialize PWA
     document.addEventListener('DOMContentLoaded', () => {
       const mainContent = document.querySelector('main');
       if (mainContent) {
         mainContent.classList.add('slide-up');
+      }
+      
+      // Initialize PWA install prompt
+      pwaInstallPrompt = document.getElementById('pwaInstallPrompt');
+      
+      // Hide prompt if dismissed
+      if (localStorage.getItem('pwaDismissed')) {
+        if (pwaInstallPrompt) {
+          pwaInstallPrompt.style.display = 'none';
+        }
       }
     });
 
