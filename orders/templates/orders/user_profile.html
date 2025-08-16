@@ -148,13 +148,16 @@
                         <p class="text-xs text-gray-500 mt-1">{{ item.college.name }}</p>
                       {% endif %}
                     </div>
-                    <button onclick="removeFavorite({{ item.id }})" class="text-red-500 hover:text-red-700 ml-2">
+                    <button data-action="remove-favorite" 
+                            data-item-id="{{ item.id }}"
+                            class="text-red-500 hover:text-red-700 ml-2">
                       <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M6 18L18 6M6 6l12 12"/>
                       </svg>
                     </button>
                   </div>
-                  <button onclick="addToCartFromFavorites({{ item.id }})" 
+                  <button data-action="add-to-cart-favorite" 
+                          data-item-id="{{ item.id }}"
                           class="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium mt-3">
                     Add to Cart
                   </button>
@@ -233,94 +236,7 @@
   </div>
 </div>
 
-<script>
-  // Remove favorite function
-  async function removeFavorite(itemId) {
-    if (!confirm('Remove this item from favorites?')) {
-      return;
-    }
-    
-    try {
-      const response = await fetch(`/toggle-favorite/${itemId}/`, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Remove the item from the DOM
-          const itemElement = document.querySelector(`[onclick="removeFavorite(${itemId})"]`).closest('.border');
-          if (itemElement) {
-            itemElement.remove();
-          }
-          
-          // Check if no more favorites
-          const favoritesContainer = document.querySelector('.grid');
-          if (favoritesContainer && favoritesContainer.children.length === 0) {
-            location.reload(); // Reload to show empty state
-          }
-          
-          showNotification('Item removed from favorites', 'success');
-        } else {
-          showNotification(data.error || 'Failed to remove favorite', 'error');
-        }
-      } else {
-        showNotification('Failed to remove favorite', 'error');
-      }
-    } catch (error) {
-      console.error('Error removing favorite:', error);
-      showNotification('Error removing favorite', 'error');
-    }
-  }
-  
-  // Add to cart from favorites
-  async function addToCartFromFavorites(itemId) {
-    try {
-      const response = await fetch(`/add-to-cart/${itemId}/`, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          showNotification('Item added to cart!', 'success');
-        } else {
-          showNotification(data.error || 'Failed to add item to cart', 'error');
-        }
-      } else {
-        showNotification('Failed to add item to cart', 'error');
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      showNotification('Error adding item to cart', 'error');
-    }
-  }
-  
-  // Show notification
-  function showNotification(message, type = 'info') {
-    if (typeof window.showNotification === 'function') {
-      window.showNotification(message, type);
-    } else {
-      // Fallback notification
-      const notification = document.createElement('div');
-      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm bg-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue'}-500 text-white`;
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-    }
-  }
-</script>
-
+<!-- External JavaScript for user profile functionality -->
+<script src="{% static 'js/user-profile.js' %}" defer></script>
 {% csrf_token %}
 {% endblock %}

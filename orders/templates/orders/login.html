@@ -14,7 +14,7 @@
                 {% for message in messages %}
                     <div class="message {{ message.tags }}">
                         <span class="message-text">{{ message }}</span>
-                        <button class="message-close" onclick="this.parentElement.remove()" aria-label="Close message">×</button>
+                        <button class="message-close" data-action="close-message" aria-label="Close message">×</button>
                     </div>
                 {% endfor %}
             </div>

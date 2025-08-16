@@ -124,7 +124,8 @@
                 
                 <div class="flex items-center gap-2">
                   <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                          onclick="addToCart('{{ item.id }}')"
+                          data-action="add-to-cart"
+                          data-item-id="{{ item.id }}"
                           {% if item.is_stock_managed and item.stock_quantity <= 0 %}disabled{% endif %}>
                     <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
@@ -133,7 +134,8 @@
                   </button>
                   
                   <button class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 focus-ring"
-                          onclick="removeFromFavorites('{{ item.id }}')"
+                          data-action="remove-favorite"
+                          data-item-id="{{ item.id }}"
                           title="Remove from favorites">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -186,7 +188,8 @@
             <div class="p-4">
               <div class="flex items-start justify-between mb-2">
                 <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
-                <button onclick="toggleFavorite('{{ item.id }}')" 
+                <button data-action="toggle-favorite" 
+                        data-item-id="{{ item.id }}"
                         class="text-gray-400 hover:text-yellow-500 transition-colors favorite-btn-{{ item.id }}"
                         data-is-favorite="{% if item.id in favorite_item_ids %}true{% else %}false{% endif %}">
                   <svg class="w-5 h-5" fill="{% if item.id in favorite_item_ids %}currentColor{% else %}none{% endif %}" 
@@ -214,7 +217,8 @@
                 {% endif %}
               </div>
               
-              <button onclick="addToCart('{{ item.id }}')" 
+              <button data-action="add-to-cart" 
+                      data-item-id="{{ item.id }}"
                       class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       {% if item.is_stock_managed and item.stock_quantity <= 0 %}disabled{% endif %}>
                 {% if item.is_stock_managed and item.stock_quantity <= 0 %}
@@ -251,181 +255,7 @@
   </div>
 </div>
 
-<!-- Add to Cart Modal -->
-<div id="cart-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-  <div class="flex items-center justify-center min-h-screen p-4">
-    <div class="bg-white rounded-lg max-w-md w-full p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold text-gray-900">Add to Cart</h3>
-        <button onclick="closeCartModal()" class="text-gray-400 hover:text-gray-600">
-          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-      
-      <div id="modal-item-details" class="mb-4">
-        <!-- Item details will be populated here -->
-      </div>
-      
-      <div class="flex items-center justify-center gap-4 mb-6">
-        <button onclick="decreaseQuantity()" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-          </svg>
-        </button>
-        
-        <span id="modal-quantity" class="text-2xl font-bold text-gray-900 mx-4">1</span>
-        
-        <button onclick="increaseQuantity()" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-          </svg>
-        </button>
-      </div>
-      
-      <div class="flex gap-3">
-        <button onclick="closeCartModal()" class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-300 transition-colors">
-          Cancel
-        </button>
-        <button onclick="confirmAddToCart()" class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors">
-          Add to Cart
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<script>
-  let currentItemId = null;
-  let currentQuantity = 1;
-  
-  // Add to cart function
-  async function addToCart(itemId) {
-    try {
-      const response = await fetch(`/add-to-cart/${itemId}/`, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Update cart count
-          updateCartCount(data.cart_count);
-          
-          // Show success message
-          showNotification(data.message, 'success');
-          
-          // Update cart badge
-          const cartBadge = document.querySelector('.cart-badge');
-          if (cartBadge) {
-            cartBadge.textContent = data.cart_count;
-            cartBadge.classList.remove('hidden');
-          }
-        } else {
-          showNotification(data.error || 'Failed to add item to cart', 'error');
-        }
-      } else {
-        showNotification('Failed to add item to cart', 'error');
-      }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-      showNotification('Error adding item to cart', 'error');
-    }
-  }
-  
-  // Toggle favorite function
-  async function toggleFavorite(itemId) {
-    try {
-      const response = await fetch(`/toggle-favorite/${itemId}/`, {
-        method: 'POST',
-        headers: {
-          'X-Requested-With': 'XMLHttpRequest',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
-        }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const favoriteBtn = document.querySelector(`.favorite-btn-${itemId}`);
-          const isFavorite = favoriteBtn.getAttribute('data-is-favorite') === 'true';
-          
-          // Toggle favorite state
-          favoriteBtn.setAttribute('data-is-favorite', !isFavorite);
-          
-          // Update button appearance
-          const svg = favoriteBtn.querySelector('svg');
-          if (isFavorite) {
-            svg.setAttribute('fill', 'none');
-            favoriteBtn.classList.remove('text-yellow-500');
-            favoriteBtn.classList.add('text-gray-400');
-          } else {
-            svg.setAttribute('fill', 'currentColor');
-            favoriteBtn.classList.remove('text-gray-400');
-            favoriteBtn.classList.add('text-yellow-500');
-          }
-          
-          showNotification(data.message, 'success');
-        } else {
-          showNotification(data.error || 'Failed to update favorite', 'error');
-        }
-      } else {
-        showNotification('Failed to update favorite', 'error');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-      showNotification('Error updating favorite', 'error');
-    }
-  }
-  
-  // Update cart count
-  function updateCartCount(count) {
-    const cartBadge = document.querySelector('.cart-badge');
-    if (cartBadge) {
-      cartBadge.textContent = count;
-      if (count > 0) {
-        cartBadge.classList.remove('hidden');
-      } else {
-        cartBadge.classList.add('hidden');
-      }
-    }
-  }
-  
-  // Show notification
-  function showNotification(message, type = 'info') {
-    if (typeof showNotification === 'function') {
-      window.showNotification(message, type);
-    } else {
-      // Fallback notification
-      const notification = document.createElement('div');
-      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm bg-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue'}-500 text-white`;
-      notification.textContent = message;
-      document.body.appendChild(notification);
-      
-      setTimeout(() => {
-        notification.remove();
-      }, 3000);
-    }
-  }
-  
-  // Initialize
-  document.addEventListener('DOMContentLoaded', function() {
-    // Add CSRF token to all forms
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (!csrfToken) {
-      const token = document.createElement('input');
-      token.type = 'hidden';
-      token.name = 'csrfmiddlewaretoken';
-      token.value = '{{ csrf_token }}';
-      document.body.appendChild(token);
-    }
-  });
-</script>
-
+<!-- External JavaScript for menu functionality -->
+<script src="{% static 'js/menu.js' %}" defer></script>
 {% csrf_token %}
 {% endblock %}

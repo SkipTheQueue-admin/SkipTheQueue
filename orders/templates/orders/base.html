@@ -660,7 +660,7 @@
             </svg>
             <span id="tracking-time" class="text-xs font-medium">-</span>
           </div>
-          <button onclick="hideOrderTracking()" 
+          <button data-action="hide-order-tracking" 
                   class="text-white hover:text-blue-100 transition-colors p-1 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
                   aria-label="Hide order tracking">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -914,141 +914,14 @@
   <!-- Notifications script -->
   <script src="{% static 'js/notifications.js' %}"></script>
   
+  <!-- UI Utilities script -->
+  <script src="{% static 'js/ui-utilities.js' %}" defer></script>
+  
   <!-- Order tracking script -->
+  <script src="{% static 'js/order-tracking.js' %}" defer></script>
+  
+  <!-- Cart and utility functions -->
   <script>
-    // Enhanced Order tracking functionality
-    let currentOrderId = null;
-    let trackingInterval = null;
-    let progressInterval = null;
-    
-    function showOrderTracking(orderId, status, estimatedTime) {
-      currentOrderId = orderId;
-      
-      // Update tracking bar content
-      document.getElementById('tracking-order-id').textContent = orderId;
-      document.getElementById('tracking-status').textContent = status;
-      document.getElementById('tracking-time').textContent = `Est. ${estimatedTime} min`;
-      
-      // Show tracking bar with smooth animation
-      const trackingBar = document.getElementById('order-tracking-bar');
-      trackingBar.classList.remove('hidden');
-      
-      // Trigger animation after a small delay
-      setTimeout(() => {
-        trackingBar.classList.remove('-translate-y-full');
-      }, 10);
-      
-      // Start tracking updates
-      startOrderTracking();
-      startProgressAnimation(estimatedTime);
-    }
-    
-    function hideOrderTracking() {
-      const trackingBar = document.getElementById('order-tracking-bar');
-      trackingBar.classList.add('-translate-y-full');
-      
-      // Hide after animation completes
-      setTimeout(() => {
-        trackingBar.classList.add('hidden');
-      }, 500);
-      
-      // Stop tracking updates
-      if (trackingInterval) {
-        clearInterval(trackingInterval);
-        trackingInterval = null;
-      }
-      
-      if (progressInterval) {
-        clearInterval(progressInterval);
-        progressInterval = null;
-      }
-      
-      // Reset progress bar
-      const progressBar = document.getElementById('tracking-progress');
-      if (progressBar) {
-        progressBar.style.width = '0%';
-      }
-      
-      currentOrderId = null;
-    }
-    
-    function startProgressAnimation(estimatedTime) {
-      const progressBar = document.getElementById('tracking-progress');
-      if (!progressBar) return;
-      
-      // Reset progress
-      progressBar.style.width = '0%';
-      
-      // Calculate progress increment per second
-      const totalSeconds = estimatedTime * 60;
-      const increment = 100 / totalSeconds;
-      let currentProgress = 0;
-      
-      progressInterval = setInterval(() => {
-        currentProgress += increment;
-        if (currentProgress >= 100) {
-          currentProgress = 100;
-          clearInterval(progressInterval);
-        }
-        progressBar.style.width = `${currentProgress}%`;
-      }, 1000);
-    }
-    
-    function startOrderTracking() {
-      if (trackingInterval) {
-        clearInterval(trackingInterval);
-      }
-      
-      // Update order status every 10 seconds
-      trackingInterval = setInterval(async () => {
-        if (!currentOrderId) return;
-        
-        try {
-          const response = await fetch(`/api/check-order-status/${currentOrderId}/`);
-          if (response.ok) {
-            const data = await response.json();
-            
-            if (data.status === 'Completed' || data.status === 'Cancelled') {
-              // Show completion message
-              if (data.status === 'Completed') {
-                showNotification('Order completed successfully! 🎉', 'success', 5000);
-              } else {
-                showNotification('Order was cancelled', 'info', 5000);
-              }
-              
-              // Hide tracking bar when order is completed
-              hideOrderTracking();
-              return;
-            }
-            
-            // Update status display
-            const statusElement = document.getElementById('tracking-status');
-            if (statusElement) {
-              statusElement.textContent = data.status;
-              
-              // Add status-specific styling
-              statusElement.className = 'font-medium';
-              if (data.status === 'Preparing') {
-                statusElement.classList.add('text-yellow-200');
-              } else if (data.status === 'Ready') {
-                statusElement.classList.add('text-green-200');
-              }
-            }
-            
-            if (data.estimated_time) {
-              const timeElement = document.getElementById('tracking-time');
-              if (timeElement) {
-                timeElement.textContent = `Est. ${data.estimated_time} min`;
-              }
-            }
-          }
-        } catch (error) {
-          console.error('Error updating order status:', error);
-          // Don't show error to user for background updates
-        }
-      }, 10000);
-    }
-    
     // Enhanced cart count update with error handling
     async function updateCartCount() {
       try {
@@ -1089,46 +962,6 @@
         if (cartCountElement && cartItems.length > 0) {
           cartCountElement.textContent = cartItems.length;
         }
-      }
-    }
-    
-    // Enhanced notification system
-    function showNotification(message, type = 'info', duration = 5000) {
-      // Check if notification system is available
-      if (window.showNotification) {
-        window.showNotification(message, type, duration);
-      } else {
-        // Fallback notification
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-        
-        // Set colors based on type
-        const colors = {
-          success: 'bg-green-500 text-white',
-          error: 'bg-red-500 text-white',
-          warning: 'bg-yellow-500 text-white',
-          info: 'bg-blue-500 text-white'
-        };
-        
-        notification.className += ` ${colors[type] || colors.info}`;
-        notification.textContent = message;
-        
-        document.body.appendChild(notification);
-        
-        // Animate in
-        setTimeout(() => {
-          notification.classList.remove('translate-x-full');
-        }, 10);
-        
-        // Auto-remove
-        setTimeout(() => {
-          notification.classList.add('translate-x-full');
-          setTimeout(() => {
-            if (notification.parentNode) {
-              notification.parentNode.removeChild(notification);
-            }
-          }, 300);
-        }, duration);
       }
     }
     
