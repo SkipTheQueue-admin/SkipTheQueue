@@ -1,727 +1,269 @@
-/**
- * Enhanced Notification System for SkipTheQueue
- * Features:
- * - Persistent order ready notifications
- * - Real-time order status tracking
- * - Mobile-optimized UI
- * - Auto-dismiss and manual dismiss options
- * - Order status bars on all pages
- * - Better error handling and performance
- */
+// Enhanced Notifications System for SkipTheQueue
+// Provides toast notifications, alerts, and user feedback
 
-class NotificationManager {
+class NotificationSystem {
     constructor() {
         this.notifications = [];
-        this.orderStatusBars = new Map();
-        this.orderReadyNotifications = new Map();
-        this.isInitialized = false;
-        this.checkInterval = null;
-        this.userPhone = null;
-        this.currentOrderId = null;
-        this.isOnline = navigator.onLine;
-        
+        this.maxNotifications = 5;
+        this.defaultDuration = 5000;
         this.init();
     }
-
+    
     init() {
-        if (this.isInitialized) return;
+        // Create notification container if it doesn't exist
+        if (!document.getElementById('notification-container')) {
+            this.createContainer();
+        }
         
-        try {
-            // Get user phone from session storage or page data
-            this.userPhone = this.getUserPhone();
-            
-            // Initialize notification container
-            this.createNotificationContainer();
-            
-            // Start real-time order status checking
-            this.startOrderStatusChecking();
-            
-            // Initialize existing notifications
-            this.initializeExistingNotifications();
-            
-            // Set up event listeners
-            this.setupEventListeners();
-            
-            this.isInitialized = true;
-            console.log('NotificationManager initialized successfully');
-        } catch (error) {
-            console.error('Error initializing NotificationManager:', error);
-        }
+        // Set up global notification function
+        window.showNotification = this.show.bind(this);
+        window.hideNotification = this.hide.bind(this);
+        window.clearAllNotifications = this.clearAll.bind(this);
     }
-
-    getUserPhone() {
-        try {
-            // Try to get phone from various sources
-            const phoneFromStorage = sessionStorage.getItem('user_phone');
-            if (phoneFromStorage) return phoneFromStorage;
-            
-            // Try to get from page data
-            const phoneElement = document.querySelector('[data-user-phone]');
-            if (phoneElement) return phoneElement.dataset.userPhone;
-            
-            // Try to get from order data
-            const orderElement = document.querySelector('[data-order-phone]');
-            if (orderElement) return orderElement.dataset.orderPhone;
-            
-            return null;
-        } catch (error) {
-            console.error('Error getting user phone:', error);
-            return null;
-        }
+    
+    createContainer() {
+        const container = document.createElement('div');
+        container.id = 'notification-container';
+        container.className = 'fixed top-4 right-4 z-50 space-y-2 max-w-sm';
+        document.body.appendChild(container);
     }
-
-    createNotificationContainer() {
-        try {
-            // Create main notification container
-            if (!document.getElementById('notification-container')) {
-                const container = document.createElement('div');
-                container.id = 'notification-container';
-                container.className = 'notification-container';
-                document.body.appendChild(container);
-            }
-
-            // Create order status bar container
-            if (!document.getElementById('order-status-container')) {
-                const statusContainer = document.createElement('div');
-                statusContainer.id = 'order-status-container';
-                document.body.appendChild(statusContainer);
-            }
-
-            // Create order ready notification container
-            if (!document.getElementById('order-ready-container')) {
-                const readyContainer = document.createElement('div');
-                readyContainer.id = 'order-ready-container';
-                document.body.appendChild(readyContainer);
-            }
-        } catch (error) {
-            console.error('Error creating notification containers:', error);
-        }
-    }
-
-    initializeExistingNotifications() {
-        try {
-            // Initialize any existing Django messages
-            const messages = document.querySelectorAll('.messages .message');
-            messages.forEach(message => {
-                this.showMessage(message);
-            });
-
-            // Initialize any existing order status
-            this.checkCurrentOrderStatus();
-        } catch (error) {
-            console.error('Error initializing existing notifications:', error);
-        }
-    }
-
-    setupEventListeners() {
-        try {
-            // Listen for order status updates
-            document.addEventListener('orderStatusUpdated', (e) => {
-                this.handleOrderStatusUpdate(e.detail);
-            });
-
-            // Listen for order ready notifications
-            document.addEventListener('orderReady', (e) => {
-                this.showOrderReadyNotification(e.detail);
-            });
-
-            // Listen for page visibility changes
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) {
-                    this.refreshOrderStatus();
-                }
-            });
-
-            // Listen for focus events
-            window.addEventListener('focus', () => {
-                this.refreshOrderStatus();
-            });
-
-            // Listen for online/offline events
-            window.addEventListener('online', () => {
-                this.isOnline = true;
-                this.refreshOrderStatus();
-            });
-
-            window.addEventListener('offline', () => {
-                this.isOnline = false;
-                this.stopOrderStatusChecking();
-            });
-        } catch (error) {
-            console.error('Error setting up event listeners:', error);
-        }
-    }
-
-    startOrderStatusChecking() {
-        if (!this.userPhone || !this.isOnline) return;
+    
+    show(message, type = 'info', duration = null, options = {}) {
+        const notification = this.createNotification(message, type, options);
+        this.notifications.push(notification);
         
-        try {
-            // Check immediately
-            this.checkOrderStatus();
-            
-            // Set up periodic checking
-            this.checkInterval = setInterval(() => {
-                if (this.isOnline) {
-                    this.checkOrderStatus();
-                }
-            }, 10000); // Check every 10 seconds
-        } catch (error) {
-            console.error('Error starting order status checking:', error);
-        }
-    }
-
-    stopOrderStatusChecking() {
-        if (this.checkInterval) {
-            clearInterval(this.checkInterval);
-            this.checkInterval = null;
-        }
-    }
-
-    async checkOrderStatus() {
-        if (!this.userPhone || !this.isOnline) return;
+        // Add to DOM
+        const container = document.getElementById('notification-container');
+        container.appendChild(notification);
         
-        try {
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-            
-            const response = await fetch(`/check-order-status/${this.userPhone}/`, {
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            
-            const data = await response.json();
-            
-            if (data.has_active_order) {
-                this.updateOrderStatusBar(data.order);
-            } else {
-                this.removeOrderStatusBar();
-            }
-            
-            // Check for new notifications
-            if (data.notifications && data.notifications.length > 0) {
-                data.notifications.forEach(notification => {
-                    this.showNotification(notification);
-                });
-            }
-            
-        } catch (error) {
-            if (error.name === 'AbortError') {
-                console.log('Order status check timed out');
-            } else {
-                console.error('Error checking order status:', error);
-            }
+        // Animate in
+        requestAnimationFrame(() => {
+            notification.classList.remove('translate-x-full', 'opacity-0');
+        });
+        
+        // Auto-remove after duration
+        const autoRemoveDuration = duration !== null ? duration : this.defaultDuration;
+        if (autoRemoveDuration > 0) {
+            setTimeout(() => {
+                this.hide(notification);
+            }, autoRemoveDuration);
         }
-    }
-
-    updateOrderStatusBar(order) {
-        try {
-            const container = document.getElementById('order-status-container');
-            if (!container) return;
-            
-            // Remove existing status bar
-            this.removeOrderStatusBar();
-            
-            // Create new status bar
-            const statusBar = this.createOrderStatusBar(order);
-            if (statusBar) {
-                container.appendChild(statusBar);
-                
-                // Store reference
-                this.orderStatusBars.set(order.id, statusBar);
-                
-                // Add to page
-                document.body.insertBefore(statusBar, document.body.firstChild);
-            }
-        } catch (error) {
-            console.error('Error updating order status bar:', error);
+        
+        // Limit number of notifications
+        if (this.notifications.length > this.maxNotifications) {
+            this.hide(this.notifications[0]);
         }
+        
+        return notification;
     }
-
-    createOrderStatusBar(order) {
-        try {
-            const statusBar = document.createElement('div');
-            statusBar.className = 'order-status-bar';
-            statusBar.dataset.orderId = order.id;
-            
-            const statusColor = this.getStatusColor(order.status);
-            const statusIcon = this.getStatusIcon(order.status);
-            
-            statusBar.innerHTML = `
-                <div class="status-content">
-                    <div class="status-info">
-                        <div class="status-icon" style="color: ${statusColor}">
-                            ${statusIcon}
-                        </div>
-                        <div class="status-details">
-                            <div class="status-title">Order #${order.id}</div>
-                            <div class="status-message">${this.getStatusMessage(order.status)}</div>
-                            <div class="status-time">${this.formatTime(order.updated_at)}</div>
-                        </div>
-                    </div>
-                    <button class="status-close" onclick="notificationManager.removeOrderStatusBar()">
-                        ×
+    
+    createNotification(message, type, options = {}) {
+        const notification = document.createElement('div');
+        
+        // Determine colors and icons based on type
+        const config = this.getTypeConfig(type);
+        
+        notification.className = `bg-${config.bgColor} border border-${config.borderColor} text-${config.textColor} p-4 rounded-lg shadow-lg transform transition-all duration-300 translate-x-full opacity-0 max-w-sm`;
+        
+        notification.innerHTML = `
+            <div class="flex items-start space-x-3">
+                <div class="flex-shrink-0">
+                    <i class="fas ${config.icon} text-lg"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-medium">${this.escapeHtml(message)}</p>
+                    ${options.description ? `<p class="text-xs mt-1 opacity-75">${this.escapeHtml(options.description)}</p>` : ''}
+                </div>
+                <div class="flex-shrink-0 ml-2">
+                    <button onclick="window.notificationSystem.hide(this.closest('.notification'))" 
+                            class="text-${config.textColor} hover:opacity-75 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-${config.ringColor} rounded">
+                        <i class="fas fa-times text-sm"></i>
                     </button>
                 </div>
-            `;
-            
-            return statusBar;
-        } catch (error) {
-            console.error('Error creating order status bar:', error);
-            return null;
+            </div>
+            ${options.progress ? `<div class="mt-2 bg-${config.progressBg} rounded-full h-1"><div class="bg-${config.progressColor} h-1 rounded-full transition-all duration-300" style="width: ${options.progress}%"></div></div>` : ''}
+        `;
+        
+        // Add custom classes
+        if (options.className) {
+            notification.classList.add(...options.className.split(' '));
         }
-    }
-
-    removeOrderStatusBar() {
-        try {
-            const statusBars = document.querySelectorAll('.order-status-bar');
-            statusBars.forEach(bar => {
-                bar.classList.add('removing');
-                setTimeout(() => {
-                    if (bar.parentNode) {
-                        bar.parentNode.removeChild(bar);
-                    }
-                }, 300);
-            });
-            
-            this.orderStatusBars.clear();
-        } catch (error) {
-            console.error('Error removing order status bar:', error);
+        
+        // Add data attributes
+        notification.dataset.type = type;
+        notification.dataset.timestamp = Date.now();
+        
+        // Add click handler if provided
+        if (options.onClick) {
+            notification.style.cursor = 'pointer';
+            notification.addEventListener('click', options.onClick);
         }
+        
+        return notification;
     }
-
-    showOrderReadyNotification(order) {
-        try {
-            const container = document.getElementById('order-ready-container');
-            if (!container) return;
-            
-            // Remove existing notification
-            this.removeOrderReadyNotification();
-            
-            // Create new notification
-            const notification = this.createOrderReadyNotification(order);
-            if (notification) {
-                container.appendChild(notification);
-                
-                // Store reference
-                this.orderReadyNotifications.set(order.id, notification);
-                
-                // Add to page
-                document.body.insertBefore(notification, document.body.firstChild);
-                
-                // Play notification sound if available
-                this.playNotificationSound();
-                
-                // Send browser notification
-                this.sendBrowserNotification(order);
+    
+    getTypeConfig(type) {
+        const configs = {
+            success: {
+                bgColor: 'green-50',
+                borderColor: 'green-200',
+                textColor: 'green-800',
+                ringColor: 'green-500',
+                icon: 'fa-check-circle',
+                progressBg: 'green-200',
+                progressColor: 'green-500'
+            },
+            error: {
+                bgColor: 'red-50',
+                borderColor: 'red-200',
+                textColor: 'red-800',
+                ringColor: 'red-500',
+                icon: 'fa-exclamation-circle',
+                progressBg: 'red-200',
+                progressColor: 'red-500'
+            },
+            warning: {
+                bgColor: 'yellow-50',
+                borderColor: 'yellow-200',
+                textColor: 'yellow-800',
+                ringColor: 'yellow-500',
+                icon: 'fa-exclamation-triangle',
+                progressBg: 'yellow-200',
+                progressColor: 'yellow-500'
+            },
+            info: {
+                bgColor: 'blue-50',
+                borderColor: 'blue-200',
+                textColor: 'blue-800',
+                ringColor: 'blue-500',
+                icon: 'fa-info-circle',
+                progressBg: 'blue-200',
+                progressColor: 'blue-500'
             }
-        } catch (error) {
-            console.error('Error showing order ready notification:', error);
-        }
+        };
+        
+        return configs[type] || configs.info;
     }
-
-    createOrderReadyNotification(order) {
-        try {
-            const notification = document.createElement('div');
-            notification.className = 'order-ready-notification';
-            notification.dataset.orderId = order.id;
-            
-            notification.innerHTML = `
-                <div class="notification-header">
-                    <div class="notification-title">
-                        <svg viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                        </svg>
-                        Order Ready!
-                    </div>
-                    <div class="notification-message">
-                        Your order #${order.id} is ready for pickup at ${order.college_name || 'the canteen'}.
-                    </div>
-                </div>
-                <button class="notification-close" onclick="notificationManager.removeOrderReadyNotification()">
-                    ×
-                </button>
-            `;
-            
-            return notification;
-        } catch (error) {
-            console.error('Error creating order ready notification:', error);
-            return null;
-        }
-    }
-
-    removeOrderReadyNotification() {
-        try {
-            const notifications = document.querySelectorAll('.order-ready-notification');
-            notifications.forEach(notification => {
-                notification.classList.add('removing');
-                setTimeout(() => {
-                    if (notification.parentNode) {
-                        notification.parentNode.removeChild(notification);
-                    }
-                }, 400);
-            });
-            
-            this.orderReadyNotifications.clear();
-        } catch (error) {
-            console.error('Error removing order ready notification:', error);
-        }
-    }
-
-    showNotification(notificationData) {
-        try {
-            const container = document.getElementById('notification-container');
-            if (!container) return;
-            
-            const notification = this.createNotification(notificationData);
-            if (notification) {
-                container.appendChild(notification);
-                
-                // Auto-dismiss after 5 seconds (unless it's a persistent notification)
-                if (!notificationData.persistent) {
-                    setTimeout(() => {
-                        this.dismissNotification(notification);
-                    }, 5000);
-                }
-                
-                // Store reference
-                this.notifications.push(notification);
-                
-                return notification;
-            }
-        } catch (error) {
-            console.error('Error showing notification:', error);
-        }
-        return null;
-    }
-
-    createNotification(notificationData) {
-        try {
-            const notification = document.createElement('div');
-            notification.className = `notification ${notificationData.type || 'info'}`;
-            notification.dataset.notificationId = notificationData.id || Date.now();
-            
-            const icon = this.getNotificationIcon(notificationData.type);
-            
-            notification.innerHTML = `
-                <div class="notification-content">
-                    <div class="notification-icon">
-                        ${icon}
-                    </div>
-                    <div class="notification-text">
-                        <div class="notification-title">${this.escapeHtml(notificationData.title || 'Notification')}</div>
-                        <div class="notification-message">${this.escapeHtml(notificationData.message || '')}</div>
-                    </div>
-                    <button class="notification-close" onclick="notificationManager.dismissNotification(this.parentElement.parentElement)">
-                        ×
-                    </button>
-                </div>
-            `;
-            
-            return notification;
-        } catch (error) {
-            console.error('Error creating notification:', error);
-            return null;
-        }
-    }
-
-    dismissNotification(notification) {
+    
+    hide(notification) {
         if (!notification) return;
         
-        try {
-            notification.classList.add('removing');
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-                
-                // Remove from array
-                const index = this.notifications.indexOf(notification);
-                if (index > -1) {
-                    this.notifications.splice(index, 1);
-                }
-            }, 300);
-        } catch (error) {
-            console.error('Error dismissing notification:', error);
-        }
-    }
-
-    showMessage(messageElement) {
-        if (!messageElement) return;
+        // Animate out
+        notification.classList.add('translate-x-full', 'opacity-0');
         
-        try {
-            const type = this.getMessageType(messageElement);
-            const title = this.getMessageTitle(type);
-            const message = messageElement.textContent.trim();
+        // Remove from DOM after animation
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.parentElement.removeChild(notification);
+            }
             
-            this.showNotification({
-                type: type,
-                title: title,
-                message: message,
-                persistent: false
-            });
-            
-            // Remove the original message
-            messageElement.remove();
-        } catch (error) {
-            console.error('Error showing message:', error);
-        }
+            // Remove from notifications array
+            const index = this.notifications.indexOf(notification);
+            if (index > -1) {
+                this.notifications.splice(index, 1);
+            }
+        }, 300);
     }
-
-    getMessageType(messageElement) {
-        try {
-            if (messageElement.classList.contains('success')) return 'success';
-            if (messageElement.classList.contains('error')) return 'error';
-            if (messageElement.classList.contains('warning')) return 'warning';
-            if (messageElement.classList.contains('info')) return 'info';
-            return 'info';
-        } catch (error) {
-            return 'info';
-        }
+    
+    clearAll() {
+        this.notifications.forEach(notification => {
+            this.hide(notification);
+        });
     }
-
-    getMessageTitle(type) {
-        const titles = {
-            success: 'Success',
-            error: 'Error',
-            warning: 'Warning',
-            info: 'Information'
-        };
-        return titles[type] || 'Notification';
-    }
-
-    getStatusColor(status) {
-        const colors = {
-            'Pending': '#f59e0b',
-            'Payment Pending': '#ef4444',
-            'Paid': '#3b82f6',
-            'In Progress': '#8b5cf6',
-            'Ready': '#10b981',
-            'Completed': '#059669',
-            'Cancelled': '#6b7280'
-        };
-        return colors[status] || '#6b7280';
-    }
-
-    getStatusIcon(status) {
-        const icons = {
-            'Pending': '⏳',
-            'Payment Pending': '💳',
-            'Paid': '✅',
-            'In Progress': '👨‍🍳',
-            'Ready': '🎉',
-            'Completed': '🎊',
-            'Cancelled': '❌'
-        };
-        return icons[status] || 'ℹ️';
-    }
-
-    getStatusMessage(status) {
-        const messages = {
-            'Pending': 'Order received, waiting for confirmation',
-            'Payment Pending': 'Payment required to proceed',
-            'Paid': 'Payment confirmed, order queued',
-            'In Progress': 'Your order is being prepared',
-            'Ready': 'Order ready for pickup!',
-            'Completed': 'Order completed successfully',
-            'Cancelled': 'Order has been cancelled'
-        };
-        return messages[status] || 'Order status updated';
-    }
-
-    getNotificationIcon(type) {
-        const icons = {
-            'success': '✅',
-            'error': '❌',
-            'warning': '⚠️',
-            'info': 'ℹ️'
-        };
-        return icons[type] || 'ℹ️';
-    }
-
-    formatTime(timestamp) {
-        if (!timestamp) return '';
-        
-        try {
-            const date = new Date(timestamp);
-            if (isNaN(date.getTime())) return '';
-            
-            const now = new Date();
-            const diff = now - date;
-            
-            if (diff < 60000) return 'Just now';
-            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-            
-            return date.toLocaleDateString();
-        } catch (error) {
-            return '';
-        }
-    }
-
+    
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
     }
-
-    playNotificationSound() {
-        try {
-            // Try to play notification sound
-            const audio = new Audio('/static/sounds/notification.mp3');
-            audio.volume = 0.5;
-            audio.play().catch(() => {
-                // Fallback: create a simple beep
-                this.createBeepSound();
-            });
-        } catch (error) {
-            this.createBeepSound();
+    
+    // Special notification types
+    success(message, duration = null, options = {}) {
+        return this.show(message, 'success', duration, options);
+    }
+    
+    error(message, duration = null, options = {}) {
+        return this.show(message, 'error', duration, options);
+    }
+    
+    warning(message, duration = null, options = {}) {
+        return this.show(message, 'warning', duration, options);
+    }
+    
+    info(message, duration = null, options = {}) {
+        return this.show(message, 'info', duration, options);
+    }
+    
+    // Progress notification
+    progress(message, progress = 0, options = {}) {
+        return this.show(message, 'info', null, { ...options, progress });
+    }
+    
+    // Update progress of existing notification
+    updateProgress(notification, progress) {
+        const progressBar = notification.querySelector('.bg-green-500, .bg-blue-500, .bg-yellow-500, .bg-red-500');
+        if (progressBar) {
+            progressBar.style.width = `${progress}%`;
         }
     }
-
-    createBeepSound() {
-        try {
-            // Create a simple beep sound using Web Audio API
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
-            
-            oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
-            oscillator.type = 'sine';
-            
-            gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-            
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.5);
-        } catch (error) {
-            console.log('Could not play notification sound');
-        }
-    }
-
-    sendBrowserNotification(order) {
-        if (!('Notification' in window)) return;
+    
+    // Confirmation dialog
+    confirm(message, onConfirm, onCancel = null, options = {}) {
+        const notification = this.createNotification(message, 'info', {
+            ...options,
+            className: 'notification confirmation',
+            duration: 0 // Don't auto-remove
+        });
         
-        try {
-            if (Notification.permission === 'granted') {
-                new Notification('Order Ready!', {
-                    body: `Your order #${order.id} is ready for pickup.`,
-                    icon: '/static/images/icon-192x192.png',
-                    badge: '/static/images/badge-72x72.png',
-                    tag: `order-${order.id}`,
-                    requireInteraction: true
-                });
-            } else if (Notification.permission !== 'denied') {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        this.sendBrowserNotification(order);
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error sending browser notification:', error);
-        }
-    }
-
-    refreshOrderStatus() {
-        if (this.isOnline) {
-            this.checkOrderStatus();
-        }
-    }
-
-    handleOrderStatusUpdate(orderData) {
-        try {
-            // Update status bar if exists
-            if (this.orderStatusBars.has(orderData.id)) {
-                this.updateOrderStatusBar(orderData);
-            }
-            
-            // Show order ready notification if status is 'Ready'
-            if (orderData.status === 'Ready') {
-                this.showOrderReadyNotification(orderData);
-            }
-        } catch (error) {
-            console.error('Error handling order status update:', error);
-        }
-    }
-
-    // Public methods for external use
-    showSuccess(message, title = 'Success') {
-        return this.showNotification({
-            type: 'success',
-            title: title,
-            message: message
+        // Add confirmation buttons
+        const buttonContainer = document.createElement('div');
+        buttonContainer.className = 'flex space-x-2 mt-3';
+        buttonContainer.innerHTML = `
+            <button class="btn-confirm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                Confirm
+            </button>
+            <button class="btn-cancel bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm transition-colors">
+                Cancel
+            </button>
+        `;
+        
+        notification.querySelector('.flex-1').appendChild(buttonContainer);
+        
+        // Add event listeners
+        const confirmBtn = notification.querySelector('.btn-confirm');
+        const cancelBtn = notification.querySelector('.btn-cancel');
+        
+        confirmBtn.addEventListener('click', () => {
+            this.hide(notification);
+            if (onConfirm) onConfirm();
         });
-    }
-
-    showError(message, title = 'Error') {
-        return this.showNotification({
-            type: 'error',
-            title: title,
-            message: message
+        
+        cancelBtn.addEventListener('click', () => {
+            this.hide(notification);
+            if (onCancel) onCancel();
         });
-    }
-
-    showWarning(message, title = 'Warning') {
-        return this.showNotification({
-            type: 'warning',
-            title: title,
-            message: message
-        });
-    }
-
-    showInfo(message, title = 'Information') {
-        return this.showNotification({
-            type: 'info',
-            title: title,
-            message: message
-        });
-    }
-
-    // Cleanup method
-    destroy() {
-        try {
-            this.stopOrderStatusChecking();
-            
-            // Remove all notifications
-            this.notifications.forEach(notification => {
-                this.dismissNotification(notification);
-            });
-            
-            // Remove order status bars
-            this.removeOrderStatusBar();
-            
-            // Remove order ready notifications
-            this.removeOrderReadyNotification();
-            
-            this.isInitialized = false;
-        } catch (error) {
-            console.error('Error destroying NotificationManager:', error);
-        }
+        
+        // Show the notification
+        this.show(message, 'info', 0, { ...options, className: 'notification confirmation' });
+        
+        return notification;
     }
 }
 
-// Initialize notification manager when DOM is ready
-let notificationManager;
+// Initialize notification system
+window.notificationSystem = new NotificationSystem();
 
-document.addEventListener('DOMContentLoaded', () => {
-    try {
-        notificationManager = new NotificationManager();
-    } catch (error) {
-        console.error('Error creating NotificationManager:', error);
-    }
-});
+// Legacy support for existing code
+function showNotification(message, type = 'info') {
+    return window.notificationSystem.show(message, type);
+}
 
-// Make it globally available
-window.notificationManager = notificationManager;
+function hideNotification(notification) {
+    return window.notificationSystem.hide(notification);
+}
 
 // Export for module systems
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = NotificationManager;
+    module.exports = NotificationSystem;
 }
 

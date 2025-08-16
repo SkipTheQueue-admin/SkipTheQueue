@@ -1,14 +1,26 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MinValueValidator, MaxValueValidator
 from django.core.cache import cache
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 import re
 
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
-    phone_number = models.CharField(max_length=15, blank=True, null=True, db_index=True)
+    phone_number = models.CharField(
+        max_length=15, 
+        blank=True, 
+        null=True, 
+        db_index=True,
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[0-9\-\s]+$',
+                message='Phone number must contain only digits, spaces, hyphens, and optionally start with +'
+            )
+        ]
+    )
     preferred_college = models.ForeignKey('College', on_delete=models.SET_NULL, null=True, blank=True)
     last_login_college = models.ForeignKey('College', on_delete=models.SET_NULL, null=True, blank=True, related_name='last_login_users')
     favorite_items = models.ManyToManyField('MenuItem', blank=True, related_name='favorited_by')
@@ -21,18 +33,19 @@ class UserProfile(models.Model):
         indexes = [
             models.Index(fields=['phone_number']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['user', 'preferred_college']),
         ]
     
     def __str__(self):
-        return f"{self.user.username} - {self.phone_number}"
+        return f"{self.user.username} - {self.phone_number or 'No phone'}"
     
     def clean(self):
         """Validate the model"""
-        from django.core.exceptions import ValidationError
-        
-        # Validate phone number format if provided
-        if self.phone_number and not re.match(r'^\+?[0-9\-\s]+$', self.phone_number):
-            raise ValidationError('Invalid phone number format')
+        if self.phone_number:
+            # Remove any non-digit characters except + for validation
+            clean_phone = re.sub(r'[^\d+]', '', self.phone_number)
+            if len(clean_phone) < 10 or len(clean_phone) > 15:
+                raise ValidationError('Phone number must be between 10 and 15 digits')
     
     def save(self, *args, **kwargs):
         """Override save to ensure validation and clear cache"""
@@ -51,7 +64,7 @@ class UserProfile(models.Model):
         
         if profile is None:
             try:
-                profile = cls.objects.get(user_id=user_id)
+                profile = cls.objects.select_related('preferred_college').get(user_id=user_id)
                 cache.set(cache_key, profile, 300)  # Cache for 5 minutes
             except cls.DoesNotExist:
                 profile = None
@@ -68,14 +81,30 @@ class College(models.Model):
     # College admin details
     admin_name = models.CharField(max_length=100, default='Admin')
     admin_email = models.EmailField(default='admin@college.com', db_index=True)
-    admin_phone = models.CharField(max_length=15, default='+91-0000000000')
+    admin_phone = models.CharField(
+        max_length=15, 
+        default='+91-0000000000',
+        validators=[
+            RegexValidator(
+                regex=r'^\+?[0-9\-\s]+$',
+                message='Phone number must contain only digits, spaces, hyphens, and optionally start with +'
+            )
+        ]
+    )
     
     # Payment settings
     allow_pay_later = models.BooleanField(default=True, help_text="Allow students to pay later with cash")
     payment_gateway_enabled = models.BooleanField(default=True, help_text="Enable online payment gateway")
     
     # College settings
-    estimated_preparation_time = models.IntegerField(default=15, help_text="Default preparation time in minutes")
+    estimated_preparation_time = models.IntegerField(
+        default=15, 
+        help_text="Default preparation time in minutes",
+        validators=[
+            MinValueValidator(5, message="Preparation time must be at least 5 minutes"),
+            MaxValueValidator(120, message="Preparation time cannot exceed 120 minutes")
+        ]
+    )
     
     class Meta:
         verbose_name = 'College'
@@ -86,6 +115,7 @@ class College(models.Model):
             models.Index(fields=['slug']),
             models.Index(fields=['is_active']),
             models.Index(fields=['admin_email']),
+            models.Index(fields=['is_active', 'name']),
         ]
     
     def __str__(self):
@@ -93,14 +123,17 @@ class College(models.Model):
     
     def clean(self):
         """Validate the model"""
-        from django.core.exceptions import ValidationError
+        if self.estimated_preparation_time < 5:
+            raise ValidationError('Estimated preparation time must be at least 5 minutes')
         
-        if self.estimated_preparation_time < 0:
-            raise ValidationError('Estimated preparation time cannot be negative')
+        if self.estimated_preparation_time > 120:
+            raise ValidationError('Estimated preparation time cannot exceed 120 minutes')
         
         # Validate phone number format
-        if self.admin_phone and not re.match(r'^\+?[0-9\-\s]+$', self.admin_phone):
-            raise ValidationError('Invalid phone number format')
+        if self.admin_phone:
+            clean_phone = re.sub(r'[^\d+]', '', self.admin_phone)
+            if len(clean_phone) < 10 or len(clean_phone) > 15:
+                raise ValidationError('Admin phone number must be between 10 and 15 digits')
     
     def save(self, *args, **kwargs):
         """Override save to ensure validation and clear cache"""
@@ -139,7 +172,15 @@ class MenuItem(models.Model):
     
     name = models.CharField(max_length=100, db_index=True)
     description = models.TextField(blank=True)
-    price = models.DecimalField(max_digits=6, decimal_places=2, db_index=True)
+    price = models.DecimalField(
+        max_digits=6, 
+        decimal_places=2, 
+        db_index=True,
+        validators=[
+            MinValueValidator(0.01, message="Price must be at least ₹0.01"),
+            MaxValueValidator(9999.99, message="Price cannot exceed ₹9,999.99")
+        ]
+    )
     is_available = models.BooleanField(default=True, db_index=True)
     college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='menu_items', null=True, blank=True, db_index=True)
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='General', db_index=True)
@@ -148,7 +189,13 @@ class MenuItem(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     
     # Stock management
-    stock_quantity = models.PositiveIntegerField(default=0, help_text="0 means unlimited")
+    stock_quantity = models.PositiveIntegerField(
+        default=0, 
+        help_text="0 means unlimited",
+        validators=[
+            MaxValueValidator(99999, message="Stock quantity cannot exceed 99,999")
+        ]
+    )
     is_stock_managed = models.BooleanField(default=False, help_text="Enable stock management for this item")
 
     class Meta:
@@ -167,6 +214,7 @@ class MenuItem(models.Model):
             models.Index(fields=['is_available', 'category']),
             models.Index(fields=['college', 'is_available', 'category']),
             models.Index(fields=['name', 'college']),
+            models.Index(fields=['is_stock_managed', 'stock_quantity']),
         ]
 
     def __str__(self):
@@ -180,13 +228,17 @@ class MenuItem(models.Model):
     
     def clean(self):
         """Validate the model"""
-        from django.core.exceptions import ValidationError
+        if self.price < 0.01:
+            raise ValidationError('Price must be at least ₹0.01')
         
-        if self.price < 0:
-            raise ValidationError('Price cannot be negative')
+        if self.price > 9999.99:
+            raise ValidationError('Price cannot exceed ₹9,999.99')
         
         if self.is_stock_managed and self.stock_quantity < 0:
             raise ValidationError('Stock quantity cannot be negative')
+        
+        if self.is_stock_managed and self.stock_quantity > 99999:
+            raise ValidationError('Stock quantity cannot exceed 99,999')
     
     def save(self, *args, **kwargs):
         """Override save to ensure validation and clear cache"""
@@ -360,8 +412,6 @@ class Order(models.Model):
     
     def clean(self):
         """Validate the model"""
-        from django.core.exceptions import ValidationError
-        
         if self.estimated_time < 0:
             raise ValidationError('Estimated time cannot be negative')
         
@@ -451,8 +501,6 @@ class Payment(models.Model):
     
     def clean(self):
         """Validate the model"""
-        from django.core.exceptions import ValidationError
-        
         if self.amount <= 0:
             raise ValidationError('Payment amount must be greater than 0')
     

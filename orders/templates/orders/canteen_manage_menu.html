@@ -85,7 +85,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-blue-200 text-sm">Available</p>
-            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"is_available"|length }}</p>
+            <p class="text-3xl font-bold text-white">{{ available_count|default:0 }}</p>
           </div>
           <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -99,7 +99,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-blue-200 text-sm">Categories</p>
-            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"category"|length }}</p>
+            <p class="text-3xl font-bold text-white">{{ categories_count|default:0 }}</p>
           </div>
           <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -113,7 +113,7 @@
         <div class="flex items-center justify-between">
           <div>
             <p class="text-blue-200 text-sm">Stock Managed</p>
-            <p class="text-3xl font-bold text-white">{{ menu_items|dictsort:"is_stock_managed"|length }}</p>
+            <p class="text-3xl font-bold text-white">{{ stock_managed_count|default:0 }}</p>
           </div>
           <div class="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -192,12 +192,17 @@
                     <label for="price-{{ item.id }}" class="sr-only">Price for {{ item.name }}</label>
                     <input type="number" 
                            step="0.01" 
-                           min="0" 
+                           min="0.01" 
+                           max="9999.99"
                            value="{{ item.price|floatformat:2 }}" 
                            class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                            placeholder="Price" 
                            id="price-{{ item.id }}"
-                           aria-label="Price for {{ item.name }}">
+                           aria-label="Price for {{ item.name }}"
+                           required
+                           pattern="[0-9]+(\.[0-9]{1,2})?"
+                           title="Please enter a valid price (e.g., 10.50)"
+                           data-original-price="{{ item.price|floatformat:2 }}">
                     <form method="post" class="inline-block">
                       {% csrf_token %}
                       <input type="hidden" name="action" value="update_price">
@@ -220,11 +225,16 @@
                       <label for="stock-{{ item.id }}" class="sr-only">Stock quantity for {{ item.name }}</label>
                       <input type="number" 
                              min="0" 
+                             max="99999"
                              value="{{ item.stock_quantity }}" 
                              class="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                              placeholder="Stock" 
                              id="stock-{{ item.id }}"
-                             aria-label="Stock quantity for {{ item.name }}">
+                             aria-label="Stock quantity for {{ item.name }}"
+                             required
+                             pattern="[0-9]+"
+                             title="Please enter a valid stock quantity (whole number)"
+                             data-original-stock="{{ item.stock_quantity }}">
                       <form method="post" class="inline-block">
                         {% csrf_token %}
                         <input type="hidden" name="action" value="update_stock">
@@ -336,9 +346,17 @@
     if (priceInput && priceHiddenInput) {
       const price = parseFloat(priceInput.value);
       
-      // Validate price
-      if (isNaN(price) || price < 0) {
-        alert('Please enter a valid price (must be a positive number)');
+      // Enhanced price validation
+      if (isNaN(price) || price < 0.01 || price > 9999.99) {
+        showNotification('Please enter a valid price between ₹0.01 and ₹9,999.99', 'error');
+        priceInput.focus();
+        return;
+      }
+      
+      // Check if price has actually changed
+      const currentPrice = parseFloat(priceInput.getAttribute('data-original-price') || priceInput.value);
+      if (Math.abs(price - currentPrice) < 0.01) {
+        showNotification('Price unchanged', 'info');
         return;
       }
       
@@ -356,9 +374,17 @@
     if (stockInput && stockHiddenInput) {
       const stock = parseInt(stockInput.value);
       
-      // Validate stock
-      if (isNaN(stock) || stock < 0) {
-        alert('Please enter a valid stock quantity (must be a positive whole number)');
+      // Enhanced stock validation
+      if (isNaN(stock) || stock < 0 || stock > 99999) {
+        showNotification('Please enter a valid stock quantity between 0 and 99,999', 'error');
+        stockInput.focus();
+        return;
+      }
+      
+      // Check if stock has actually changed
+      const currentStock = parseInt(stockInput.getAttribute('data-original-stock') || stockInput.value);
+      if (stock === currentStock) {
+        showNotification('Stock unchanged', 'info');
         return;
       }
       
@@ -385,5 +411,41 @@
   window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection in menu management:', e.reason);
   });
+  
+  // Enhanced notification system
+  function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+    const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+    
+    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${bgColor} text-white transform transition-all duration-300 translate-x-full`;
+    notification.innerHTML = `
+      <div class="flex items-center">
+        <span class="mr-2 text-lg">${icon}</span>
+        <span class="flex-1">${message}</span>
+        <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200 transition-colors">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(notification);
+    
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(() => {
+      notification.classList.remove('translate-x-full');
+    });
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+      if (notification.parentElement) {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+          if (notification.parentElement) {
+            notification.remove();
+          }
+        }, 300);
+      }
+    }, 5000);
+  }
 </script>
 {% endblock %} 

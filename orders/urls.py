@@ -58,6 +58,7 @@ urlpatterns = [
     path('api/update_cart/<int:item_id>/', views.update_cart_api, name='update_cart_api'),
     path('api/check-order-status/<int:order_id>/', views.check_order_status, name='check_order_status'),
     path('api/check-active-orders/', views.check_active_orders, name='check_active_orders'),
+    path('api/cart-count/', views.cart_count_api, name='cart_count_api'),
     path('check-order-status/', views.check_order_status_main, name='check_order_status_main'),
     path('check-notifications/', views.check_notifications, name='check_notifications'),
     path('api/update-order-status/<int:order_id>/', views.update_order_status, name='update_order_status'),

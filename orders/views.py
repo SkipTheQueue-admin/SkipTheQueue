@@ -2540,10 +2540,18 @@ def canteen_manage_menu(request, college_slug):
                 except (MenuItem.DoesNotExist, ValueError):
                     messages.error(request, "Invalid stock quantity or item not found.")
         
+        # Calculate stats for the dashboard
+        available_count = menu_items.filter(is_available=True).count()
+        stock_managed_count = menu_items.filter(is_stock_managed=True).count()
+        categories_count = menu_items.values('category').distinct().count()
+        
         context = {
             'college': college,
             'menu_items': menu_items,
-            'canteen_staff': canteen_staff if 'canteen_staff' in locals() else None
+            'canteen_staff': canteen_staff if 'canteen_staff' in locals() else None,
+            'available_count': available_count,
+            'stock_managed_count': stock_managed_count,
+            'categories_count': categories_count
         }
         
         return render(request, 'orders/canteen_manage_menu.html', context)
@@ -3773,6 +3781,36 @@ def canteen_update_order_status(request, college_slug, order_id):
     except Exception as e:
         logger.error(f"Error updating order status: {e}")
         return JsonResponse({'error': 'Internal server error'}, status=500)
+
+# Add these new API endpoints after the existing ones
+
+@require_GET
+def cart_count_api(request):
+    """API endpoint to get cart count for the current user"""
+    try:
+        if request.user.is_authenticated:
+            # Get cart count from session or database
+            cart_count = request.session.get('cart_count', 0)
+        else:
+            # For anonymous users, get from session
+            cart_count = request.session.get('cart_count', 0)
+        
+        return JsonResponse({
+            'success': True,
+            'count': cart_count
+        })
+    except Exception as e:
+        logger.error(f"Error getting cart count: {e}")
+        return JsonResponse({
+            'success': False,
+            'count': 0,
+            'error': 'Failed to get cart count'
+        }, status=500)
+
+@require_GET
+def api_cart_count(request):
+    """Alternative API endpoint for cart count"""
+    return cart_count_api(request)
 
 
 

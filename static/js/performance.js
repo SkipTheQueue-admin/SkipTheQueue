@@ -1,9 +1,6 @@
-/**
- * Performance Optimization Utilities for SkipTheQueue
- * This file contains utilities to improve performance and user experience
- */
+// Performance Monitoring System for SkipTheQueue
+// Monitors and optimizes application performance
 
-// Performance monitoring
 class PerformanceMonitor {
     constructor() {
         this.metrics = {
@@ -11,30 +8,57 @@ class PerformanceMonitor {
             domContentLoaded: 0,
             firstContentfulPaint: 0,
             largestContentfulPaint: 0,
-            cumulativeLayoutShift: 0
+            cumulativeLayoutShift: 0,
+            firstInputDelay: 0,
+            totalBlockingTime: 0
         };
+        
+        this.observers = [];
         this.init();
     }
-
+    
     init() {
-        this.measurePageLoad();
-        this.measureCoreWebVitals();
-        this.setupPerformanceObserver();
+        // Monitor page load performance
+        this.monitorPageLoad();
+        
+        // Monitor Core Web Vitals
+        this.monitorCoreWebVitals();
+        
+        // Monitor user interactions
+        this.monitorUserInteractions();
+        
+        // Monitor resource loading
+        this.monitorResourceLoading();
+        
+        // Monitor memory usage
+        this.monitorMemoryUsage();
+        
+        // Set up performance budget alerts
+        this.setupPerformanceBudget();
     }
-
-    measurePageLoad() {
+    
+    monitorPageLoad() {
         window.addEventListener('load', () => {
-            this.metrics.pageLoadTime = performance.now();
-            this.logMetric('Page Load Time', this.metrics.pageLoadTime);
-        });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            this.metrics.domContentLoaded = performance.now();
-            this.logMetric('DOM Content Loaded', this.metrics.domContentLoaded);
+            const navigation = performance.getEntriesByType('navigation')[0];
+            if (navigation) {
+                this.metrics.pageLoadTime = navigation.loadEventEnd - navigation.loadEventStart;
+                this.metrics.domContentLoaded = navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart;
+                
+                // Log performance metrics
+                console.log('Page Load Performance:', {
+                    pageLoadTime: `${this.metrics.pageLoadTime}ms`,
+                    domContentLoaded: `${this.metrics.domContentLoaded}ms`
+                });
+                
+                // Alert if performance is poor
+                if (this.metrics.pageLoadTime > 3000) {
+                    this.alertPoorPerformance('Page load time', this.metrics.pageLoadTime);
+                }
+            }
         });
     }
-
-    measureCoreWebVitals() {
+    
+    monitorCoreWebVitals() {
         // First Contentful Paint
         if ('PerformanceObserver' in window) {
             try {
@@ -42,271 +66,339 @@ class PerformanceMonitor {
                     for (const entry of list.getEntries()) {
                         if (entry.name === 'first-contentful-paint') {
                             this.metrics.firstContentfulPaint = entry.startTime;
-                            this.logMetric('First Contentful Paint', entry.startTime);
+                            this.checkPerformanceBudget('FCP', entry.startTime, 1800);
                         }
                     }
                 });
                 paintObserver.observe({ entryTypes: ['paint'] });
+                this.observers.push(paintObserver);
             } catch (e) {
-                console.warn('PerformanceObserver not supported');
+                console.warn('FCP monitoring not supported:', e);
             }
-        }
-
-        // Largest Contentful Paint
-        if ('PerformanceObserver' in window) {
+            
+            // Largest Contentful Paint
             try {
                 const lcpObserver = new PerformanceObserver((list) => {
-                    const entries = list.getEntries();
-                    const lastEntry = entries[entries.length - 1];
-                    this.metrics.largestContentfulPaint = lastEntry.startTime;
-                    this.logMetric('Largest Contentful Paint', lastEntry.startTime);
+                    for (const entry of list.getEntries()) {
+                        this.metrics.largestContentfulPaint = entry.startTime;
+                        this.checkPerformanceBudget('LCP', entry.startTime, 2500);
+                    }
                 });
                 lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
+                this.observers.push(lcpObserver);
             } catch (e) {
-                console.warn('LCP observer not supported');
+                console.warn('LCP monitoring not supported:', e);
+            }
+            
+            // Cumulative Layout Shift
+            try {
+                const clsObserver = new PerformanceObserver((list) => {
+                    let clsValue = 0;
+                    for (const entry of list.getEntries()) {
+                        clsValue += entry.value;
+                    }
+                    this.metrics.cumulativeLayoutShift = clsValue;
+                    this.checkPerformanceBudget('CLS', clsValue, 0.1);
+                });
+                clsObserver.observe({ entryTypes: ['layout-shift'] });
+                this.observers.push(clsObserver);
+            } catch (e) {
+                console.warn('CLS monitoring not supported:', e);
+            }
+            
+            // First Input Delay
+            try {
+                const fidObserver = new PerformanceObserver((list) => {
+                    for (const entry of list.getEntries()) {
+                        this.metrics.firstInputDelay = entry.processingStart - entry.startTime;
+                        this.checkPerformanceBudget('FID', this.metrics.firstInputDelay, 100);
+                    }
+                });
+                fidObserver.observe({ entryTypes: ['first-input'] });
+                this.observers.push(fidObserver);
+            } catch (e) {
+                console.warn('FID monitoring not supported:', e);
+            }
+            
+            // Total Blocking Time
+            try {
+                const tbtObserver = new PerformanceObserver((list) => {
+                    let totalBlockingTime = 0;
+                    for (const entry of list.getEntries()) {
+                        if (entry.duration > 50) {
+                            totalBlockingTime += entry.duration - 50;
+                        }
+                    }
+                    this.metrics.totalBlockingTime = totalBlockingTime;
+                    this.checkPerformanceBudget('TBT', totalBlockingTime, 300);
+                });
+                tbtObserver.observe({ entryTypes: ['longtask'] });
+                this.observers.push(tbtObserver);
+            } catch (e) {
+                console.warn('TBT monitoring not supported:', e);
             }
         }
     }
-
-    setupPerformanceObserver() {
-        // Monitor long tasks
+    
+    monitorUserInteractions() {
+        // Monitor button clicks and form submissions
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'BUTTON' || e.target.closest('button')) {
+                this.trackInteraction('button_click', e.target);
+            }
+        });
+        
+        document.addEventListener('submit', (e) => {
+            this.trackInteraction('form_submit', e.target);
+        });
+        
+        // Monitor navigation
+        let navigationStart = performance.now();
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A' || e.target.closest('a')) {
+                navigationStart = performance.now();
+            }
+        });
+        
+        window.addEventListener('beforeunload', () => {
+            const navigationTime = performance.now() - navigationStart;
+            if (navigationTime > 100) {
+                console.log('Navigation took:', `${navigationTime}ms`);
+            }
+        });
+    }
+    
+    monitorResourceLoading() {
         if ('PerformanceObserver' in window) {
             try {
-                const longTaskObserver = new PerformanceObserver((list) => {
+                const resourceObserver = new PerformanceObserver((list) => {
                     for (const entry of list.getEntries()) {
-                        if (entry.duration > 50) { // 50ms threshold
-                            console.warn('Long task detected:', entry.duration + 'ms');
+                        // Alert for slow resources
+                        if (entry.duration > 2000) {
+                            console.warn('Slow resource loaded:', {
+                                name: entry.name,
+                                duration: `${entry.duration}ms`,
+                                size: entry.transferSize ? `${entry.transferSize} bytes` : 'unknown'
+                            });
+                        }
+                        
+                        // Track large resources
+                        if (entry.transferSize && entry.transferSize > 500000) {
+                            console.warn('Large resource loaded:', {
+                                name: entry.name,
+                                size: `${(entry.transferSize / 1024 / 1024).toFixed(2)} MB`
+                            });
                         }
                     }
                 });
-                longTaskObserver.observe({ entryTypes: ['longtask'] });
+                resourceObserver.observe({ entryTypes: ['resource'] });
+                this.observers.push(resourceObserver);
             } catch (e) {
-                console.warn('Long task observer not supported');
+                console.warn('Resource monitoring not supported:', e);
             }
         }
     }
-
-    logMetric(name, value) {
-        console.log(`Performance Metric - ${name}: ${value.toFixed(2)}ms`);
+    
+    monitorMemoryUsage() {
+        if ('memory' in performance) {
+            setInterval(() => {
+                const memory = performance.memory;
+                const usedMB = (memory.usedJSHeapSize / 1024 / 1024).toFixed(2);
+                const totalMB = (memory.totalJSHeapSize / 1024 / 1024).toFixed(2);
+                
+                // Alert if memory usage is high
+                if (memory.usedJSHeapSize > memory.totalJSHeapSize * 0.8) {
+                    console.warn('High memory usage:', `${usedMB}MB / ${totalMB}MB`);
+                }
+            }, 10000); // Check every 10 seconds
+        }
+    }
+    
+    setupPerformanceBudget() {
+        this.performanceBudget = {
+            FCP: 1800,    // First Contentful Paint: 1.8s
+            LCP: 2500,    // Largest Contentful Paint: 2.5s
+            FID: 100,     // First Input Delay: 100ms
+            CLS: 0.1,     // Cumulative Layout Shift: 0.1
+            TBT: 300      // Total Blocking Time: 300ms
+        };
+    }
+    
+    checkPerformanceBudget(metric, value, threshold) {
+        if (value > threshold) {
+            this.alertPoorPerformance(metric, value, threshold);
+        }
+    }
+    
+    alertPoorPerformance(metric, value, threshold = null) {
+        const message = threshold 
+            ? `${metric}: ${value} (threshold: ${threshold})`
+            : `${metric}: ${value}`;
+        
+        console.warn('Performance Issue:', message);
+        
+        // Show user notification for critical issues
+        if (window.showNotification) {
+            window.showNotification(
+                `Performance issue detected: ${metric}`,
+                'warning',
+                5000
+            );
+        }
         
         // Send to analytics if available
         if (window.gtag) {
-            window.gtag('event', 'performance_metric', {
-                metric_name: name,
-                metric_value: value
+            window.gtag('event', 'performance_issue', {
+                event_category: 'performance',
+                event_label: metric,
+                value: Math.round(value)
             });
         }
     }
-
-    getMetrics() {
-        return this.metrics;
-    }
-}
-
-// Image optimization
-class ImageOptimizer {
-    constructor() {
-        this.init();
-    }
-
-    init() {
-        this.setupLazyLoading();
-        this.optimizeImages();
-    }
-
-    setupLazyLoading() {
-        if ('IntersectionObserver' in window) {
-            const imageObserver = new IntersectionObserver((entries, observer) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        const img = entry.target;
-                        this.loadImage(img);
-                        observer.unobserve(img);
-                    }
+    
+    trackInteraction(type, element) {
+        const startTime = performance.now();
+        
+        // Create a performance mark
+        const markName = `${type}_${Date.now()}`;
+        performance.mark(markName);
+        
+        // Measure time to next frame
+        requestAnimationFrame(() => {
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            
+            // Alert for slow interactions
+            if (duration > 100) {
+                console.warn('Slow interaction:', {
+                    type,
+                    element: element.tagName || element.className,
+                    duration: `${duration}ms`
                 });
-            }, {
-                rootMargin: '50px 0px',
-                threshold: 0.01
-            });
-
-            document.querySelectorAll('img[data-src]').forEach(img => {
-                imageObserver.observe(img);
-            });
-        }
+            }
+            
+            // Clear the mark
+            performance.clearMarks(markName);
+        });
     }
-
-    loadImage(img) {
-        const src = img.dataset.src;
-        if (src) {
-            img.src = src;
-            img.classList.remove('lazy');
-            img.classList.add('loaded');
-        }
+    
+    getMetrics() {
+        return { ...this.metrics };
     }
-
+    
+    generateReport() {
+        const report = {
+            timestamp: new Date().toISOString(),
+            metrics: this.getMetrics(),
+            userAgent: navigator.userAgent,
+            url: window.location.href,
+            performanceScore: this.calculatePerformanceScore()
+        };
+        
+        console.log('Performance Report:', report);
+        return report;
+    }
+    
+    calculatePerformanceScore() {
+        let score = 100;
+        
+        // Deduct points for poor performance
+        if (this.metrics.firstContentfulPaint > 1800) score -= 20;
+        if (this.metrics.largestContentfulPaint > 2500) score -= 20;
+        if (this.metrics.firstInputDelay > 100) score -= 20;
+        if (this.metrics.cumulativeLayoutShift > 0.1) score -= 20;
+        if (this.metrics.totalBlockingTime > 300) score -= 20;
+        
+        return Math.max(0, score);
+    }
+    
+    optimizePerformance() {
+        // Optimize images
+        this.optimizeImages();
+        
+        // Optimize fonts
+        this.optimizeFonts();
+        
+        // Optimize CSS
+        this.optimizeCSS();
+        
+        // Optimize JavaScript
+        this.optimizeJavaScript();
+    }
+    
     optimizeImages() {
-        // Add loading="lazy" to images without it
-        document.querySelectorAll('img:not([loading])').forEach(img => {
-            if (!img.classList.contains('critical')) {
+        const images = document.querySelectorAll('img');
+        images.forEach(img => {
+            // Add loading="lazy" for images below the fold
+            if (!img.loading) {
                 img.loading = 'lazy';
             }
-        });
-
-        // Optimize image sizes for different viewports
-        this.setupResponsiveImages();
-    }
-
-    setupResponsiveImages() {
-        const images = document.querySelectorAll('img[data-srcset]');
-        images.forEach(img => {
-            if (img.dataset.srcset) {
-                img.srcset = img.dataset.srcset;
-                img.sizes = img.dataset.sizes || '100vw';
-            }
-        });
-    }
-}
-
-// Resource optimization
-class ResourceOptimizer {
-    constructor() {
-        this.init();
-    }
-
-    init() {
-        this.preloadCriticalResources();
-        this.deferNonCriticalScripts();
-    }
-
-    preloadCriticalResources() {
-        // Preload critical CSS and fonts
-        const criticalResources = [
-            '/static/css/tailwind-fallback.css',
-            '/static/js/notifications.js'
-        ];
-
-        criticalResources.forEach(resource => {
-            const link = document.createElement('link');
-            link.rel = 'preload';
-            link.href = resource;
-            link.as = resource.endsWith('.css') ? 'style' : 'script';
-            document.head.appendChild(link);
-        });
-    }
-
-    deferNonCriticalScripts() {
-        // Defer non-critical scripts
-        const scripts = document.querySelectorAll('script[data-defer]');
-        scripts.forEach(script => {
-            script.defer = true;
-        });
-    }
-}
-
-// Cache management
-class CacheManager {
-    constructor() {
-        this.cache = new Map();
-        this.maxSize = 100;
-    }
-
-    set(key, value, ttl = 300000) { // 5 minutes default
-        if (this.cache.size >= this.maxSize) {
-            // Remove oldest entry
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-
-        this.cache.set(key, {
-            value,
-            timestamp: Date.now(),
-            ttl
-        });
-    }
-
-    get(key) {
-        const item = this.cache.get(key);
-        if (!item) return null;
-
-        if (Date.now() - item.timestamp > item.ttl) {
-            this.cache.delete(key);
-            return null;
-        }
-
-        return item.value;
-    }
-
-    clear() {
-        this.cache.clear();
-    }
-
-    size() {
-        return this.cache.size;
-    }
-}
-
-// Network optimization
-class NetworkOptimizer {
-    constructor() {
-        this.retryAttempts = 3;
-        this.retryDelay = 1000;
-    }
-
-    async fetchWithRetry(url, options = {}, retryCount = 0) {
-        try {
-            const response = await fetch(url, options);
             
-            if (!response.ok && retryCount < this.retryAttempts) {
-                await this.delay(this.retryDelay * Math.pow(2, retryCount));
-                return this.fetchWithRetry(url, options, retryCount + 1);
+            // Add decoding="async" for better performance
+            if (!img.decoding) {
+                img.decoding = 'async';
             }
-            
-            return response;
-        } catch (error) {
-            if (retryCount < this.retryAttempts) {
-                await this.delay(this.retryDelay * Math.pow(2, retryCount));
-                return this.fetchWithRetry(url, options, retryCount + 1);
+        });
+    }
+    
+    optimizeFonts() {
+        // Preload critical fonts
+        const criticalFonts = document.querySelectorAll('link[rel="preload"][as="font"]');
+        criticalFonts.forEach(font => {
+            font.setAttribute('crossorigin', 'anonymous');
+        });
+    }
+    
+    optimizeCSS() {
+        // Remove unused CSS rules
+        const styleSheets = Array.from(document.styleSheets);
+        styleSheets.forEach(sheet => {
+            try {
+                const rules = sheet.cssRules || sheet.rules;
+                if (rules) {
+                    // This is a simplified optimization - in practice, you'd want more sophisticated analysis
+                    console.log(`Stylesheet ${sheet.href} has ${rules.length} rules`);
+                }
+            } catch (e) {
+                // Cross-origin stylesheets will throw an error
             }
-            throw error;
-        }
+        });
     }
-
-    delay(ms) {
-        return new Promise(resolve => setTimeout(resolve, ms));
+    
+    optimizeJavaScript() {
+        // Debounce scroll and resize events
+        let scrollTimeout, resizeTimeout;
+        
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                // Handle scroll events here
+            }, 16); // ~60fps
+        });
+        
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                // Handle resize events here
+            }, 100);
+        });
     }
-
-    // Batch API requests for better performance
-    async batchRequests(requests) {
-        const promises = requests.map(req => this.fetchWithRetry(req.url, req.options));
-        return Promise.all(promises);
+    
+    destroy() {
+        // Disconnect all observers
+        this.observers.forEach(observer => {
+            if (observer.disconnect) {
+                observer.disconnect();
+            }
+        });
+        this.observers = [];
     }
 }
 
-// Initialize performance optimizations
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize performance monitoring
-    window.performanceMonitor = new PerformanceMonitor();
-    
-    // Initialize image optimization
-    window.imageOptimizer = new ImageOptimizer();
-    
-    // Initialize resource optimization
-    window.resourceOptimizer = new ResourceOptimizer();
-    
-    // Initialize cache management
-    window.cacheManager = new CacheManager();
-    
-    // Initialize network optimization
-    window.networkOptimizer = new NetworkOptimizer();
-    
-    console.log('Performance optimizations initialized');
-});
+// Initialize performance monitor
+window.performanceMonitor = new PerformanceMonitor();
 
-// Export for use in other modules
-window.PerformanceOptimizer = {
-    PerformanceMonitor,
-    ImageOptimizer,
-    ResourceOptimizer,
-    CacheManager,
-    NetworkOptimizer
-};
+// Export for module systems
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = PerformanceMonitor;
+}

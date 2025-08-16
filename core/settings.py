@@ -14,8 +14,11 @@ ALLOWED_HOSTS = [
     '0.0.0.0',
     'skipthequeue.onrender.com',
     'testserver',  # For testing
-    '*',  # Allow all hosts in development
 ]
+
+# Remove wildcard host in production
+if not DEBUG:
+    ALLOWED_HOSTS = [host for host in ALLOWED_HOSTS if host != '*']
 
 INSTALLED_APPS = [
     'jazzmin',
@@ -79,24 +82,7 @@ DATABASES = {
     )
 }
 
-# Database query optimization
-DB_OPTIMIZATION = {
-    'ATOMIC_REQUESTS': False,  # Disable for better performance
-    'CONN_MAX_AGE': 300,
-    'OPTIONS': {
-        'timeout': 20,
-        'check_same_thread': False,
-        'isolation_level': 'READ_COMMITTED',  # Better performance isolation level
-    },
-    'POOL_OPTIONS': {
-        'max_connections': 20,
-        'min_connections': 5,
-        'connection_timeout': 30,
-    }
-}
-
 # Cache configuration for better performance
-# Enhanced cache configuration for better performance
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -114,11 +100,6 @@ CACHE_MIDDLEWARE_SECONDS = 300
 CACHE_MIDDLEWARE_KEY_PREFIX = 'skipthequeue'
 CACHE_MIDDLEWARE_ALIAS = 'default'
 
-# Performance optimization settings
-SLOW_REQUEST_THRESHOLD = 1.0  # Log requests slower than 1 second
-DB_QUERY_TIMEOUT = 10  # Database query timeout in seconds
-MAX_CACHE_ENTRIES = 5000  # Maximum cache entries
-
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -126,6 +107,9 @@ AUTH_PASSWORD_VALIDATORS = [
     },
     {
         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+        'OPTIONS': {
+            'min_length': 8,
+        }
     },
     {
         'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
@@ -230,11 +214,6 @@ CSRF_COOKIE_SAMESITE = 'Lax'
 # Session Security - optimized
 SESSION_COOKIE_SAMESITE = 'Lax'
 
-# Rate Limiting - optimized for performance
-RATE_LIMIT_ENABLED = False  # Keep disabled for performance
-RATE_LIMIT_REQUESTS = 10000
-RATE_LIMIT_WINDOW = 60
-
 # Logging configuration - optimized for performance
 LOGGING = {
     'version': 1,
@@ -296,9 +275,6 @@ PERFORMANCE_MONITORING = {
     'CACHE_HIT_RATIO_THRESHOLD': 0.8,  # Alert if cache hit ratio is below 80%
 }
 
-# Cache key prefixes for better organization
-CACHE_KEY_PREFIX = 'skipthequeue'
-
 # Database query optimization
 DATABASE_OPTIMIZATION = {
     'ENABLE_QUERY_OPTIMIZATION': True,
@@ -325,3 +301,37 @@ STATICFILES_FINDERS = [
 COMPRESS_ENABLED = not DEBUG
 COMPRESS_CSS_FILTERS = ['compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.rCSSMinFilter']
 COMPRESS_JS_FILTERS = ['compressor.filters.jsmin.JSMinFilter']
+
+# Jazzmin configuration for better admin UI
+JAZZMIN_SETTINGS = {
+    "site_title": "SkipTheQueue Admin",
+    "site_header": "SkipTheQueue",
+    "site_brand": "SkipTheQueue",
+    "site_logo": None,
+    "welcome_sign": "Welcome to SkipTheQueue Admin",
+    "copyright": "SkipTheQueue Ltd",
+    "search_model": ["orders.Order", "orders.College"],
+    "user_avatar": None,
+    "show_sidebar": True,
+    "navigation_expanded": True,
+    "icons": {
+        "auth": "fas fa-users-cog",
+        "auth.user": "fas fa-user",
+        "auth.Group": "fas fa-users",
+        "orders.Order": "fas fa-shopping-cart",
+        "orders.College": "fas fa-university",
+        "orders.MenuItem": "fas fa-utensils",
+        "orders.UserProfile": "fas fa-user-circle",
+    },
+    "default_icon_parents": "fas fa-chevron-circle-right",
+    "default_icon_children": "fas fa-circle",
+    "related_modal_active": True,
+    "custom_css": None,
+    "custom_js": None,
+    "show_ui_builder": False,
+    "changeform_format": "horizontal_tabs",
+    "changeform_format_overrides": {
+        "orders.Order": "collapsible",
+        "orders.College": "collapsible",
+    },
+}

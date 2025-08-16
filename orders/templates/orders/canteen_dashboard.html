@@ -3,6 +3,8 @@
 {% block content %}
 <!-- CSRF Token - Must be at the top for JavaScript access -->
 {% csrf_token %}
+<!-- Meta tag for JavaScript access to CSRF token -->
+<meta name="csrf-token" content="{{ csrf_token }}">
 
 <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
   <!-- Header -->
@@ -344,8 +346,9 @@
   });
   
   function initializeDashboard() {
-    // Cache frequently used DOM elements
-    CACHE.csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    // Cache frequently used DOM elements - get CSRF token from meta tag
+    CACHE.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || 
+                      document.querySelector('[name=csrfmiddlewaretoken]')?.value;
     CACHE.loadingIndicator = document.getElementById('loading-indicator');
     
     if (!CACHE.csrfToken) {
@@ -388,9 +391,15 @@
     }, 60000);  // Increased to 60 seconds for better performance
   }
   
-  // Function to accept order - optimized with debouncing
+  // Function to accept order - optimized with debouncing and validation
   const acceptOrder = debounce(async function(orderId) {
     if (CACHE.isRefreshing) return;
+    
+    // Validate order ID
+    if (!orderId || isNaN(parseInt(orderId))) {
+      showNotification('Invalid order ID', 'error');
+      return;
+    }
     
     CACHE.isRefreshing = true;
     showLoading();
@@ -401,6 +410,7 @@
     if (button) {
       button.disabled = true;
       button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Accepting...';
+      button.setAttribute('aria-label', 'Accepting order...');
     }
     
     try {
@@ -437,9 +447,16 @@
     }
   }, 300);
   
-  // Function to decline order - optimized with debouncing
+  // Function to decline order - optimized with debouncing and validation
   const declineOrder = debounce(async function(orderId) {
     if (CACHE.isRefreshing) return;
+    
+    // Validate order ID
+    if (!orderId || isNaN(parseInt(orderId))) {
+      showNotification('Invalid order ID', 'error');
+      return;
+    }
+    
     if (!confirm('Are you sure you want to decline this order?')) return;
     
     CACHE.isRefreshing = true;
@@ -450,6 +467,7 @@
     if (button) {
       button.disabled = true;
       button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Declining...';
+      button.setAttribute('aria-label', 'Declining order...');
     }
     
     try {
@@ -485,9 +503,15 @@
     }
   }, 300);
   
-  // Function to mark order as ready - optimized with debouncing
+  // Function to mark order as ready - optimized with debouncing and validation
   const markOrderReady = debounce(async function(orderId) {
     if (CACHE.isRefreshing) return;
+    
+    // Validate order ID
+    if (!orderId || isNaN(parseInt(orderId))) {
+      showNotification('Invalid order ID', 'error');
+      return;
+    }
     
     CACHE.isRefreshing = true;
     
@@ -497,6 +521,7 @@
     if (button) {
       button.disabled = true;
       button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+      button.setAttribute('aria-label', 'Marking order as ready...');
     }
     
     try {
@@ -533,9 +558,15 @@
     }
   }, 300);
   
-  // Function to mark order as completed - optimized with debouncing
+  // Function to mark order as completed - optimized with debouncing and validation
   const markOrderCompleted = debounce(async function(orderId) {
     if (CACHE.isRefreshing) return;
+    
+    // Validate order ID
+    if (!orderId || isNaN(parseInt(orderId))) {
+      showNotification('Invalid order ID', 'error');
+      return;
+    }
     
     CACHE.isRefreshing = true;
     
@@ -545,6 +576,7 @@
     if (button) {
       button.disabled = true;
       button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+      button.setAttribute('aria-label', 'Marking order as completed...');
     }
     
     try {
