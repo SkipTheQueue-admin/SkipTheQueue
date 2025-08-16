@@ -5910,3 +5910,12 @@ INFO 2025-08-15 20:50:23,056 autoreload 10004 16676 D:\SkipTheQueue\core\setting
 INFO 2025-08-15 20:50:24,851 autoreload 19216 10544 Watching for file changes with StatReloader
 INFO 2025-08-15 20:52:38,366 autoreload 19216 10544 D:\SkipTheQueue\core\settings.py changed, reloading.
 INFO 2025-08-15 20:52:40,249 autoreload 12048 20936 Watching for file changes with StatReloader
+ERROR 2025-08-16 23:50:13,335 basehttp 23004 29376 You're accessing the development server over HTTPS, but it only supports HTTP.
+ERROR 2025-08-17 02:08:08,079 basehttp 23004 29632 You're accessing the development server over HTTPS, but it only supports HTTP.
+ERROR 2025-08-17 02:08:17,825 basehttp 23004 26676 You're accessing the development server over HTTPS, but it only supports HTTP.
+ERROR 2025-08-17 02:08:22,030 basehttp 23004 17640 You're accessing the development server over HTTPS, but it only supports HTTP.
+ERROR 2025-08-17 02:14:15,433 basehttp 23004 11844 You're accessing the development server over HTTPS, but it only supports HTTP.
+ERROR 2025-08-17 02:21:29,791 middleware 13624 20692 Error response: /auth/login/google-oauth2/ - 404 in 0.00s
+WARNING 2025-08-17 02:21:29,791 log 13624 20692 Not Found: /auth/login/google-oauth2/
+ERROR 2025-08-17 02:21:29,810 middleware 13624 20692 Error response: /auth/login/google-oauth2/ - 404 in 0.00s
+WARNING 2025-08-17 02:21:29,810 log 13624 20692 Not Found: /auth/login/google-oauth2/

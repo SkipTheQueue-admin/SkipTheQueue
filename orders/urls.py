@@ -107,4 +107,5 @@ if settings.DEBUG:
         path('debug-home/', _views.debug_home, name='debug_home'),
         path('health/', _views.health_check, name='health_check'),
         path('diagnostic/', _views.site_diagnostic, name='site_diagnostic'),
+        path('error-monitoring/', _views.error_monitoring_dashboard, name='error_monitoring_dashboard'),
     ]

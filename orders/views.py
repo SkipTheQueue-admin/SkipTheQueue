@@ -27,6 +27,7 @@ import hmac
 from functools import wraps
 import logging
 from core.security import SecurityValidator, SessionSecurity
+from core.error_handling import ErrorTracker, comprehensive_health_check, safe_view
 
 logger = logging.getLogger(__name__)
 
@@ -485,93 +486,103 @@ def place_order(request):
 @cache_page(600)  # Cache for 10 minutes
 def home(request):
     """Home page with auto-redirect based on user email and enhanced security - optimized for performance"""
-    # Auto-redirect logic for logged-in users
-    if request.user.is_authenticated:
-        user_email = request.user.email
-        
-        # Log access attempt for security monitoring
-        logger.info(f"User {request.user.username} ({user_email}) accessed home page")
-        
-        # Check if user is the main admin (skipthequeue.app@gmail.com)
-        if user_email == 'skipthequeue.app@gmail.com':
-            if not request.user.is_superuser:
-                # Update user to superuser if they have the admin email
-                request.user.is_superuser = True
-                request.user.is_staff = True
-                request.user.save()
-                logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
-            # Store user type in session for consistent behavior
-            request.session['user_type'] = 'super_admin'
-            request.session['user_email'] = user_email
-            return redirect('super_admin_dashboard')
-        
-        # Check if user is canteen staff for any college - optimized with select_related
-        try:
-            canteen_staff = CanteenStaff.objects.select_related('college').get(user=request.user, is_active=True)
-            # Verify the college still exists and is active
-            if canteen_staff.college and canteen_staff.college.is_active:
-                # Store user type and college info in session for consistent behavior
-                request.session['user_type'] = 'canteen_staff'
-                request.session['college_slug'] = canteen_staff.college.slug
-                request.session['college_name'] = canteen_staff.college.name
-                request.session['user_email'] = user_email
-                logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
-                return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
-            else:
-                # College is inactive or doesn't exist, log out the user
-                logout(request)
-                messages.error(request, "Your assigned college is no longer active. Please contact administrator.")
-                return redirect('home')
-        except CanteenStaff.DoesNotExist:
-            # Check if user is college admin
-            try:
-                college_admin = College.objects.get(admin_email=user_email, is_active=True)
-                # Store user type and college info in session for consistent behavior
-                request.session['user_type'] = 'college_admin'
-                request.session['college_slug'] = college_admin.slug
-                request.session['college_name'] = college_admin.name
-                request.session['user_email'] = user_email
-                logger.info(f"College admin {user_email} redirected to {college_admin.name} dashboard")
-                return redirect('college_admin_dashboard', college_slug=college_admin.slug)
-            except College.DoesNotExist:
-                # Regular user - continue to normal home page
-                logger.info(f"Regular user {user_email} accessing home page")
+    try:
+        # Auto-redirect logic for logged-in users
+        if request.user.is_authenticated:
+            user_email = request.user.email
+            
+            # Log access attempt for security monitoring
+            logger.info(f"User {request.user.username} ({user_email}) accessed home page")
+            
+            # Check if user is the main admin (skipthequeue.app@gmail.com)
+            if user_email == 'skipthequeue.app@gmail.com':
+                if not request.user.is_superuser:
+                    # Update user to superuser if they have the admin email
+                    request.user.is_superuser = True
+                    request.user.is_staff = True
+                    request.user.save()
+                    logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
                 # Store user type in session for consistent behavior
-                request.session['user_type'] = 'regular_user'
+                request.session['user_type'] = 'super_admin'
                 request.session['user_email'] = user_email
-    
-    # Get active colleges with caching
-    colleges_cache_key = 'active_colleges'
-    colleges = cache.get(colleges_cache_key)
-    
-    if colleges is None:
-        colleges = College.objects.filter(is_active=True).order_by('name')
-        cache.set(colleges_cache_key, colleges, 1800)  # Cache for 30 minutes
-    
-    # Get selected college from session
-    selected_college = request.session.get('selected_college')
-    
-    # Validate selected college still exists and is active
-    if selected_college:
-        try:
-            college = College.objects.get(id=selected_college['id'], is_active=True)
-            # Update session with current college data
-            request.session['selected_college'] = {
-                'id': college.id,
-                'name': college.name,
-                'slug': college.slug
-            }
-        except College.DoesNotExist:
-            # College no longer exists or is inactive, clear session
-            request.session.pop('selected_college', None)
-            selected_college = None
-            messages.warning(request, "Your previously selected college is no longer available.")
-    
-    context = {
-        'colleges': colleges,
-        'selected_college': selected_college,
-    }
-    return render(request, 'orders/home.html', context)
+                return redirect('super_admin_dashboard')
+            
+            # Check if user is canteen staff for any college - optimized with select_related
+            try:
+                canteen_staff = CanteenStaff.objects.select_related('college').get(user=request.user, is_active=True)
+                # Verify the college still exists and is active
+                if canteen_staff.college and canteen_staff.college.is_active:
+                    # Store user type and college info in session for consistent behavior
+                    request.session['user_type'] = 'canteen_staff'
+                    request.session['college_slug'] = canteen_staff.college.slug
+                    request.session['college_name'] = canteen_staff.college.name
+                    request.session['user_email'] = user_email
+                    logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
+                    return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
+                else:
+                    # College is inactive or doesn't exist, log out the user
+                    logout(request)
+                    messages.error(request, "Your assigned college is no longer active. Please contact administrator.")
+                    return redirect('home')
+            except CanteenStaff.DoesNotExist:
+                # Check if user is college admin
+                try:
+                    college_admin = College.objects.get(admin_email=user_email, is_active=True)
+                    # Store user type and college info in session for consistent behavior
+                    request.session['user_type'] = 'college_admin'
+                    request.session['college_slug'] = college_admin.slug
+                    request.session['college_name'] = college_admin.name
+                    request.session['user_email'] = user_email
+                    logger.info(f"College admin {user_email} redirected to {college_admin.name} dashboard")
+                    return redirect('college_admin_dashboard', college_slug=college_admin.slug)
+                except College.DoesNotExist:
+                    # Regular user - continue to normal home page
+                    logger.info(f"Regular user {user_email} accessing home page")
+                    # Store user type in session for consistent behavior
+                    request.session['user_type'] = 'regular_user'
+                    request.session['user_email'] = user_email
+        
+        # Get active colleges with caching
+        colleges_cache_key = 'active_colleges'
+        colleges = cache.get(colleges_cache_key)
+        
+        if colleges is None:
+            colleges = College.objects.filter(is_active=True).order_by('name')
+            cache.set(colleges_cache_key, colleges, 1800)  # Cache for 30 minutes
+        
+        # Get selected college from session
+        selected_college = request.session.get('selected_college')
+        
+        # Validate selected college still exists and is active
+        if selected_college:
+            try:
+                college = College.objects.get(id=selected_college['id'], is_active=True)
+                # Update session with current college data
+                request.session['selected_college'] = {
+                    'id': college.id,
+                    'name': college.name,
+                    'slug': college.slug
+                }
+            except College.DoesNotExist:
+                # College no longer exists or is inactive, clear session
+                request.session.pop('selected_college', None)
+                selected_college = None
+                messages.warning(request, "Your previously selected college is no longer available.")
+        
+        context = {
+            'colleges': colleges,
+            'selected_college': selected_college,
+        }
+        return render(request, 'orders/home.html', context)
+        
+    except Exception as e:
+        logger.error(f"Error in home view: {str(e)}")
+        # Return a simple error page instead of 500
+        return render(request, 'orders/home.html', {
+            'colleges': [],
+            'selected_college': None,
+            'error_message': 'An error occurred while loading the page. Please try again.'
+        })
 
 @never_cache
 @vary_on_cookie
@@ -2747,39 +2758,37 @@ def debug_home(request):
     
     return JsonResponse(debug_info)
 
+@safe_view
 def health_check(request):
-    """Simple health check to verify the application is working"""
+    """Comprehensive health check to verify the application is working"""
+    # Use the comprehensive health check from error handling
+    health_status = comprehensive_health_check()
+    
+    # Add application-specific checks
     try:
-        # Check database connection
         colleges_count = College.objects.filter(is_active=True).count()
-        
-        # Check if superuser exists
         superuser_exists = User.objects.filter(
             email='skipthequeue.app@gmail.com',
             is_superuser=True
         ).exists()
         
-        health_status = {
-            'status': 'healthy',
-            'timestamp': timezone.now().isoformat(),
+        health_status.update({
             'debug_mode': settings.DEBUG,
             'colleges_count': colleges_count,
             'superuser_exists': superuser_exists,
             'database_connected': True,
-        }
-        
-        return JsonResponse(health_status, status=200)
+        })
         
     except Exception as e:
-        health_status = {
+        health_status['checks']['application'] = {
             'status': 'unhealthy',
-            'timestamp': timezone.now().isoformat(),
-            'error': str(e),
-            'debug_mode': settings.DEBUG,
+            'message': f'Application error: {str(e)}'
         }
-        
-        return JsonResponse(health_status, status=500)
+        health_status['overall_status'] = 'unhealthy'
+    
+    return JsonResponse(health_status, status=200 if health_status['overall_status'] == 'healthy' else 500)
 
+@safe_view
 def site_diagnostic(request):
     """Comprehensive diagnostic to identify site issues"""
     diagnostic_results = {
@@ -2884,6 +2893,37 @@ def site_diagnostic(request):
         diagnostic_results['status'] = 'HEALTHY'
     
     return JsonResponse(diagnostic_results, status=200 if diagnostic_results['status'] != 'ERROR' else 500)
+
+@safe_view
+def error_monitoring_dashboard(request):
+    """Error monitoring dashboard for administrators"""
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Access denied'}, status=403)
+    
+    # Get error statistics
+    error_stats = ErrorTracker.get_error_stats()
+    
+    # Get recent errors from cache
+    recent_errors = []
+    for i in range(10):  # Get last 10 errors
+        error_key = f"error_{int(time.time()) - (i * 60)}"  # Last 10 minutes
+        error_data = cache.get(error_key)
+        if error_data:
+            recent_errors.append(error_data)
+    
+    dashboard_data = {
+        'timestamp': timezone.now().isoformat(),
+        'error_statistics': error_stats,
+        'recent_errors': recent_errors,
+        'health_status': comprehensive_health_check(),
+        'system_info': {
+            'debug_mode': settings.DEBUG,
+            'database_engine': settings.DATABASES['default']['ENGINE'],
+            'cache_backend': settings.CACHES['default']['BACKEND'],
+        }
+    }
+    
+    return JsonResponse(dashboard_data)
 
 @require_GET
 def check_order_status(request, order_id):
@@ -3369,12 +3409,21 @@ def order_status_update(request, order_id):
 def user_profile(request):
     """User profile view with comprehensive information - optimized for performance"""
     try:
-        user_profile = UserProfile.objects.select_related('user', 'preferred_college').get(user=request.user)
+        # Get or create user profile
+        user_profile, created = UserProfile.objects.get_or_create(
+            user=request.user,
+            defaults={'phone_number': ''}
+        )
         
-        # Get user's recent orders with optimized queries
-        recent_orders = Order.objects.filter(
-            user_phone=user_profile.phone_number
-        ).select_related('college').prefetch_related('order_items__menu_item').order_by('-created_at')[:10]
+        if created:
+            messages.info(request, "Profile created successfully!")
+        
+        # Get user's recent orders with optimized queries (only if phone number exists)
+        recent_orders = []
+        if user_profile.phone_number:
+            recent_orders = Order.objects.filter(
+                user_phone=user_profile.phone_number
+            ).select_related('college').prefetch_related('order_items__menu_item').order_by('-created_at')[:10]
         
         # Get user's favorite items with optimization
         favorite_items = user_profile.favorite_items.select_related('college').all()
@@ -3382,42 +3431,45 @@ def user_profile(request):
         # Get user's preferred college (already loaded with select_related)
         preferred_college = user_profile.preferred_college
         
-        # Calculate orders this month
-        from datetime import datetime, timedelta
-        now = timezone.now()
-        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        # Calculate orders this month (only if phone number exists)
+        orders_this_month = 0
+        total_orders = 0
+        total_spent = 0
         
-        orders_this_month = Order.objects.filter(
-            user_phone=user_profile.phone_number,
-            created_at__gte=month_start
-        ).count()
-        
-        # Optimize total calculations using database aggregation
-        from django.db.models import Sum, Count
-        order_stats = Order.objects.filter(
-            user_phone=user_profile.phone_number
-        ).aggregate(
-            total_orders=Count('id'),
-            total_spent=Sum('amount_paid')
-        )
+        if user_profile.phone_number:
+            from datetime import datetime, timedelta
+            now = timezone.now()
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            
+            orders_this_month = Order.objects.filter(
+                user_phone=user_profile.phone_number,
+                created_at__gte=month_start
+            ).count()
+            
+            # Optimize total calculations using database aggregation
+            from django.db.models import Sum, Count
+            order_stats = Order.objects.filter(
+                user_phone=user_profile.phone_number
+            ).aggregate(
+                total_orders=Count('id'),
+                total_spent=Sum('amount_paid')
+            )
+            
+            total_orders = order_stats['total_orders'] or 0
+            total_spent = order_stats['total_spent'] or 0
         
         context = {
             'user_profile': user_profile,
             'recent_orders': recent_orders,
             'favorite_items': favorite_items,
             'preferred_college': preferred_college,
-            'total_orders': order_stats['total_orders'] or 0,
+            'total_orders': total_orders,
             'orders_this_month': orders_this_month,
-            'total_spent': order_stats['total_spent'] or 0,
+            'total_spent': total_spent,
         }
         
         return render(request, 'orders/user_profile.html', context)
         
-    except UserProfile.DoesNotExist:
-        # Create profile if it doesn't exist
-        user_profile = UserProfile.objects.create(user=request.user)
-        messages.info(request, "Profile created successfully!")
-        return redirect('user_profile')
     except Exception as e:
         logger.error(f"Error in user profile view: {str(e)}")
         messages.error(request, "Error loading profile. Please try again.")
@@ -3428,7 +3480,11 @@ def edit_profile(request):
     """Edit user profile"""
     if request.method == 'POST':
         try:
-            user_profile = UserProfile.objects.get(user=request.user)
+            # Get or create user profile
+            user_profile, created = UserProfile.objects.get_or_create(
+                user=request.user,
+                defaults={'phone_number': ''}
+            )
             
             # Update phone number
             phone = request.POST.get('phone_number')
@@ -3453,9 +3509,6 @@ def edit_profile(request):
             
             return redirect('user_profile')
             
-        except UserProfile.DoesNotExist:
-            messages.error(request, "Profile not found.")
-            return redirect('home')
         except Exception as e:
             logger.error(f"Error updating profile: {str(e)}")
             messages.error(request, "Error updating profile. Please try again.")
@@ -3464,7 +3517,11 @@ def edit_profile(request):
     # GET request - show edit form
     colleges = College.objects.filter(is_active=True)
     try:
-        user_profile = UserProfile.objects.get(user=request.user)
+        # Get or create user profile
+        user_profile, created = UserProfile.objects.get_or_create(
+            user=request.user,
+            defaults={'phone_number': ''}
+        )
     except UserProfile.DoesNotExist:
         user_profile = None
     

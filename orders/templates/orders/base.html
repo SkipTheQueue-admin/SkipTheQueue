@@ -16,7 +16,7 @@
   <meta name="msapplication-tap-highlight" content="no">
     
   <!-- PWA Manifest -->
-  <link rel="manifest" href="/manifest.json">
+      <link rel="manifest" href="{% url 'pwa_manifest' %}">
   
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
@@ -533,6 +533,11 @@
       }
     }
     
+    /* Alpine.js x-cloak directive */
+    [x-cloak] {
+      display: none !important;
+    }
+    
     /* Enhanced utility classes */
     .line-clamp-2 {
       display: -webkit-box;
@@ -638,7 +643,7 @@
 </head>
 <body class="bg-gray-50">
   <!-- Order Tracking Bar (Zomato Style) -->
-  <div id="order-tracking-bar" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-xl transform transition-all duration-500 -translate-y-full">
+  <div id="order-tracking-bar" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-xl transform transition-all duration-500 -translate-y-full" x-data="{ isVisible: false }" x-show="isVisible" x-cloak>
     <div class="container-responsive py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
@@ -724,9 +729,10 @@
           
           <!-- User Menu -->
           {% if user.is_authenticated %}
-            <div class="relative" x-data="{ userMenuOpen: false }">
+            <div class="relative" x-data="{ userMenuOpen: false }" x-cloak>
               <button @click="userMenuOpen = !userMenuOpen" 
                       @click.away="userMenuOpen = false"
+                      @keydown.escape="userMenuOpen = false"
                       class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-1"
                       aria-label="User menu"
                       aria-expanded="false"
@@ -748,6 +754,7 @@
                    x-transition:leave="transition ease-in duration-150"
                    x-transition:leave-start="opacity-100 transform scale-100"
                    x-transition:leave-end="opacity-0 transform scale-95"
+                   x-cloak
                    class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <i class="fas fa-user mr-2"></i>Profile
@@ -771,6 +778,7 @@
         <!-- Mobile Menu Button -->
         <div class="md:hidden">
           <button @click="mobileMenuOpen = !mobileMenuOpen" 
+                  @keydown.escape="mobileMenuOpen = false"
                   class="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   aria-label="Toggle mobile menu"
                   aria-expanded="false"
@@ -790,6 +798,7 @@
            x-transition:leave="transition ease-in duration-150"
            x-transition:leave-start="opacity-100 transform translate-y-0"
            x-transition:leave-end="opacity-0 transform -translate-y-2"
+           x-cloak
            class="md:hidden border-t border-gray-200 py-4 bg-white">
         <div class="space-y-2 px-4">
           <a href="{% url 'home' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'home' %}text-blue-600 bg-blue-50{% endif %}">
@@ -906,7 +915,7 @@
   </footer>
 
   <!-- Alpine.js for interactive components -->
-  <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
   
   <!-- Performance monitoring script -->
   <script src="{% static 'js/performance.js' %}"></script>
