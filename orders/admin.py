@@ -25,13 +25,13 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ['order', 'item', 'quantity', 'price_at_time', 'total_price']
-    list_filter = ['order__status', 'item__college']
-    search_fields = ['order__user_name', 'item__name']
-    readonly_fields = ['price_at_time']
+    list_display = ['order', 'menu_item', 'quantity', 'unit_price', 'total_price']
+    list_filter = ['order__status', 'menu_item__college']
+    search_fields = ['order__user_name', 'menu_item__name']
+    readonly_fields = ['total_price']
     
     def total_price(self, obj):
-        return obj.total_price()
+        return obj.total_price
     total_price.short_description = 'Total Price'
 
 @admin.register(College)

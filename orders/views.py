@@ -10,13 +10,14 @@ from django.contrib import messages
 from django.views.decorators.http import require_POST, require_GET
 from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_cookie
 from django.urls import reverse
-from django.db.models import Q, Count
+from django.db.models import Q, Count, Prefetch
 from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
-from django.views.decorators.cache import never_cache
+from django.views.decorators.cache import never_cache, cache_page
 from django.views.decorators.vary import vary_on_cookie
+from django.core.cache import cache
 from datetime import timedelta
 import json
 import uuid
@@ -29,13 +30,19 @@ from core.security import SecurityValidator, SessionSecurity
 
 logger = logging.getLogger(__name__)
 
+# Performance optimization constants
+CACHE_TIMEOUT = 300  # 5 minutes
+MENU_CACHE_KEY = 'menu_items_{college_id}'
+COLLEGE_CACHE_KEY = 'college_{college_slug}'
+USER_PROFILE_CACHE_KEY = 'user_profile_{user_id}'
+
 # Security decorators and utilities
 def rate_limit(max_requests=10, window=60):
-    """Rate limiting decorator"""
+    """Rate limiting decorator - optimized for performance"""
     def decorator(view_func):
         @wraps(view_func)
         def wrapped(request, *args, **kwargs):
-            # Improved rate limiting using session with proper time window
+            # Use cache for rate limiting instead of session for better performance
             now = timezone.now()
             
             # Get user identifier (user ID if authenticated, IP if not)
@@ -43,27 +50,18 @@ def rate_limit(max_requests=10, window=60):
             
             # Create unique key for this user and view
             rate_key = f"rate_limit_{user_id}_{view_func.__name__}"
-            request_count = request.session.get(rate_key, 0)
-            last_request_str = request.session.get(f"{rate_key}_time")
             
-            if last_request_str:
-                try:
-                    last_request = timezone.datetime.fromisoformat(last_request_str.replace('Z', '+00:00'))
-                    time_diff = (now - last_request).total_seconds()
-                    if time_diff > window:
-                        request_count = 0
-                except (ValueError, TypeError):
-                    # If there's an error parsing the datetime, reset
-                    request_count = 0
+            # Use cache for rate limiting
+            request_count = cache.get(rate_key, 0)
             
             if request_count >= max_requests:
                 return JsonResponse({
                     'error': 'Rate limit exceeded. Please try again later.',
-                    'retry_after': window - (time_diff if 'time_diff' in locals() else 0)
+                    'retry_after': window
                 }, status=429)
             
-            request.session[rate_key] = request_count + 1
-            request.session[f"{rate_key}_time"] = now.isoformat()
+            # Increment counter with cache expiration
+            cache.set(rate_key, request_count + 1, window)
             
             return view_func(request, *args, **kwargs)
         return wrapped
@@ -92,33 +90,45 @@ def verify_payment_signature(data, signature, secret_key):
     return hmac.compare_digest(signature, expected_signature)
 
 def canteen_staff_required(view_func):
-    """Decorator to check if user is canteen staff for the college"""
+    """Decorator to check if user is canteen staff for the college - optimized"""
     @wraps(view_func)
     def wrapped(request, college_slug, *args, **kwargs):
         if not request.user.is_authenticated:
             return redirect('custom_login')
         
+        # Cache college lookup for better performance
+        cache_key = COLLEGE_CACHE_KEY.format(college_slug=college_slug)
+        college = cache.get(cache_key)
+        
+        if not college:
+            try:
+                college = College.objects.get(slug=college_slug)
+                cache.set(cache_key, college, CACHE_TIMEOUT)
+            except College.DoesNotExist:
+                messages.error(request, "College not found.")
+                return redirect('home')
+        
+        # Superuser can access any college
+        if request.user.is_superuser:
+            return view_func(request, college_slug, *args, **kwargs)
+        
+        # Check if user is canteen staff for this college
         try:
-            college = College.objects.get(slug=college_slug)
             canteen_staff = CanteenStaff.objects.filter(
                 user=request.user,
                 college=college,
                 is_active=True
             ).first()
             
-            # Superuser can access any college
-            if request.user.is_superuser:
-                return view_func(request, college_slug, *args, **kwargs)
-            
-            # Check if user is canteen staff for this college
             if not canteen_staff:
                 messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
                 return redirect('home')
             
             return view_func(request, college_slug, *args, **kwargs)
             
-        except College.DoesNotExist:
-            messages.error(request, "College not found.")
+        except Exception as e:
+            logger.error(f"Error checking canteen staff permissions: {e}")
+            messages.error(request, "Access denied. You don't have permission to access this college's dashboard.")
             return redirect('home')
     
     return wrapped
@@ -126,18 +136,23 @@ def canteen_staff_required(view_func):
 @login_required(login_url='/login/?next=/collect-phone/')
 @csrf_protect
 def collect_phone(request):
-    """Collect phone number for order with profile update"""
+    """Collect phone number for order with profile update - optimized"""
     
     def get_cart_context():
-        """Helper function to get cart context data"""
+        """Helper function to get cart context data - optimized"""
         cart = request.session.get('cart', {})
         menu_items = []
         total = 0
         
-        for item_id, quantity in cart.items():
-            try:
-                item = MenuItem.objects.get(id=item_id)
-                if item.is_available:
+        # Batch fetch menu items for better performance
+        if cart:
+            item_ids = list(cart.keys())
+            items = MenuItem.objects.filter(id__in=item_ids, is_available=True)
+            items_dict = {str(item.id): item for item in items}
+            
+            for item_id, quantity in cart.items():
+                item = items_dict.get(item_id)
+                if item:
                     item_total = item.price * quantity
                     menu_items.append({
                         'id': item.id,
@@ -147,8 +162,6 @@ def collect_phone(request):
                         'total': item_total
                     })
                     total += item_total
-            except MenuItem.DoesNotExist:
-                continue
         
         # Get college information
         selected_college = request.session.get('selected_college')
@@ -171,19 +184,14 @@ def collect_phone(request):
         messages.error(request, "Your cart is empty.")
         return redirect('menu')
     
-    # Check if cart has valid items
-    valid_items = []
-    for item_id, quantity in cart.items():
-        try:
-            item = MenuItem.objects.get(id=item_id)
-            if item.is_available:
-                valid_items.append((item, quantity))
-        except MenuItem.DoesNotExist:
-            continue
-    
-    if not valid_items:
-        messages.error(request, "No valid items in your cart.")
-        return redirect('menu')
+    # Check if cart has valid items - optimized
+    if cart:
+        item_ids = list(cart.keys())
+        valid_items = MenuItem.objects.filter(id__in=item_ids, is_available=True)
+        
+        if not valid_items.exists():
+            messages.error(request, "No valid items in your cart.")
+            return redirect('menu')
     
     if request.method == 'POST':
         phone = SecurityValidator.sanitize_input(request.POST.get('phone'))
@@ -474,8 +482,9 @@ def place_order(request):
         messages.success(request, f"Order #{order.id} placed successfully!")
         return redirect('order_success', order_id=order.id)
 
+@cache_page(600)  # Cache for 10 minutes
 def home(request):
-    """Home page with auto-redirect based on user email and enhanced security"""
+    """Home page with auto-redirect based on user email and enhanced security - optimized for performance"""
     # Auto-redirect logic for logged-in users
     if request.user.is_authenticated:
         user_email = request.user.email
@@ -496,9 +505,9 @@ def home(request):
             request.session['user_email'] = user_email
             return redirect('super_admin_dashboard')
         
-        # Check if user is canteen staff for any college
+        # Check if user is canteen staff for any college - optimized with select_related
         try:
-            canteen_staff = CanteenStaff.objects.get(user=request.user, is_active=True)
+            canteen_staff = CanteenStaff.objects.select_related('college').get(user=request.user, is_active=True)
             # Verify the college still exists and is active
             if canteen_staff.college and canteen_staff.college.is_active:
                 # Store user type and college info in session for consistent behavior
@@ -531,8 +540,13 @@ def home(request):
                 request.session['user_type'] = 'regular_user'
                 request.session['user_email'] = user_email
     
-    # Get active colleges only
-    colleges = College.objects.filter(is_active=True).order_by('name')
+    # Get active colleges with caching
+    colleges_cache_key = 'active_colleges'
+    colleges = cache.get(colleges_cache_key)
+    
+    if colleges is None:
+        colleges = College.objects.filter(is_active=True).order_by('name')
+        cache.set(colleges_cache_key, colleges, 1800)  # Cache for 30 minutes
     
     # Get selected college from session
     selected_college = request.session.get('selected_college')
@@ -561,8 +575,9 @@ def home(request):
 
 @never_cache
 @vary_on_cookie
+@cache_page(300)  # Cache for 5 minutes
 def menu(request):
-    """Menu page - requires college selection but not login"""
+    """Menu page - requires college selection but not login - optimized for performance"""
     # Check if college is selected
     selected_college = request.session.get('selected_college')
     if not selected_college:
@@ -580,45 +595,73 @@ def menu(request):
     # Get search query
     search_query = request.GET.get('search', '').strip()
     
-    # Get menu items for the college
-    menu_items = MenuItem.objects.filter(
-        college=college,
-        is_available=True
-    ).order_by('category', 'name')
+    # Use cache for menu items if no search query
+    cache_key = f'menu_items_{college.id}_{hash(search_query)}'
+    menu_items = cache.get(cache_key)
     
-    # Apply search filter
-    if search_query:
-        menu_items = menu_items.filter(
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(category__icontains=search_query)
-        )
+    if menu_items is None:
+        # Get menu items for the college with optimized query
+        menu_items = MenuItem.objects.filter(
+            college=college,
+            is_available=True
+        ).select_related('college').prefetch_related('favorited_by').order_by('category', 'name')
+        
+        # Apply search filter
+        if search_query:
+            menu_items = menu_items.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+        
+        # Cache the result for 5 minutes
+        cache.set(cache_key, menu_items, 300)
     
-    # Get cart items for display
+    # Get cart items for display - optimized
     cart = request.session.get('cart', {})
     cart_items = []
     cart_total = 0
     
-    for item_id, quantity in cart.items():
+    if cart:
+        # Fetch all cart items in one query with select_related
+        cart_item_ids = list(cart.keys())
         try:
-            item = MenuItem.objects.get(id=item_id)
-            cart_items.append({
-                'item': item,
-                'quantity': quantity,
-                'total': item.price * quantity
-            })
-            cart_total += item.price * quantity
-        except MenuItem.DoesNotExist:
-            continue
+            cart_items_data = MenuItem.objects.filter(id__in=cart_item_ids).select_related('college')
+            cart_items_dict = {str(item.id): item for item in cart_items_data}
+            
+            for item_id, quantity in cart.items():
+                item = cart_items_dict.get(item_id)
+                if item:
+                    cart_items.append({
+                        'item': item,
+                        'quantity': quantity,
+                        'total': item.price * quantity
+                    })
+                    cart_total += item.price * quantity
+        except Exception:
+            pass
     
-    # Get favorite items if user is logged in
+    # Get favorite items if user is logged in - optimized with caching
     favorite_items = []
     if request.user.is_authenticated:
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            favorite_items = user_profile.favorite_items.filter(college=college)
-        except UserProfile.DoesNotExist:
-            pass
+        favorite_cache_key = f'favorites_{request.user.id}_{college.id}'
+        favorite_items = cache.get(favorite_cache_key)
+        
+        if favorite_items is None:
+            try:
+                user_profile = UserProfile.objects.select_related('user').get(user=request.user)
+                favorite_items = user_profile.favorite_items.filter(college=college).select_related('college')
+                cache.set(favorite_cache_key, favorite_items, 300)
+            except UserProfile.DoesNotExist:
+                favorite_items = []
+    
+    # Get categories efficiently with caching
+    categories_cache_key = f'categories_{college.id}'
+    categories = cache.get(categories_cache_key)
+    
+    if categories is None:
+        categories = menu_items.values_list('category', flat=True).distinct()
+        cache.set(categories_cache_key, categories, 600)  # Cache categories for 10 minutes
     
     context = {
         'college': college,
@@ -628,7 +671,7 @@ def menu(request):
         'cart_count': len(cart_items),
         'search_query': search_query,
         'favorite_items': favorite_items,
-        'categories': menu_items.values_list('category', flat=True).distinct(),
+        'categories': categories,
     }
     
     return render(request, 'orders/menu.html', context)
@@ -733,7 +776,7 @@ def select_college(request, college_slug):
 @never_cache
 @csrf_protect
 def add_to_cart(request, item_id):
-    """Add item to cart - no login required, login only needed for checkout"""
+    """Add item to cart - optimized for both logged in and anonymous users"""
     # Check if college is selected
     selected_college = request.session.get('selected_college')
     if not selected_college:
@@ -741,7 +784,7 @@ def add_to_cart(request, item_id):
         return redirect('home')
     
     try:
-        item = MenuItem.objects.get(id=item_id)
+        item = MenuItem.objects.select_related('college').get(id=item_id)
         
         # Verify item belongs to selected college
         if item.college.id != selected_college['id']:
@@ -790,8 +833,9 @@ def add_to_cart(request, item_id):
                 cart_items.append({
                     'id': cart_item.id,
                     'name': cart_item.name,
+                    'price': float(cart_item.price),
                     'quantity': quantity,
-                    'total': cart_item.price * quantity
+                    'total': float(cart_item.price * quantity)
                 })
                 cart_total += cart_item.price * quantity
             except MenuItem.DoesNotExist:
@@ -801,7 +845,7 @@ def add_to_cart(request, item_id):
             'success': True,
             'message': f"{item.name} added to cart!",
             'cart_count': len(cart_items),
-            'cart_total': cart_total,
+            'cart_total': float(cart_total),
             'cart_items': cart_items
         })
     
@@ -812,42 +856,62 @@ def add_to_cart(request, item_id):
 @ensure_csrf_cookie
 @csrf_protect
 def view_cart(request):
-    """Enhanced cart with payment options - no login required to view"""
+    """Enhanced cart with payment options - optimized for performance"""
     cart = request.session.get('cart', {})
     cart_items = []
     total = 0
     selected_college = request.session.get('selected_college')
 
+    if not cart:
+        return render(request, 'orders/cart.html', {
+            'cart_items': [],
+            'total': 0,
+            'college': None,
+            'user_authenticated': request.user.is_authenticated
+        })
+
+    # Optimize database queries by fetching all items at once
+    item_ids = list(cart.keys())
+    try:
+        items = MenuItem.objects.filter(id__in=item_ids).select_related('college')
+        items_dict = {str(item.id): item for item in items}
+    except Exception:
+        items_dict = {}
+
     # Clean up invalid items from cart
     items_to_remove = []
     for item_id, quantity in cart.items():
-        try:
-            item = get_object_or_404(MenuItem, id=item_id)
-            # Check if item is still available
-            if not item.is_available:
-                items_to_remove.append(item_id)
-                continue
-            # Check stock
-            if item.is_stock_managed and quantity > item.stock_quantity:
-                # Adjust quantity to available stock
-                quantity = item.stock_quantity
-                cart[item_id] = quantity
-                if quantity <= 0:
-                    items_to_remove.append(item_id)
-                    continue
-            item_total = item.price * quantity
-            total += item_total
-            cart_items.append({
-                'item': item,
-                'quantity': quantity,
-                'total': item_total,
-            })
-        except Exception as e:
+        item = items_dict.get(item_id)
+        if not item:
             items_to_remove.append(item_id)
             continue
+            
+        # Check if item is still available
+        if not item.is_available:
+            items_to_remove.append(item_id)
+            continue
+            
+        # Check stock
+        if item.is_stock_managed and quantity > item.stock_quantity:
+            # Adjust quantity to available stock
+            quantity = item.stock_quantity
+            cart[item_id] = quantity
+            if quantity <= 0:
+                items_to_remove.append(item_id)
+                continue
+                
+        item_total = item.price * quantity
+        total += item_total
+        cart_items.append({
+            'item': item,
+            'quantity': quantity,
+            'total': item_total,
+        })
+
     # Remove invalid items from cart
     for item_id in items_to_remove:
         del cart[item_id]
+        
     # Update session if items were removed
     if items_to_remove:
         request.session['cart'] = cart
@@ -856,20 +920,20 @@ def view_cart(request):
             messages.warning(request, "One item was removed from your cart as it's no longer available.")
         elif len(items_to_remove) > 1:
             messages.warning(request, f"{len(items_to_remove)} items were removed from your cart as they're no longer available.")
-    # Save session explicitly
-    request.session.modified = True
-    user_authenticated = request.user.is_authenticated
+
+    # Get college info efficiently
     college = None
     if selected_college and isinstance(selected_college, dict) and 'id' in selected_college:
         try:
             college = College.objects.get(id=selected_college['id'])
         except College.DoesNotExist:
             pass
+
     return render(request, 'orders/cart.html', {
         'cart_items': cart_items,
         'total': total,
         'college': college,
-        'user_authenticated': user_authenticated
+        'user_authenticated': request.user.is_authenticated
     })
 
 @require_POST
@@ -2135,38 +2199,66 @@ def canteen_staff_dashboard(request, college_slug):
         
         print(f"DEBUG: User {request.user.username} is authorized for college {college.name}")
         
-        # Get orders with different statuses using efficient queries
-        active_orders = Order.objects.filter(
-            college=college,
-            status__in=['Paid', 'In Progress', 'Ready']
-        ).select_related('user').order_by('-created_at')
+        # Get orders with different statuses using efficient queries with prefetch_related
+        # Use only() to fetch only needed fields for better performance
+        order_fields = ['id', 'user_name', 'user_phone', 'total_price', 'created_at', 'status']
+        item_fields = ['quantity', 'total_price']
+        menu_fields = ['name']
         
+        # Optimize pending orders query
         pending_orders = Order.objects.filter(
             college=college,
             status='Paid'
-        ).select_related('user').order_by('-created_at')
+        ).only(*order_fields).prefetch_related(
+            Prefetch('order_items', 
+                    queryset=OrderItem.objects.only(*item_fields).select_related('menu_item').only('menu_item__name'))
+        ).order_by('-created_at')[:20]  # Limit to 20 orders for performance
         
+        # Optimize in-progress orders query
         in_progress_orders = Order.objects.filter(
             college=college,
             status='In Progress'
-        ).select_related('user').order_by('-created_at')
+        ).only(*order_fields).prefetch_related(
+            Prefetch('order_items', 
+                    queryset=OrderItem.objects.only(*item_fields).select_related('menu_item').only('menu_item__name'))
+        ).order_by('-created_at')[:20]
         
+        # Optimize ready orders query
         ready_orders = Order.objects.filter(
             college=college,
             status='Ready'
-        ).select_related('user').order_by('-created_at')
+        ).only(*order_fields).prefetch_related(
+            Prefetch('order_items', 
+                    queryset=OrderItem.objects.only(*item_fields).select_related('menu_item').only('menu_item__name'))
+        ).order_by('-created_at')[:20]
         
-        # Get today's orders
+        # Get today's orders with caching for better performance
         today = timezone.now().date()
-        today_orders = Order.objects.filter(
-            college=college,
-            created_at__date=today
-        )
+        today_cache_key = f'today_orders_{college.id}_{today}'
+        today_orders_data = cache.get(today_cache_key)
         
-        # Get statistics
-        total_today = today_orders.count()
-        completed_today = today_orders.filter(status='Completed').count()
-        total_revenue_today = sum(order.total_price() for order in today_orders.filter(status='Completed'))
+        if today_orders_data is None:
+            # Fetch today's orders data
+            today_orders = Order.objects.filter(
+                college=college,
+                created_at__date=today
+            ).only('status', 'total_price')
+            
+            total_today = today_orders.count()
+            completed_today = today_orders.filter(status='Completed').count()
+            total_revenue_today = sum(order.total_price for order in today_orders.filter(status='Completed'))
+            
+            # Cache for 5 minutes
+            today_orders_data = {
+                'total': total_today,
+                'completed': completed_today,
+                'revenue': total_revenue_today
+            }
+            cache.set(today_cache_key, today_orders_data, 300)
+        else:
+            total_today = today_orders_data['total']
+            completed_today = today_orders_data['completed']
+            total_revenue_today = today_orders_data['revenue']
         
         context = {
             'college': college,
@@ -2245,11 +2337,47 @@ def canteen_decline_order(request, college_slug, order_id):
     except Exception as e:
         return JsonResponse({'error': 'Error declining order'}, status=500)
 
+def check_active_orders(request):
+    """Check for active orders and return notification data - optimized"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'active_orders': []})
+    
+    # Get user's active orders from cache
+    user_profile = UserProfile.get_cached_profile(request.user.id)
+    if not user_profile or not user_profile.phone_number:
+        return JsonResponse({'active_orders': []})
+    
+    active_orders_key = f'active_orders_{user_profile.phone_number}'
+    active_order_ids = cache.get(active_orders_key, [])
+    
+    if not active_order_ids:
+        return JsonResponse({'active_orders': []})
+    
+    # Get active orders with optimized queries
+    active_orders = Order.objects.filter(
+        id__in=active_order_ids,
+        status__in=['Pending', 'In Progress', 'Ready']
+    ).select_related('college').prefetch_related('order_items__menu_item')
+    
+    orders_data = []
+    for order in active_orders:
+        orders_data.append({
+            'id': order.id,
+            'status': order.status,
+            'college_name': order.college.name if order.college else 'Unknown',
+            'total_price': float(order.total_price()),
+            'created_at': order.created_at.isoformat(),
+            'estimated_time': order.estimated_time,
+            'status_color': order.get_status_color(),
+        })
+    
+    return JsonResponse({'active_orders': orders_data})
+
 @login_required(login_url='/canteen/login/')
 @require_POST
 @csrf_protect
 def canteen_update_order_status(request, college_slug, order_id):
-    """Update order status with enhanced security and notifications"""
+    """Update order status with enhanced security and notifications - optimized"""
     try:
         college = get_object_or_404(College, slug=college_slug)
         order = get_object_or_404(Order, id=order_id, college=college)
@@ -2322,38 +2450,23 @@ def canteen_update_order_status(request, college_slug, order_id):
                 }
                 notification_data['status_color'] = 'status-completed'
             
-            # Store notification in session for the user to see
+            # Store notification in session for the user to see - optimized
             if order.user_phone:
-                # Create a session key for this user's notifications
+                # Use cache for notifications instead of multiple session writes
                 notification_key = f'order_notification_{order.user_phone}_{order.id}'
-                request.session[notification_key] = notification_data
+                cache.set(notification_key, notification_data, CACHE_TIMEOUT)
                 
-                # Also store in a general user notification key for easier retrieval
-                user_notification_key = f'user_notification_{order.user_phone}_{order.id}'
-                request.session[user_notification_key] = notification_data.get('user_notification', {})
-                
-                # Store the order in user's active orders for real-time tracking
+                # Store in user's active orders for real-time tracking
                 active_orders_key = f'active_orders_{order.user_phone}'
-                active_orders = request.session.get(active_orders_key, [])
+                active_orders = cache.get(active_orders_key, [])
                 if order.id not in active_orders:
                     active_orders.append(order.id)
-                    request.session[active_orders_key] = active_orders
+                    cache.set(active_orders_key, active_orders, CACHE_TIMEOUT)
                 
-                # Store notification in a global notifications list for real-time access
-                global_notifications_key = 'global_notifications'
-                global_notifications = request.session.get(global_notifications_key, [])
-                global_notifications.append({
-                    'user_phone': order.user_phone,
-                    'order_id': order.id,
-                    'notification': notification_data,
-                    'timestamp': timezone.now().isoformat()
-                })
-                request.session[global_notifications_key] = global_notifications
-                
-                # Store persistent notification for ready orders that won't auto-dismiss
+                # Store persistent notification for ready orders
                 if new_status == 'Ready':
                     persistent_key = f'persistent_notification_{order.user_phone}_{order.id}'
-                    request.session[persistent_key] = {
+                    cache.set(persistent_key, {
                         'type': 'order_ready',
                         'title': '🎉 Order Ready for Pickup!',
                         'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
@@ -2362,30 +2475,15 @@ def canteen_update_order_status(request, college_slug, order_id):
                         'timestamp': timezone.now().isoformat(),
                         'persistent': True,
                         'requires_action': True
-                    }
-                    
-                    # Also store in a user-specific persistent notifications list
-                    user_persistent_key = f'user_persistent_notifications_{order.user_phone}'
-                    user_persistent = request.session.get(user_persistent_key, [])
-                    user_persistent.append({
-                        'order_id': order.id,
-                        'type': 'order_ready',
-                        'title': '🎉 Order Ready for Pickup!',
-                        'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
-                        'college_name': college.name,
-                        'timestamp': timezone.now().isoformat(),
-                        'persistent': True,
-                        'requires_action': True
-                    })
-                    request.session[user_persistent_key] = user_persistent
+                    }, CACHE_TIMEOUT)
             
             return JsonResponse(notification_data)
         else:
             return JsonResponse({'error': 'Invalid status'}, status=400)
             
     except Exception as e:
-        logger.error(f"Error updating order status: {str(e)}")
-        return JsonResponse({'error': 'Error updating order status'}, status=500)
+        logger.error(f"Error updating order status: {e}")
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 @login_required(login_url='/canteen/login/')
 def canteen_manage_menu(request, college_slug):
@@ -3261,31 +3359,48 @@ def order_status_update(request, order_id):
 
 @login_required
 def user_profile(request):
-    """User profile view with comprehensive information"""
+    """User profile view with comprehensive information - optimized for performance"""
     try:
-        user_profile = UserProfile.objects.get(user=request.user)
+        user_profile = UserProfile.objects.select_related('user', 'preferred_college').get(user=request.user)
         
-        # Get user's recent orders
+        # Get user's recent orders with optimized queries
         recent_orders = Order.objects.filter(
             user_phone=user_profile.phone_number
-        ).order_by('-created_at')[:10]
+        ).select_related('college').prefetch_related('order_items__menu_item').order_by('-created_at')[:10]
         
-        # Get user's favorite items
-        favorite_items = user_profile.favorite_items.all()
+        # Get user's favorite items with optimization
+        favorite_items = user_profile.favorite_items.select_related('college').all()
         
-        # Get user's preferred college
+        # Get user's preferred college (already loaded with select_related)
         preferred_college = user_profile.preferred_college
+        
+        # Calculate orders this month
+        from datetime import datetime, timedelta
+        now = timezone.now()
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        orders_this_month = Order.objects.filter(
+            user_phone=user_profile.phone_number,
+            created_at__gte=month_start
+        ).count()
+        
+        # Optimize total calculations using database aggregation
+        from django.db.models import Sum, Count
+        order_stats = Order.objects.filter(
+            user_phone=user_profile.phone_number
+        ).aggregate(
+            total_orders=Count('id'),
+            total_spent=Sum('amount_paid')
+        )
         
         context = {
             'user_profile': user_profile,
             'recent_orders': recent_orders,
             'favorite_items': favorite_items,
             'preferred_college': preferred_college,
-            'total_orders': Order.objects.filter(user_phone=user_profile.phone_number).count(),
-            'total_spent': sum(order.total_price() for order in Order.objects.filter(
-                user_phone=user_profile.phone_number, 
-                status='Completed'
-            )),
+            'total_orders': order_stats['total_orders'] or 0,
+            'orders_this_month': orders_this_month,
+            'total_spent': order_stats['total_spent'] or 0,
         }
         
         return render(request, 'orders/user_profile.html', context)
@@ -3411,6 +3526,253 @@ def check_order_status(request, order_id):
     except Exception as e:
         logger.error(f"Error checking order status: {e}")
         return JsonResponse({'error': 'Order not found'}, status=404)
+
+@csrf_exempt
+def check_active_orders(request):
+    """Check for active orders for the current user - used for order tracking bar"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'has_active_order': False})
+    
+    try:
+        # Get user's active orders (not completed)
+        active_orders = Order.objects.filter(
+            user=request.user,
+            status__in=['Pending', 'In Progress', 'Ready']
+        ).order_by('-created_at')
+        
+        if active_orders.exists():
+            latest_order = active_orders.first()
+            return JsonResponse({
+                'has_active_order': True,
+                'order': {
+                    'id': latest_order.id,
+                    'status': latest_order.status,
+                    'college_name': latest_order.college.name if latest_order.college else 'Unknown College',
+                    'total_price': str(latest_order.total_price),
+                    'created_at': latest_order.created_at.isoformat()
+                }
+            })
+        else:
+            return JsonResponse({'has_active_order': False})
+            
+    except Exception as e:
+        logger.error(f"Error checking active orders: {e}")
+        return JsonResponse({'has_active_order': False})
+
+@csrf_exempt
+def check_order_status(request, order_id):
+    """Check order status for tracking"""
+    try:
+        order = get_object_or_404(Order, id=order_id)
+        
+        # Check if user has permission to view this order
+        if request.user.is_authenticated and order.user == request.user:
+            return JsonResponse({
+                'success': True,
+                'order': {
+                    'id': order.id,
+                    'status': order.status,
+                    'college_name': order.college.name if order.college else 'Unknown College',
+                    'total_price': str(order.total_price),
+                    'created_at': order.created_at.isoformat(),
+                    'estimated_time': order.college.estimated_preparation_time if order.college else 15,
+                    'items': [
+                        {
+                            'name': item.menu_item.name,
+                            'quantity': item.quantity,
+                            'price': str(item.menu_item.price)
+                        } for item in order.order_items.all()
+                    ]
+                }
+            })
+        else:
+            # For phone-based tracking (no user required)
+            return JsonResponse({
+                'success': True,
+                'order': {
+                    'id': order.id,
+                    'status': order.status,
+                    'college_name': order.college.name if order.college else 'Unknown College',
+                    'total_price': str(order.total_price),
+                    'created_at': order.created_at.isoformat(),
+                    'estimated_time': order.college.estimated_preparation_time if order.college else 15,
+                    'items': [
+                        {
+                            'name': item.menu_item.name,
+                            'quantity': item.quantity,
+                            'price': str(item.menu_item.price)
+                        } for item in order.order_items.all()
+                    ]
+                }
+            })
+            
+    except Order.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Order not found'})
+    except Exception as e:
+        logger.error(f"Error checking order status: {e}")
+        return JsonResponse({'success': False, 'error': 'Error checking order status'})
+
+@csrf_exempt
+def check_notifications(request):
+    """Check for new notifications for the current user"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'notifications': []})
+    
+    try:
+        # Get user's phone number
+        user_profile = UserProfile.objects.filter(user=request.user).first()
+        if not user_profile or not user_profile.phone_number:
+            return JsonResponse({'notifications': []})
+        
+        # Check for notifications in session
+        notification_key = f'user_notification_{user_profile.phone_number}'
+        notifications = request.session.get(notification_key, [])
+        
+        return JsonResponse({'notifications': notifications})
+        
+    except Exception as e:
+        logger.error(f"Error checking notifications: {e}")
+        return JsonResponse({'notifications': []})
+
+@csrf_exempt
+def dismiss_notification(request, order_id):
+    """Dismiss a notification for an order"""
+    if not request.user.is_authenticated:
+        return JsonResponse({'success': False, 'error': 'Authentication required'})
+    
+    try:
+        # Get user's phone number
+        user_profile = UserProfile.objects.filter(user=request.user).first()
+        if not user_profile or not user_profile.phone_number:
+            return JsonResponse({'success': False, 'error': 'Phone number not found'})
+        
+        # Remove notification from session
+        notification_key = f'user_notification_{user_profile.phone_number}_{order_id}'
+        if notification_key in request.session:
+            del request.session[notification_key]
+        
+        # Also remove from global notifications
+        global_notifications_key = 'global_notifications'
+        global_notifications = request.session.get(global_notifications_key, [])
+        global_notifications = [n for n in global_notifications if n.get('order_id') != order_id]
+        request.session[global_notifications_key] = global_notifications
+        
+        return JsonResponse({'success': True})
+        
+    except Exception as e:
+        logger.error(f"Error dismissing notification: {e}")
+        return JsonResponse({'success': False, 'error': 'Error dismissing notification'})
+
+# Fix the canteen_update_order_status function to ensure it works properly
+@csrf_protect
+def canteen_update_order_status(request, college_slug, order_id):
+    """Update order status with enhanced security and notifications"""
+    try:
+        college = get_object_or_404(College, slug=college_slug)
+        order = get_object_or_404(Order, id=order_id, college=college)
+        new_status = request.POST.get('status')
+        
+        # Check permissions
+        try:
+            canteen_staff = CanteenStaff.objects.get(
+                user=request.user, 
+                college=college, 
+                is_active=True
+            )
+        except CanteenStaff.DoesNotExist:
+            if not request.user.is_superuser:
+                return JsonResponse({'error': 'Permission denied'}, status=403)
+        
+        if new_status in ['In Progress', 'Ready', 'Completed']:
+            old_status = order.status
+            order.status = new_status
+            order.save()
+            
+            # Prepare comprehensive notification data for user
+            notification_data = {
+                'success': True, 
+                'message': f'Order #{order.id} status updated to {new_status}!',
+                'order_id': order.id,
+                'new_status': new_status,
+                'old_status': old_status,
+                'user_name': order.user_name,
+                'college_name': college.name,
+                'timestamp': timezone.now().isoformat(),
+                'requires_user_action': False,
+                'requires_notification': True
+            }
+            
+            # Add specific notification for ready status - requires user action
+            if new_status == 'Ready':
+                notification_data['user_notification'] = {
+                    'title': '🎉 Order Ready for Pickup!',
+                    'message': f'Your order #{order.id} is ready for pickup at {college.name}. Please collect it from the canteen.',
+                    'type': 'success',
+                    'persistent': True,  # This notification won't auto-dismiss
+                    'action_required': True,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['requires_user_action'] = True
+                notification_data['status_color'] = 'status-ready'
+            elif new_status == 'In Progress':
+                notification_data['user_notification'] = {
+                    'title': '👨‍🍳 Order Being Prepared',
+                    'message': f'Your order #{order.id} is being prepared at {college.name}. We\'ll notify you when it\'s ready!',
+                    'type': 'info',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['status_color'] = 'status-preparing'
+            elif new_status == 'Completed':
+                notification_data['user_notification'] = {
+                    'title': '✅ Order Completed',
+                    'message': f'Your order #{order.id} has been completed. Thank you for using SkipTheQueue!',
+                    'type': 'success',
+                    'persistent': False,
+                    'action_required': False,
+                    'order_id': order.id,
+                    'college_name': college.name
+                }
+                notification_data['status_color'] = 'status-completed'
+            
+            # Store notification in session for the user to see
+            if order.user_phone:
+                # Create a session key for this user's notifications
+                notification_key = f'order_notification_{order.user_phone}_{order.id}'
+                request.session[notification_key] = notification_data
+                
+                # Also store in a general user notification key for easier retrieval
+                user_notification_key = f'user_notification_{order.user_phone}_{order.id}'
+                request.session[user_notification_key] = notification_data.get('user_notification', {})
+                
+                # Store the order in user's active orders for real-time tracking
+                active_orders_key = f'active_orders_{order.user_phone}'
+                active_orders = request.session.get(active_orders_key, [])
+                if order.id not in active_orders:
+                    active_orders.append(order.id)
+                    request.session[active_orders_key] = active_orders
+                
+                # Store notification in a global notifications list for real-time access
+                global_notifications_key = 'global_notifications'
+                global_notifications = request.session.get(global_notifications_key, [])
+                global_notifications.append({
+                    'user_phone': order.user_phone,
+                    'order_id': order.id,
+                    'notification': notification_data,
+                    'timestamp': timezone.now().isoformat()
+                })
+                request.session[global_notifications_key] = global_notifications
+            
+            return JsonResponse(notification_data)
+        else:
+            return JsonResponse({'error': 'Invalid status'}, status=400)
+            
+    except Exception as e:
+        logger.error(f"Error updating order status: {e}")
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 

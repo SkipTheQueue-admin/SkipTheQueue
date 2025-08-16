@@ -6,12 +6,12 @@
   <div class="max-w-4xl mx-auto">
     <!-- Header -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
           <p class="text-gray-600">Manage your account and preferences</p>
         </div>
-        <a href="{% url 'edit_profile' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+        <a href="{% url 'edit_profile' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center">
           Edit Profile
         </a>
       </div>
@@ -26,10 +26,18 @@
           <div class="space-y-4">
             <div class="flex items-center space-x-4">
               <div class="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
-                {{ user.first_name|first|upper }}
+                {{ user.first_name|first|upper|default:user.username|first|upper }}
               </div>
               <div>
-                <h3 class="text-lg font-semibold text-gray-900">{{ user.get_full_name|default:user.username }}</h3>
+                <h3 class="text-lg font-semibold text-gray-900">
+                  {% if user.first_name and user.last_name %}
+                    {{ user.first_name }} {{ user.last_name }}
+                  {% elif user.first_name %}
+                    {{ user.first_name }}
+                  {% else %}
+                    {{ user.username }}
+                  {% endif %}
+                </h3>
                 <p class="text-gray-600">{{ user.email }}</p>
                 <p class="text-sm text-gray-500">Member since {{ user.date_joined|date:"M Y" }}</p>
               </div>
@@ -39,11 +47,23 @@
               <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
-                  <p class="text-gray-900">{{ user_profile.phone_number|default:"Not set" }}</p>
+                  <p class="text-gray-900">
+                    {% if user_profile.phone_number %}
+                      {{ user_profile.phone_number }}
+                    {% else %}
+                      <span class="text-gray-400">Not set</span>
+                    {% endif %}
+                  </p>
                 </div>
                 <div>
                   <label class="block text-sm font-medium text-gray-700 mb-1">Preferred College</label>
-                  <p class="text-gray-900">{{ user_profile.preferred_college.name|default:"Not set" }}</p>
+                  <p class="text-gray-900">
+                    {% if user_profile.preferred_college %}
+                      {{ user_profile.preferred_college.name }}
+                    {% else %}
+                      <span class="text-gray-400">Not set</span>
+                    {% endif %}
+                  </p>
                 </div>
               </div>
             </div>
@@ -57,22 +77,33 @@
             <div class="space-y-4">
               {% for order in recent_orders %}
                 <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div class="flex items-center justify-between">
-                    <div>
-                      <h4 class="font-medium text-gray-900">Order #{{ order.id }}</h4>
-                      <p class="text-sm text-gray-600">{{ order.college.name }}</p>
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div class="flex-1">
+                      <div class="flex items-center gap-3 mb-2">
+                        <h4 class="font-medium text-gray-900">Order #{{ order.id }}</h4>
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium 
+                          {% if order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                          {% elif order.status == 'In Progress' %}bg-blue-100 text-blue-800
+                          {% elif order.status == 'Ready' %}bg-green-100 text-green-800
+                          {% elif order.status == 'Completed' %}bg-gray-100 text-gray-800
+                          {% else %}bg-gray-100 text-gray-800{% endif %}">
+                          {{ order.status }}
+                        </span>
+                      </div>
+                      <p class="text-sm text-gray-600">
+                        {% if order.college %}
+                          {{ order.college.name }}
+                        {% else %}
+                          College not specified
+                        {% endif %}
+                      </p>
                       <p class="text-sm text-gray-500">{{ order.created_at|date:"M d, Y H:i" }}</p>
                     </div>
                     <div class="text-right">
-                      <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
-                        {% if order.status == 'Pending' %}bg-yellow-100 text-yellow-800
-                        {% elif order.status == 'In Progress' %}bg-blue-100 text-blue-800
-                        {% elif order.status == 'Ready' %}bg-green-100 text-green-800
-                        {% elif order.status == 'Completed' %}bg-gray-100 text-gray-800
-                        {% else %}bg-gray-100 text-gray-800{% endif %}">
-                        {{ order.status }}
-                      </span>
-                      <p class="text-lg font-semibold text-gray-900 mt-1">₹{{ order.total_price }}</p>
+                      <p class="text-lg font-semibold text-gray-900">₹{{ order.total_price }}</p>
+                      <a href="{% url 'track_order' %}?order_id={{ order.id }}" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                        Track Order →
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -85,9 +116,15 @@
             </div>
           {% else %}
             <div class="text-center py-8 text-gray-500">
-              <p>No orders yet</p>
-              <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 font-medium">
-                Start ordering →
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+              </div>
+              <p class="text-lg font-medium mb-2">No orders yet</p>
+              <p class="text-sm mb-4">Start ordering to see your order history here</p>
+              <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                Start Ordering →
               </a>
             </div>
           {% endif %}
@@ -100,49 +137,69 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               {% for item in favorite_items %}
                 <div class="border border-gray-200 rounded-lg p-4 hover:bg-gray-50 transition-colors">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                      </svg>
-                    </div>
-                    <div>
+                  <div class="flex items-start justify-between">
+                    <div class="flex-1">
                       <h4 class="font-medium text-gray-900">{{ item.name }}</h4>
-                      <p class="text-sm text-gray-600">{{ item.college.name }}</p>
-                      <p class="text-sm font-medium text-gray-900">₹{{ item.price }}</p>
+                      {% if item.description %}
+                        <p class="text-sm text-gray-600 mt-1 line-clamp-2">{{ item.description }}</p>
+                      {% endif %}
+                      <p class="text-blue-600 font-semibold mt-2">₹{{ item.price }}</p>
+                      {% if item.college %}
+                        <p class="text-xs text-gray-500 mt-1">{{ item.college.name }}</p>
+                      {% endif %}
                     </div>
+                    <button onclick="removeFavorite({{ item.id }})" class="text-red-500 hover:text-red-700 ml-2">
+                      <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12"/>
+                      </svg>
+                    </button>
                   </div>
+                  <button onclick="addToCartFromFavorites({{ item.id }})" 
+                          class="w-full bg-blue-600 text-white py-2 px-3 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium mt-3">
+                    Add to Cart
+                  </button>
                 </div>
               {% endfor %}
             </div>
+            <div class="mt-4 text-center">
+              <a href="{% url 'favorites' %}" class="text-blue-600 hover:text-blue-700 font-medium">
+                View All Favorites →
+              </a>
+            </div>
           {% else %}
             <div class="text-center py-8 text-gray-500">
-              <p>No favorite items yet</p>
-              <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 font-medium">
-                Browse menu →
+              <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+              </div>
+              <p class="text-lg font-medium mb-2">No favorite items yet</p>
+              <p class="text-sm mb-4">Add items to your favorites for quick access</p>
+              <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                Browse Menu →
               </a>
             </div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Sidebar Stats -->
-      <div class="space-y-6">
-        <!-- Statistics Card -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Statistics</h3>
+      <!-- Sidebar -->
+      <div class="lg:col-span-1">
+        <!-- Quick Stats -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Stats</h3>
           <div class="space-y-4">
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Total Orders</span>
-              <span class="text-2xl font-bold text-gray-900">{{ total_orders }}</span>
+              <span class="text-2xl font-bold text-blue-600">{{ total_orders|default:0 }}</span>
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-gray-600">This Month</span>
+              <span class="text-lg font-semibold text-gray-900">{{ orders_this_month|default:0 }}</span>
             </div>
             <div class="flex items-center justify-between">
               <span class="text-gray-600">Total Spent</span>
-              <span class="text-2xl font-bold text-green-600">₹{{ total_spent|floatformat:0 }}</span>
-            </div>
-            <div class="flex items-center justify-between">
-              <span class="text-gray-600">Favorite Items</span>
-              <span class="text-2xl font-bold text-purple-600">{{ favorite_items|length }}</span>
+              <span class="text-lg font-semibold text-green-600">₹{{ total_spent|default:0 }}</span>
             </div>
           </div>
         </div>
@@ -151,30 +208,23 @@
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
           <div class="space-y-3">
-            <a href="{% url 'menu' %}" class="block w-full bg-blue-600 text-white text-center py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
-              Order Food
+            <a href="{% url 'menu' %}" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center block">
+              <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+              </svg>
+              New Order
             </a>
-            <a href="{% url 'track_order' %}" class="block w-full bg-green-600 text-white text-center py-3 px-4 rounded-lg hover:bg-green-700 transition-colors font-medium">
-              Track Order
-            </a>
-            <a href="{% url 'order_history' %}" class="block w-full bg-purple-600 text-white text-center py-3 px-4 rounded-lg hover:bg-purple-700 transition-colors font-medium">
+            <a href="{% url 'order_history' %}" class="w-full bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-center block">
+              <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
               Order History
             </a>
-          </div>
-        </div>
-
-        <!-- Help & Support -->
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 class="text-lg font-semibold text-gray-900 mb-4">Help & Support</h3>
-          <div class="space-y-3">
-            <a href="{% url 'help_center' %}" class="block text-blue-600 hover:text-blue-700 font-medium">
-              Help Center
-            </a>
-            <a href="#" class="block text-blue-600 hover:text-blue-700 font-medium">
-              Contact Support
-            </a>
-            <a href="{% url 'privacy_policy' %}" class="block text-blue-600 hover:text-blue-700 font-medium">
-              Privacy Policy
+            <a href="{% url 'favorites' %}" class="w-full bg-yellow-500 text-white py-3 px-4 rounded-lg hover:bg-yellow-600 transition-colors font-medium text-center block">
+              <svg class="w-5 h-5 inline mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+              Favorites
             </a>
           </div>
         </div>
@@ -182,4 +232,95 @@
     </div>
   </div>
 </div>
+
+<script>
+  // Remove favorite function
+  async function removeFavorite(itemId) {
+    if (!confirm('Remove this item from favorites?')) {
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/toggle-favorite/${itemId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Remove the item from the DOM
+          const itemElement = document.querySelector(`[onclick="removeFavorite(${itemId})"]`).closest('.border');
+          if (itemElement) {
+            itemElement.remove();
+          }
+          
+          // Check if no more favorites
+          const favoritesContainer = document.querySelector('.grid');
+          if (favoritesContainer && favoritesContainer.children.length === 0) {
+            location.reload(); // Reload to show empty state
+          }
+          
+          showNotification('Item removed from favorites', 'success');
+        } else {
+          showNotification(data.error || 'Failed to remove favorite', 'error');
+        }
+      } else {
+        showNotification('Failed to remove favorite', 'error');
+      }
+    } catch (error) {
+      console.error('Error removing favorite:', error);
+      showNotification('Error removing favorite', 'error');
+    }
+  }
+  
+  // Add to cart from favorites
+  async function addToCartFromFavorites(itemId) {
+    try {
+      const response = await fetch(`/add-to-cart/${itemId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Item added to cart!', 'success');
+        } else {
+          showNotification(data.error || 'Failed to add item to cart', 'error');
+        }
+      } else {
+        showNotification('Failed to add item to cart', 'error');
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      showNotification('Error adding item to cart', 'error');
+    }
+  }
+  
+  // Show notification
+  function showNotification(message, type = 'info') {
+    if (typeof window.showNotification === 'function') {
+      window.showNotification(message, type);
+    } else {
+      // Fallback notification
+      const notification = document.createElement('div');
+      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm bg-${type === 'success' ? 'green' : type === 'error' ? 'red' : 'blue'}-500 text-white`;
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.remove();
+      }, 3000);
+    }
+  }
+</script>
+
+{% csrf_token %}
 {% endblock %}

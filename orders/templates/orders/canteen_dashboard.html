@@ -1,11 +1,14 @@
 {% extends "orders/base.html" %}
 
 {% block content %}
+<!-- CSRF Token - Must be at the top for JavaScript access -->
+{% csrf_token %}
+
 <div class="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900">
   <!-- Header -->
   <div class="bg-white/10 backdrop-blur-lg border-b border-white/20">
     <div class="max-w-7xl mx-auto px-4 py-4">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div class="flex items-center space-x-3">
           <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -18,30 +21,32 @@
           </div>
         </div>
         
-        <div class="flex items-center space-x-3">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-3">
           <div class="bg-green-500/20 backdrop-blur-sm rounded-lg px-3 py-1">
             <span class="text-green-300 text-sm font-medium">🟢 Live</span>
           </div>
           
           <!-- Navigation Links -->
-          <a href="{% url 'canteen_manage_menu' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
-            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
-            </svg>
-            Menu
-          </a>
-          <a href="{% url 'canteen_order_history' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
-            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-            </svg>
-            History
-          </a>
-          <a href="{% url 'canteen_staff_logout' %}" class="bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm rounded-lg px-4 py-2 text-red-200 text-sm font-medium transition duration-200">
-            <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-            </svg>
-            Logout
-          </a>
+          <div class="flex flex-wrap gap-2">
+            <a href="{% url 'canteen_manage_menu' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"></path>
+              </svg>
+              Menu
+            </a>
+            <a href="{% url 'canteen_order_history' college.slug %}" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm font-medium transition duration-200">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+              </svg>
+              History
+            </a>
+            <a href="{% url 'canteen_staff_logout' %}" class="bg-red-500/20 hover:bg-red-500/30 backdrop-blur-sm rounded-lg px-4 py-2 text-red-200 text-sm font-medium transition duration-200">
+              <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+              </svg>
+              Logout
+            </a>
+          </div>
           
           <button onclick="location.reload()" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg p-2 transition duration-200">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -54,6 +59,17 @@
   </div>
 
   <div class="max-w-7xl mx-auto px-4 py-6">
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="hidden fixed top-4 left-1/2 transform -translate-x-1/2 z-50 bg-blue-600 text-white px-6 py-3 rounded-lg shadow-lg">
+      <div class="flex items-center">
+        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span>Processing...</span>
+      </div>
+    </div>
+    
     <!-- Stats Cards -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
       <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -101,294 +117,299 @@
       <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
         <div class="flex items-center justify-between">
           <div>
-            <p class="text-blue-200 text-sm">Today's Revenue</p>
-            <p class="text-3xl font-bold text-white">₹{{ total_revenue_today|floatformat:2 }}</p>
+            <p class="text-blue-200 text-sm font-medium">Ready Orders</p>
+            <p class="text-3xl font-bold text-white drop-shadow-lg">{{ ready_orders|length }}</p>
           </div>
           <div class="w-12 h-12 bg-green-500/20 rounded-xl flex items-center justify-center">
             <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Orders Section -->
-    <div class="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 overflow-hidden">
-      <div class="px-6 py-4 border-b border-white/20">
-        <h2 class="text-xl font-bold text-white">Active Orders</h2>
-        <p class="text-blue-200 text-sm">Manage incoming orders</p>
-      </div>
-      
-      <div class="p-6">
-        {% if active_orders %}
-          <div class="space-y-4" id="ordersContainer">
-            {% for order in active_orders %}
-              <div class="bg-white/10 backdrop-blur-lg rounded-xl p-6 border border-white/20 hover:bg-white/15 transition-all duration-300 shadow-lg hover:shadow-xl" data-order-id="{{ order.id }}">
-                <!-- Order Header -->
-                <div class="flex items-center justify-between mb-4">
-                  <div class="flex items-center space-x-3">
-                    <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <span class="text-white font-bold text-sm">#{{ order.id }}</span>
-                    </div>
-                    <div>
-                      <h3 class="text-white font-semibold">{{ order.user_name }}</h3>
-                      <p class="text-blue-200 text-sm">{{ order.user_phone }}</p>
-                    </div>
-                  </div>
-                  
-                  <div class="text-right">
-                    <div class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold shadow-lg
-                      {% if order.status == 'Paid' %}bg-green-500/30 text-green-100 border border-green-400/50
-                      {% elif order.status == 'In Progress' %}bg-yellow-500/30 text-yellow-100 border border-yellow-400/50
-                      {% elif order.status == 'Ready' %}bg-blue-500/30 text-blue-100 border border-blue-400/50
-                      {% else %}bg-gray-500/30 text-gray-100 border border-gray-400/50{% endif %}">
-                      {{ order.status }}
-                    </div>
-                    <p class="text-white font-bold text-xl mt-2 drop-shadow-lg">₹{{ order.total_price|floatformat:2 }}</p>
-                  </div>
-                </div>
-                
-                <!-- Order Items -->
-                <div class="mb-4">
-                  <h4 class="text-blue-200 font-medium mb-2">Items:</h4>
-                  <div class="space-y-2">
-                    {% for item in order.orderitem_set.all %}
-                      <div class="flex justify-between items-center bg-white/10 rounded-lg px-3 py-2 border border-white/20">
-                        <span class="text-white font-medium">{{ item.menu_item.name }}</span>
-                        <div class="flex items-center space-x-2">
-                          <span class="text-blue-200 text-sm font-semibold">×{{ item.quantity }}</span>
-                          <span class="text-white font-bold">₹{{ item.menu_item.price }}</span>
-                        </div>
-                      </div>
-                    {% endfor %}
-                  </div>
-                </div>
-                
-                <!-- Special Instructions -->
-                {% if order.special_instructions %}
-                  <div class="mb-4 p-3 bg-yellow-500/20 border border-yellow-500/40 rounded-lg">
-                    <p class="text-yellow-100 text-sm font-medium">
-                      <span class="font-bold">Special Instructions:</span> {{ order.special_instructions }}
-                    </p>
-                  </div>
-                {% endif %}
-                
-                <!-- Payment Info -->
-                <div class="mb-4 flex items-center justify-between">
-                  <div class="flex items-center space-x-2">
-                    <span class="text-blue-200 text-sm font-medium">Payment:</span>
-                    <span class="text-white font-semibold">{{ order.payment_method }}</span>
-                  </div>
-                  <div class="text-blue-200 text-sm font-medium">
-                    {{ order.created_at|date:"H:i" }}
-                  </div>
-                </div>
-                
-                <!-- Action Buttons -->
-                <div class="flex space-x-3">
-                  {% if order.status == 'Paid' %}
-                    <button onclick="acceptOrder({{ order.id }})" id="accept-order-btn-{{ order.id }}" class="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 px-4 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                      Accept Order
-                    </button>
-                  {% elif order.status == 'In Progress' %}
-                    <button onclick="markOrderReady({{ order.id }})" id="mark-ready-btn-{{ order.id }}" class="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-4 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                      </svg>
-                      Mark Ready
-                    </button>
-                  {% elif order.status == 'Ready' %}
-                    <button onclick="markOrderReady({{ order.id }})" id="complete-order-btn-{{ order.id }}" class="flex-1 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
-                      <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                      </svg>
-                      Complete
-                    </button>
-                  {% endif %}
-                  
-                  <button onclick="declineOrder({{ order.id }})" id="decline-order-btn-{{ order.id }}" class="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 px-4 rounded-lg font-bold text-sm shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 flex items-center justify-center">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            {% endfor %}
-          </div>
-        {% else %}
-          <div class="text-center py-12">
-            <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg class="w-12 h-12 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
-              </svg>
-            </div>
-            <h3 class="text-xl font-semibold text-white mb-2">No Active Orders</h3>
-            <p class="text-blue-200">All caught up! New orders will appear here.</p>
-          </div>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-
-  <!-- Pending Orders Section -->
-  <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
-    <div class="flex items-center justify-between mb-6">
-      <h2 class="text-2xl font-bold text-white">Pending Orders</h2>
-      <div class="flex items-center space-x-2">
-        <span class="text-blue-200 text-sm">Auto-refresh every 30s</span>
-        <button onclick="location.reload()" class="bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-lg p-2 transition duration-200">
-          <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-    
+    <!-- Pending Orders Section -->
     {% if pending_orders %}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for order in pending_orders %}
-          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition duration-200">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
-              <span class="text-xs text-blue-200">{{ order.created_at|timesince }} ago</span>
-            </div>
-            
-            <div class="space-y-2 mb-4">
-              <p class="text-blue-200 text-sm">
-                <i class="fas fa-user mr-1"></i>{{ order.user_name }}
-              </p>
-              <p class="text-blue-200 text-sm">
-                <i class="fas fa-phone mr-1"></i>{{ order.user_phone }}
-              </p>
-              <p class="text-blue-200 text-sm">
-                <i class="fas fa-clock mr-1"></i>Est. {{ order.estimated_time }} min
-              </p>
-            </div>
-            
-            <div class="mb-4">
-              <h4 class="text-white font-medium mb-2">Items:</h4>
-              <div class="space-y-1">
-                {% for item in order.order_items.all %}
-                  <div class="flex justify-between text-sm">
-                    <span class="text-blue-200">{{ item.quantity }}x {{ item.item.name }}</span>
-                    <span class="text-white">₹{{ item.price_at_time }}</span>
-                  </div>
-                {% endfor %}
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Pending Orders ({{ pending_orders|length }})
+        </h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {% for order in pending_orders %}
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition duration-200" data-order-id="{{ order.id }}">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
+                  <p class="text-blue-200 text-sm">{{ order.user_name }}</p>
+                  <p class="text-blue-200 text-sm">{{ order.user_phone }}</p>
+                  <p class="text-blue-200 text-xs">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-orange-500/20 text-orange-300">
+                    Pending
+                  </span>
+                  <p class="text-white font-semibold mt-2">₹{{ order.total_price }}</p>
+                </div>
+              </div>
+              
+              <!-- Order Items -->
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-blue-200 mb-2">Items:</h4>
+                <div class="space-y-1">
+                  {% for item in order.order_items.all %}
+                    <div class="flex justify-between text-sm">
+                      <span class="text-white">{{ item.menu_item.name }} × {{ item.quantity }}</span>
+                      <span class="text-blue-200">₹{{ item.total_price }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="flex gap-3">
+                <button onclick="acceptOrder('{{ order.id }}')" 
+                        class="accept-btn flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white py-3 px-4 rounded-lg font-medium transition duration-200"
+                        data-order-id="{{ order.id }}">
+                  <i class="fas fa-check mr-2"></i>Accept Order
+                </button>
+                <button onclick="declineOrder('{{ order.id }}')" 
+                        class="decline-btn flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white py-3 px-4 rounded-lg font-medium transition duration-200"
+                        data-order-id="{{ order.id }}">
+                  <i class="fas fa-times mr-2"></i>Decline
+                </button>
               </div>
             </div>
-            
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-lg font-bold text-white">Total: ₹{{ order.total_price }}</span>
-              <span class="px-2 py-1 bg-orange-500/20 text-orange-300 text-xs rounded-full">
-                {{ order.status }}
-              </span>
-            </div>
-            
-            {% if order.special_instructions %}
-              <div class="mb-4 p-2 bg-yellow-500/10 border border-yellow-500/20 rounded">
-                <p class="text-yellow-200 text-sm">
-                  <i class="fas fa-info-circle mr-1"></i>{{ order.special_instructions }}
-                </p>
-              </div>
-            {% endif %}
-            
-            <div class="flex space-x-2">
-              <button onclick="acceptOrder({{ order.id }})" class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
-                <i class="fas fa-check mr-1"></i>Accept
-              </button>
-              <button onclick="declineOrder({{ order.id }})" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
-                <i class="fas fa-times mr-1"></i>Decline
-              </button>
-            </div>
-          </div>
-        {% endfor %}
+          {% endfor %}
+        </div>
       </div>
-    {% else %}
-      <div class="text-center py-8">
-        <svg class="w-16 h-16 text-blue-200 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-        </svg>
-        <p class="text-blue-200 text-lg">No pending orders</p>
-        <p class="text-blue-300 text-sm">New orders will appear here automatically</p>
+    {% endif %}
+
+    <!-- In Progress Orders Section -->
+    {% if in_progress_orders %}
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          </svg>
+          In Progress ({{ in_progress_orders|length }})
+        </h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {% for order in in_progress_orders %}
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition duration-200" data-order-id="{{ order.id }}">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
+                  <p class="text-blue-200 text-sm">{{ order.user_name }}</p>
+                  <p class="text-blue-200 text-sm">{{ order.user_phone }}</p>
+                  <p class="text-blue-200 text-xs">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-500/20 text-yellow-300">
+                    In Progress
+                  </span>
+                  <p class="text-white font-semibold mt-2">₹{{ order.total_price }}</p>
+                </div>
+              </div>
+              
+              <!-- Order Items -->
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-blue-200 mb-2">Items:</h4>
+                <div class="space-y-1">
+                  {% for item in order.order_items.all %}
+                    <div class="flex justify-between text-sm">
+                      <span class="text-white">{{ item.menu_item.name }} × {{ item.quantity }}</span>
+                      <span class="text-blue-200">₹{{ item.total_price }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="flex gap-3">
+                <button onclick="markOrderReady('{{ order.id }}')" 
+                        class="mark-ready-btn flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-3 px-4 rounded-lg font-medium transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-order-id="{{ order.id }}">
+                  <i class="fas fa-check-circle mr-2"></i>Mark Ready
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Ready Orders Section -->
+    {% if ready_orders %}
+      <div class="mb-8">
+        <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+          <svg class="w-6 h-6 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          Ready for Pickup ({{ ready_orders|length }})
+        </h2>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {% for order in ready_orders %}
+            <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 hover:bg-white/20 transition duration-200" data-order-id="{{ order.id }}">
+              <div class="flex items-start justify-between mb-4">
+                <div>
+                  <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
+                  <p class="text-blue-200 text-sm">{{ order.user_name }}</p>
+                  <p class="text-blue-200 text-sm">{{ order.user_phone }}</p>
+                  <p class="text-blue-200 text-xs">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-500/20 text-green-300">
+                    Ready
+                  </span>
+                  <p class="text-white font-semibold mt-2">₹{{ order.total_price }}</p>
+                </div>
+              </div>
+              
+              <!-- Order Items -->
+              <div class="mb-4">
+                <h4 class="text-sm font-medium text-blue-200 mb-2">Items:</h4>
+                <div class="space-y-1">
+                  {% for item in order.order_items.all %}
+                    <div class="flex justify-between text-sm">
+                      <span class="text-white">{{ item.menu_item.name }} × {{ item.quantity }}</span>
+                      <span class="text-blue-200">₹{{ item.total_price }}</span>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+              
+              <!-- Action Buttons -->
+              <div class="flex gap-3">
+                <button onclick="markOrderCompleted('{{ order.id }}')" 
+                        class="complete-order-btn flex-1 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white py-3 px-4 rounded-lg font-medium transition duration-200"
+                        data-order-id="{{ order.id }}">
+                  <i class="fas fa-check-double mr-2"></i>Mark Completed
+                </button>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- No Orders Message -->
+    {% if not pending_orders and not in_progress_orders and not ready_orders %}
+      <div class="text-center py-16">
+        <div class="w-24 h-24 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-12 h-12 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">No active orders</h3>
+        <p class="text-blue-200">All caught up! No orders to process at the moment.</p>
       </div>
     {% endif %}
   </div>
-
-  <!-- In Progress Orders Section -->
-  {% if in_progress_orders %}
-    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20 mb-8">
-      <h2 class="text-2xl font-bold text-white mb-6">In Progress Orders</h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {% for order in in_progress_orders %}
-          <div class="bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/10 hover:bg-white/10 transition duration-200">
-            <div class="flex items-center justify-between mb-3">
-              <h3 class="text-lg font-semibold text-white">Order #{{ order.id }}</h3>
-              <span class="text-xs text-blue-200">{{ order.created_at|timesince }} ago</span>
-            </div>
-            
-            <div class="space-y-2 mb-4">
-              <p class="text-blue-200 text-sm">
-                <i class="fas fa-user mr-1"></i>{{ order.user_name }}
-              </p>
-              <p class="text-blue-200 text-sm">
-                <i class="fas fa-phone mr-1"></i>{{ order.user_phone }}
-              </p>
-            </div>
-            
-            <div class="mb-4">
-              <h4 class="text-white font-medium mb-2">Items:</h4>
-              <div class="space-y-1">
-                {% for item in order.order_items.all %}
-                  <div class="flex justify-between text-sm">
-                    <span class="text-blue-200">{{ item.quantity }}x {{ item.item.name }}</span>
-                    <span class="text-white">₹{{ item.price_at_time }}</span>
-                  </div>
-                {% endfor %}
-              </div>
-            </div>
-            
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-lg font-bold text-white">Total: ₹{{ order.total_price }}</span>
-              <span class="px-2 py-1 bg-yellow-500/20 text-yellow-300 text-xs rounded-full">
-                {{ order.status }}
-              </span>
-            </div>
-            
-            <button onclick="markOrderReady({{ order.id }})" class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-medium transition duration-200">
-              <i class="fas fa-check-circle mr-1"></i>Mark Ready
-            </button>
-          </div>
-        {% endfor %}
-      </div>
-    </div>
-  {% endif %}
 </div>
 
-<!-- Success Notification -->
-<div id="successNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
-  <div class="flex items-center">
-    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-    </svg>
-    <span id="successMessage">Action completed successfully!</span>
-  </div>
-</div>
-
-<!-- JavaScript for Canteen Dashboard -->
 <script>
-  // Function to accept an order
-  async function acceptOrder(orderId) {
+  // Performance-optimized JavaScript for canteen dashboard
+  
+  // Cache DOM elements and constants for better performance
+  const CACHE = {
+    csrfToken: null,
+    loadingIndicator: null,
+    refreshTimer: null,
+    isRefreshing: false
+  };
+  
+  // Debounce function to prevent excessive function calls
+  function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  }
+  
+  // Initialize dashboard on DOM load
+  document.addEventListener('DOMContentLoaded', function() {
+    initializeDashboard();
+  });
+  
+  function initializeDashboard() {
+    // Cache frequently used DOM elements
+    CACHE.csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    CACHE.loadingIndicator = document.getElementById('loading-indicator');
+    
+    if (!CACHE.csrfToken) {
+      console.error('CSRF token not found on page load');
+      showNotification('Security configuration error. Please refresh the page.', 'error');
+      return;
+    }
+    
+    console.log('Canteen dashboard initialized successfully');
+    
+    // Start smart auto-refresh
+    startSmartRefresh();
+  }
+  
+  // Smart auto-refresh that only refreshes when no operations are in progress
+  function startSmartRefresh() {
+    CACHE.refreshTimer = setInterval(() => {
+      if (!CACHE.isRefreshing) {
+        // Use fetch instead of location.reload() for better UX
+        fetch(window.location.href, {
+          method: 'GET',
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        }).then(response => {
+          if (response.ok) {
+            // Check if there are new orders by comparing order counts
+            const currentPendingCount = document.querySelectorAll('[data-order-id]').length;
+            // Only reload if there might be new orders
+            if (currentPendingCount > 0) {
+              location.reload();
+            }
+          }
+        }).catch(error => {
+          console.log('Auto-refresh check failed:', error);
+        });
+      } else {
+        console.log('Skipping auto-refresh - operations in progress');
+      }
+    }, 60000);  // Increased to 60 seconds for better performance
+  }
+  
+  // Function to accept order - optimized with debouncing
+  const acceptOrder = debounce(async function(orderId) {
+    if (CACHE.isRefreshing) return;
+    
+    CACHE.isRefreshing = true;
+    showLoading();
+    
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    const button = orderElement?.querySelector('.accept-btn');
+    
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Accepting...';
+    }
+    
     try {
       const response = await fetch(`/canteen/dashboard/{{ college.slug }}/accept-order/${orderId}/`, {
         method: 'POST',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
-          'Content-Type': 'application/json',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': CACHE.csrfToken
         },
         credentials: 'same-origin'
       });
@@ -400,20 +421,35 @@
           setTimeout(() => location.reload(), 1000);
         } else {
           showNotification(data.error || 'Failed to accept order', 'error');
+          resetButton(button, 'Accept Order', 'fas fa-check');
         }
       } else {
         showNotification('Failed to accept order', 'error');
+        resetButton(button, 'Accept Order', 'fas fa-check');
       }
     } catch (error) {
       console.error('Error accepting order:', error);
       showNotification('Error accepting order', 'error');
+      resetButton(button, 'Accept Order', 'fas fa-check');
+    } finally {
+      hideLoading();
+      CACHE.isRefreshing = false;
     }
-  }
-
-  // Function to decline an order
-  async function declineOrder(orderId) {
-    if (!confirm('Are you sure you want to decline this order?')) {
-      return;
+  }, 300);
+  
+  // Function to decline order - optimized with debouncing
+  const declineOrder = debounce(async function(orderId) {
+    if (CACHE.isRefreshing) return;
+    if (!confirm('Are you sure you want to decline this order?')) return;
+    
+    CACHE.isRefreshing = true;
+    
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    const button = orderElement?.querySelector('.decline-btn');
+    
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Declining...';
     }
     
     try {
@@ -421,8 +457,8 @@
         method: 'POST',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
-          'Content-Type': 'application/json',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': CACHE.csrfToken
         },
         credentials: 'same-origin'
       });
@@ -434,25 +470,42 @@
           setTimeout(() => location.reload(), 1000);
         } else {
           showNotification(data.error || 'Failed to decline order', 'error');
+          resetButton(button, 'Decline', 'fas fa-times');
         }
       } else {
         showNotification('Failed to decline order', 'error');
+        resetButton(button, 'Decline', 'fas fa-times');
       }
     } catch (error) {
       console.error('Error declining order:', error);
       showNotification('Error declining order', 'error');
+      resetButton(button, 'Decline', 'fas fa-times');
+    } finally {
+      CACHE.isRefreshing = false;
     }
-  }
-
-  // Function to mark order as ready
-  async function markOrderReady(orderId) {
+  }, 300);
+  
+  // Function to mark order as ready - optimized with debouncing
+  const markOrderReady = debounce(async function(orderId) {
+    if (CACHE.isRefreshing) return;
+    
+    CACHE.isRefreshing = true;
+    
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    const button = orderElement?.querySelector('.mark-ready-btn');
+    
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    }
+    
     try {
       const response = await fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
         method: 'POST',
         headers: {
           'X-Requested-With': 'XMLHttpRequest',
           'Content-Type': 'application/x-www-form-urlencoded',
-          'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+          'X-CSRFToken': CACHE.csrfToken
         },
         body: `status=Ready`,
         credentials: 'same-origin'
@@ -465,61 +518,148 @@
           setTimeout(() => location.reload(), 1000);
         } else {
           showNotification(data.error || 'Failed to update order status', 'error');
+          resetButton(button, 'Mark Ready', 'fas fa-check-circle');
         }
       } else {
         showNotification('Failed to update order status', 'error');
+        resetButton(button, 'Mark Ready', 'fas fa-check-circle');
       }
     } catch (error) {
       console.error('Error updating order status:', error);
       showNotification('Error updating order status', 'error');
+      resetButton(button, 'Mark Ready', 'fas fa-check-circle');
+    } finally {
+      CACHE.isRefreshing = false;
+    }
+  }, 300);
+  
+  // Function to mark order as completed - optimized with debouncing
+  const markOrderCompleted = debounce(async function(orderId) {
+    if (CACHE.isRefreshing) return;
+    
+    CACHE.isRefreshing = true;
+    
+    const orderElement = document.querySelector(`[data-order-id="${orderId}"]`);
+    const button = orderElement?.querySelector('.complete-order-btn');
+    
+    if (button) {
+      button.disabled = true;
+      button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Updating...';
+    }
+    
+    try {
+      const response = await fetch(`/canteen/dashboard/{{ college.slug }}/update-status/${orderId}/`, {
+        method: 'POST',
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': CACHE.csrfToken
+        },
+        body: `status=Completed`,
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          showNotification('Order marked as completed!', 'success');
+          setTimeout(() => location.reload(), 1000);
+        } else {
+          showNotification(data.error || 'Failed to update order status', 'error');
+          resetButton(button, 'Mark Completed', 'fas fa-check-double');
+        }
+      } else {
+        showNotification('Failed to update order status', 'error');
+        resetButton(button, 'Mark Completed', 'fas fa-check-double');
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      showNotification('Error updating order status', 'error');
+      resetButton(button, 'Mark Completed', 'fas fa-check-double');
+    } finally {
+      CACHE.isRefreshing = false;
+    }
+  }, 300);
+  
+  // Utility function to reset button state
+  function resetButton(button, text, iconClass) {
+    if (button) {
+      button.disabled = false;
+      button.innerHTML = `<i class="${iconClass} mr-2"></i>${text}`;
     }
   }
-
-  // Function to show notifications
+  
+  // Optimized notification system
   function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-    
-    if (type === 'success') {
-      notification.className += ' bg-green-500 text-white';
-    } else if (type === 'error') {
-      notification.className += ' bg-red-500 text-white';
+    if (typeof window.showNotification === 'function') {
+      window.showNotification(message, type);
     } else {
-      notification.className += ' bg-blue-500 text-white';
-    }
-    
-    notification.innerHTML = `
-      <div class="flex items-center">
-        <span class="flex-1">${message}</span>
-        <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    `;
-    
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-      notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-      notification.classList.add('translate-x-full');
+      // Enhanced fallback notification with better performance
+      const notification = document.createElement('div');
+      const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+      const icon = type === 'success' ? '✓' : type === 'error' ? '✗' : 'ℹ';
+      
+      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${bgColor} text-white transform transition-all duration-300 translate-x-full`;
+      notification.innerHTML = `
+        <div class="flex items-center">
+          <span class="mr-2 text-lg">${icon}</span>
+          <span class="flex-1">${message}</span>
+          <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200 transition-colors">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+      document.body.appendChild(notification);
+      
+      // Use requestAnimationFrame for better performance
+      requestAnimationFrame(() => {
+        notification.classList.remove('translate-x-full');
+      });
+      
+      // Auto remove after 5 seconds
       setTimeout(() => {
         if (notification.parentElement) {
-          notification.remove();
+          notification.classList.add('translate-x-full');
+          setTimeout(() => {
+            if (notification.parentElement) {
+              notification.remove();
+            }
+          }, 300);
         }
-      }, 300);
-    }, 5000);
+      }, 5000);
+    }
   }
-
-  // Auto-refresh dashboard every 30 seconds
-  setInterval(() => {
-    location.reload();
-  }, 30000);
+  
+  // Optimized loading state management
+  function showLoading() {
+    if (CACHE.loadingIndicator) {
+      CACHE.loadingIndicator.classList.remove('hidden');
+    }
+  }
+  
+  function hideLoading() {
+    if (CACHE.loadingIndicator) {
+      CACHE.loadingIndicator.classList.add('hidden');
+    }
+  }
+  
+  // Global error handlers with better performance
+  window.addEventListener('error', function(e) {
+    console.error('Global error in canteen dashboard:', e.error);
+    showNotification('An unexpected error occurred. Please check the console.', 'error');
+  });
+  
+  window.addEventListener('unhandledrejection', function(e) {
+    console.error('Unhandled promise rejection in canteen dashboard:', e.reason);
+    showNotification('A network error occurred. Please try again.', 'error');
+  });
+  
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', () => {
+    if (CACHE.refreshTimer) {
+      clearInterval(CACHE.refreshTimer);
+    }
+  });
 </script>
 
-{% csrf_token %}
 {% endblock %}

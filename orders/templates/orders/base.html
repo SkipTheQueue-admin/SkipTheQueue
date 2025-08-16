@@ -9,13 +9,13 @@
   
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#3B82F6">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="SkipTheQueue">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="SkipTheQueue">
   <meta name="msapplication-TileColor" content="#3B82F6">
   <meta name="msapplication-tap-highlight" content="no">
     
-    <!-- PWA Manifest -->
+  <!-- PWA Manifest -->
   <link rel="manifest" href="/manifest.json">
   
   <!-- Apple Touch Icons -->
@@ -24,17 +24,22 @@
   <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-180x180.png">
   <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icon-167x167.png">
     
-    <!-- Favicon -->
+  <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-96x96.png' %}">
   <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-96x96.png' %}">
   
   <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <!-- Tailwind CSS CDN for better reliability -->
+  <!-- Tailwind CSS CDN with fallback -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Comprehensive CSS Solution - Works even if Tailwind fails -->
+  <!-- Performance optimization: Preload critical resources -->
+  <link rel="preload" href="{% static 'css/tailwind-fallback.css' %}" as="style">
+  <link rel="preload" href="{% static 'js/notifications.js' %}" as="script">
+  <link rel="preload" href="{% static 'js/performance.js' %}" as="script">
+  
+  <!-- Comprehensive CSS Solution -->
   <style>
     /* Reset and base styles */
     * {
@@ -54,7 +59,54 @@
       line-height: 1.6;
       background-color: #f9fafb;
       color: #111827;
-      padding-top: 0; /* Will be adjusted by order tracking bar */
+      padding-top: 0;
+    }
+    
+    /* Performance optimization: Reduce paint operations */
+    .bg-gradient-to-br {
+      will-change: transform;
+    }
+    
+    .backdrop-blur-lg {
+      will-change: backdrop-filter;
+    }
+    
+    /* Optimize transitions for better performance */
+    .transition-all {
+      transition-property: all;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 200ms;
+    }
+    
+    /* Optimize hover effects */
+    .hover\:shadow-xl:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Loading states for better UX */
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    
+    .loading::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 20px;
+      height: 20px;
+      margin: -10px 0 0 -10px;
+      border: 2px solid #f3f3f3;
+      border-top: 2px solid #3498db;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
     
     /* Order Tracking Bar - Zomato Style */
@@ -158,34 +210,9 @@
       height: 32px;
     }
     
-          .close-tracking:hover {
-        background: rgba(255, 255, 255, 0.2);
-        border-color: rgba(255, 255, 255, 0.4);
-      }
-      font-weight: 500;
-      transition: all 0.2s ease;
-      white-space: nowrap;
-    }
-    
-    .track-order-btn:hover {
-      background: rgba(255, 255, 255, 0.3);
-      color: white;
-      text-decoration: none;
-    }
-    
-    .close-tracking {
-      background: none;
-      border: none;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      padding: 5px;
-      opacity: 0.7;
-      transition: opacity 0.2s ease;
-    }
-    
     .close-tracking:hover {
-      opacity: 1;
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.4);
     }
     
     /* Status colors */
@@ -194,841 +221,270 @@
     .status-ready .order-status-icon { background: #10B981; }
     .status-completed .order-status-icon { background: #6B7280; }
     
+    /* Navigation */
+    .nav-container {
+      background: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    
+    .nav-content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    .nav-logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #3B82F6;
+      text-decoration: none;
+    }
+    
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+    
+    .nav-link {
+      color: #6B7280;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.2s ease;
+    }
+    
+    .nav-link:hover {
+      color: #3B82F6;
+    }
+    
+    .nav-link.active {
+      color: #3B82F6;
+    }
+    
+    .auth-buttons {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    
+    .btn-primary {
+      background: #3B82F6;
+      color: white;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 500;
+      transition: background-color 0.2s ease;
+    }
+    
+    .btn-primary:hover {
+      background: #2563EB;
+    }
+    
+    .btn-secondary {
+      background: transparent;
+      color: #6B7280;
+      padding: 0.5rem 1rem;
+      border: 1px solid #D1D5DB;
+      border-radius: 0.5rem;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-secondary:hover {
+      background: #F9FAFB;
+      border-color: #9CA3AF;
+    }
+    
+    /* Mobile menu */
+    .mobile-menu-btn {
+      display: none;
+      background: none;
+      border: none;
+      color: #6B7280;
+      font-size: 1.5rem;
+      cursor: pointer;
+      padding: 0.5rem;
+      border-radius: 0.375rem;
+      transition: background-color 0.2s ease;
+    }
+    
+    .mobile-menu-btn:hover {
+      background-color: #F3F4F6;
+    }
+    
+    .mobile-menu {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border-top: 1px solid #E5E7EB;
+      padding: 1rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 50;
+      max-height: calc(100vh - 100%);
+      overflow-y: auto;
+    }
+    
+    .mobile-menu.show {
+      display: block;
+      animation: slideDown 0.3s ease-out;
+    }
+    
+    .mobile-menu .nav-links {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+    
+    .mobile-menu .nav-links a {
+      padding: 0.75rem 0;
+      border-bottom: 1px solid #F3F4F6;
+      width: 100%;
+      transition: color 0.2s ease;
+    }
+    
+    .mobile-menu .nav-links a:hover {
+      color: #3B82F6;
+      background-color: #F9FAFB;
+      padding-left: 0.5rem;
+    }
+    
+    .mobile-menu .auth-buttons {
+      flex-direction: column;
+      align-items: stretch;
+      margin-top: 1rem;
+      gap: 0.75rem;
+    }
+    
+    .mobile-menu .auth-buttons a {
+      text-align: center;
+      padding: 0.75rem 1rem;
+    }
+    
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
     /* Responsive design */
     @media (max-width: 768px) {
       .order-tracking-bar {
         padding: 10px 15px;
-        min-height: 50px;
+        flex-direction: column;
+        gap: 10px;
+        min-height: auto;
       }
       
       .order-info {
+        flex-direction: column;
+        text-align: center;
         gap: 10px;
       }
       
-      .order-status-icon {
-        width: 35px;
-        height: 35px;
-        font-size: 16px;
-      }
-      
-      .order-details h4 {
-        font-size: 14px;
-      }
-      
-      .order-details p {
-        font-size: 12px;
-      }
-      
-      .track-order-btn {
-        padding: 6px 12px;
-        font-size: 12px;
-      }
-      
       .order-actions {
+        flex-direction: column;
         gap: 8px;
+      }
+      
+      .nav-links {
+        display: none;
+      }
+      
+      .mobile-menu-btn {
+        display: block;
+      }
+      
+      .auth-buttons {
+        display: none;
+      }
+      
+      .mobile-menu .auth-buttons {
+        display: flex;
+      }
+      
+      /* Improve mobile navigation */
+      .nav-content {
+        padding: 0 1rem;
+      }
+      
+      .nav-logo {
+        font-size: 1.25rem;
+      }
+      
+      /* Better mobile spacing */
+      .nav-container {
+        padding: 0.5rem 0;
+      }
+      
+      .nav-content {
+        padding: 0 1rem;
+      }
+    }
+    
+    @media (max-width: 640px) {
+      .nav-content {
+        padding: 0 0.75rem;
+      }
+      
+      .nav-logo {
+        font-size: 1.125rem;
+      }
+      
+      /* Improve mobile button sizes */
+      .btn-primary, .btn-secondary {
+        padding: 0.75rem 1rem;
+        font-size: 0.875rem;
+      }
+      
+      /* Better mobile spacing */
+      .nav-container {
+        padding: 0.25rem 0;
       }
     }
     
     @media (max-width: 480px) {
-      .order-tracking-bar {
-        padding: 8px 12px;
-        min-height: 45px;
+      .nav-content {
+        padding: 0 0.5rem;
       }
       
-      .order-info {
-        gap: 8px;
+      .nav-logo {
+        font-size: 1rem;
       }
       
-      .order-status-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 14px;
+      /* Stack mobile menu items better */
+      .mobile-menu {
+        padding: 0.75rem;
       }
       
-      .order-details h4 {
-        font-size: 13px;
+      .mobile-menu .nav-links a {
+        padding: 1rem 0;
+        font-size: 1rem;
       }
       
-      .order-details p {
-        font-size: 11px;
+      .mobile-menu .auth-buttons a {
+        padding: 1rem;
+        font-size: 1rem;
       }
-      
-      .track-order-btn {
-        padding: 5px 10px;
-        font-size: 11px;
-      }
-    }
-    
-    /* Layout containers */
-    .max-w-7xl { max-width: 80rem; }
-    .max-w-4xl { max-width: 56rem; }
-    .max-w-5xl { max-width: 64rem; }
-    .max-w-3xl { max-width: 48rem; }
-    
-    .mx-auto { margin-left: auto; margin-right: auto; }
-    .px-4 { padding-left: 1rem; padding-right: 1rem; }
-    .px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-    .px-8 { padding-left: 2rem; padding-right: 2rem; }
-    .py-6 { padding-top: 1.5rem; padding-bottom: 1.5rem; }
-    .py-8 { padding-top: 2rem; padding-bottom: 2rem; }
-    .py-12 { padding-top: 3rem; padding-bottom: 3rem; }
-    .py-16 { padding-top: 4rem; padding-bottom: 4rem; }
-    .py-24 { padding-top: 6rem; padding-bottom: 6rem; }
-    
-    /* Typography */
-    .text-xs { font-size: 0.75rem; }
-    .text-sm { font-size: 0.875rem; }
-    .text-base { font-size: 1rem; }
-    .text-lg { font-size: 1.125rem; }
-    .text-xl { font-size: 1.25rem; }
-    .text-2xl { font-size: 1.5rem; }
-    .text-3xl { font-size: 1.875rem; }
-    .text-4xl { font-size: 2.25rem; }
-    .text-6xl { font-size: 3.75rem; }
-    
-    .font-bold { font-weight: 700; }
-    .font-semibold { font-weight: 600; }
-    .font-medium { font-weight: 500; }
-    
-    /* Colors */
-    .text-gray-900 { color: #111827; }
-    .text-gray-800 { color: #1f2937; }
-    .text-gray-700 { color: #374151; }
-    .text-gray-600 { color: #4b5563; }
-    .text-gray-500 { color: #6b7280; }
-    .text-gray-400 { color: #9ca3af; }
-    .text-blue-600 { color: #2563eb; }
-    .text-blue-700 { color: #1d4ed8; }
-    .text-green-600 { color: #16a34a; }
-    .text-green-700 { color: #15803d; }
-    .text-red-600 { color: #dc2626; }
-    .text-white { color: #ffffff; }
-    
-    .bg-white { background-color: #ffffff; }
-    .bg-gray-50 { background-color: #f9fafb; }
-    .bg-gray-100 { background-color: #f3f4f6; }
-    .bg-gray-900 { background-color: #111827; }
-    .bg-blue-50 { background-color: #eff6ff; }
-    .bg-blue-100 { background-color: #dbeafe; }
-    .bg-blue-600 { background-color: #2563eb; }
-    .bg-blue-700 { background-color: #1d4ed8; }
-    .bg-green-600 { background-color: #16a34a; }
-    .bg-green-700 { background-color: #15803d; }
-    .bg-yellow-50 { background-color: #fefce8; }
-    .bg-yellow-500 { color: #eab308; }
-    .bg-yellow-600 { color: #ca8a04; }
-    .bg-red-500 { color: #ef4444; }
-    .bg-gradient-to-br { background-image: linear-gradient(to bottom right, var(--tw-gradient-stops)); }
-    .from-blue-50 { --tw-gradient-from: #eff6ff; }
-    .to-indigo-100 { --tw-gradient-to: #e0e7ff; }
-    .from-blue-600 { --tw-gradient-from: #2563eb; }
-    .to-purple-600 { --tw-gradient-to: #9333ea; }
-    
-    /* Grid system */
-    .grid { display: grid; }
-    .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-    .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    
-    .gap-6 { gap: 1.5rem; }
-    .gap-8 { gap: 2rem; }
-    
-    /* Additional critical styles */
-    .bg-gradient-to-br { background-image: linear-gradient(to bottom right, #eff6ff, #e0e7ff); }
-    .from-blue-50 { background-color: #eff6ff; }
-    .to-indigo-100 { background-color: #e0e7ff; }
-    .from-blue-600 { background-color: #2563eb; }
-    .to-purple-600 { background-color: #9333ea; }
-    
-    /* Button styles */
-    .bg-blue-600 { background-color: #2563eb !important; }
-    .bg-blue-700 { background-color: #1d4ed8 !important; }
-    .bg-green-600 { background-color: #16a34a !important; }
-    .bg-green-700 { background-color: #15803d !important; }
-    .bg-yellow-500 { background-color: #eab308 !important; }
-    .bg-yellow-600 { background-color: #ca8a04 !important; }
-    .bg-red-500 { background-color: #ef4444 !important; }
-    
-    /* Text colors */
-    .text-white { color: #ffffff !important; }
-    .text-blue-600 { color: #2563eb !important; }
-    .text-gray-900 { color: #111827 !important; }
-    .text-gray-600 { color: #4b5563 !important; }
-    .text-gray-500 { color: #6b7280 !important; }
-    
-    /* Hover effects */
-    .hover\\:bg-blue-700:hover { background-color: #1d4ed8 !important; }
-    .hover\\:bg-green-700:hover { background-color: #15803d !important; }
-    .hover\\:bg-yellow-600:hover { background-color: #ca8a04 !important; }
-    .hover\\:text-blue-600:hover { color: #2563eb !important; }
-    .hover\\:text-white:hover { color: #ffffff !important; }
-    
-    /* Transitions */
-    .transition { transition: all 0.2s ease-in-out; }
-    .duration-200 { transition-duration: 0.2s; }
-    .duration-300 { transition-duration: 0.3s; }
-    
-    /* Shadows */
-    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; }
-    .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important; }
-    .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important; }
-    .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05) !important; }
-    
-    /* Borders */
-    .border-b { border-bottom-width: 1px; }
-    .border-t { border-top-width: 1px; }
-    .border { border-width: 1px; }
-    .border-gray-200 { border-color: #e5e7eb; }
-    .border-gray-800 { border-color: #1f2937; }
-    
-    /* Rounded corners */
-    .rounded-lg { border-radius: 0.5rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    .rounded-full { border-radius: 9999px; }
-    
-    /* Positioning */
-    .sticky { position: sticky; }
-    .top-0 { top: 0; }
-    .z-50 { z-index: 50; }
-    .relative { position: relative; }
-    .absolute { position: absolute; }
-    
-    /* Display */
-    .hidden { display: none; }
-    .block { display: block; }
-    .flex { display: flex; }
-    .grid { display: grid; }
-    
-    /* Alignment */
-    .items-center { align-items: center; }
-    .justify-center { justify-content: center; }
-    .justify-between { justify-content: space-between; }
-    .text-center { text-align: center; }
-    .text-left { text-align: left; }
-    
-    /* Spacing utilities */
-    .space-x-2 > * + * { margin-left: 0.5rem; }
-    .space-x-3 > * + * { margin-left: 0.75rem; }
-    .space-x-4 > * + * { margin-left: 1rem; }
-    .space-x-6 > * + * { margin-left: 1.5rem; }
-    .space-y-1 > * + * { margin-top: 0.25rem; }
-    .space-y-2 > * + * { margin-top: 0.5rem; }
-    .space-y-3 > * + * { margin-top: 0.75rem; }
-    
-    /* Flexbox */
-    .flex { display: flex; }
-    .items-center { align-items: center; }
-    .justify-center { justify-content: center; }
-    .justify-between { justify-content: space-between; }
-    .space-x-2 > * + * { margin-left: 0.5rem; }
-    .space-x-3 > * + * { margin-left: 0.75rem; }
-    .space-x-4 > * + * { margin-left: 1rem; }
-    .space-x-6 > * + * { margin-left: 1.5rem; }
-    .space-y-1 > * + * { margin-top: 0.25rem; }
-    .space-y-2 > * + * { margin-top: 0.5rem; }
-    .space-y-3 > * + * { margin-top: 0.75rem; }
-    
-    /* Spacing */
-    .mb-2 { margin-bottom: 0.5rem; }
-    .mb-4 { margin-bottom: 1rem; }
-    .mb-6 { margin-bottom: 1.5rem; }
-    .mb-8 { margin-bottom: 2rem; }
-    .mt-1 { margin-top: 0.25rem; }
-    .mt-2 { margin-top: 0.5rem; }
-    .mt-4 { margin-top: 1rem; }
-    .mt-8 { margin-top: 2rem; }
-    .mt-16 { margin-top: 4rem; }
-    .ml-1 { margin-left: 0.25rem; }
-    .ml-2 { margin-left: 0.5rem; }
-    .mr-1 { margin-right: 0.25rem; }
-    .mr-2 { margin-right: 0.5rem; }
-    .mr-3 { margin-right: 0.75rem; }
-    
-    /* Sizing */
-    .w-4 { width: 1rem; }
-    .w-5 { width: 1.25rem; }
-    .w-6 { width: 1.5rem; }
-    .w-8 { width: 2rem; }
-    .w-10 { width: 2.5rem; }
-    .w-12 { width: 3rem; }
-    .w-16 { width: 4rem; }
-    .w-20 { width: 5rem; }
-    .w-24 { width: 6rem; }
-    .w-32 { width: 8rem; }
-    .w-48 { width: 12rem; }
-    .w-64 { width: 16rem; }
-    
-    .h-4 { height: 1rem; }
-    .h-5 { height: 1.25rem; }
-    .h-6 { height: 1.5rem; }
-    .h-8 { height: 2rem; }
-    .h-10 { height: 2.5rem; }
-    .h-12 { height: 3rem; }
-    .h-16 { height: 4rem; }
-    .h-20 { height: 5rem; }
-    .h-24 { height: 6rem; }
-    .h-48 { height: 12rem; }
-    
-    .min-h-screen { min-height: 100vh; }
-    
-    /* Borders and shadows */
-    .border-b { border-bottom-width: 1px; }
-    .border-t { border-top-width: 1px; }
-    .border { border-width: 1px; }
-    .border-gray-200 { border-color: #e5e7eb; }
-    .border-gray-800 { border-color: #1f2937; }
-    .border-transparent { border-color: transparent; }
-    .border-2 { border-width: 2px; }
-    
-    .rounded-lg { border-radius: 0.5rem; }
-    .rounded-xl { border-radius: 0.75rem; }
-    .rounded-full { border-radius: 9999px; }
-    
-    .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); }
-    .shadow-md { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }
-    .shadow-xl { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-    .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
-    
-    /* Transitions */
-    .transition { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter; }
-    .transition-all { transition-property: all; }
-    .transition-colors { transition-property: color, background-color, border-color, text-decoration-color, fill, stroke; }
-    .transition-transform { transition-property: transform; }
-    .duration-200 { transition-duration: 200ms; }
-    .duration-300 { transition-duration: 300ms; }
-    
-    /* Hover states */
-    .hover\\:bg-blue-700:hover { background-color: #1d4ed8; }
-    .hover\\:bg-green-700:hover { background-color: #15803d; }
-    .hover\\:bg-yellow-600:hover { background-color: #ca8a04; }
-    .hover\\:bg-gray-300:hover { background-color: #d1d5db; }
-    .hover\\:bg-blue-200:hover { background-color: #bfdbfe; }
-    .hover\\:bg-gray-100:hover { background-color: #f3f4f6; }
-    .hover\\:bg-red-50:hover { background-color: #fef2f2; }
-    .hover\\:text-blue-600:hover { color: #2563eb; }
-    .hover\\:text-white:hover { color: #ffffff; }
-    .hover\\:text-red-700:hover { color: #b91c1c; }
-    .hover\\:shadow-xl:hover { box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
-    .hover\\:border-blue-200:hover { border-color: #bfdbfe; }
-    .hover\\:-translate-y-1:hover { transform: translateY(-0.25rem); }
-    
-    /* Responsive design */
-    @media (max-width: 640px) {
-      .sm\\:px-6 { padding-left: 1.5rem; padding-right: 1.5rem; }
-      .sm\\:block { display: block; }
-      .py-24 { padding-top: 3rem; padding-bottom: 3rem; }
-      .text-4xl { font-size: 1.875rem; }
-      .text-6xl { font-size: 2.25rem; }
-      .px-4 { padding-left: 0.5rem; padding-right: 0.5rem; }
-      .px-6 { padding-left: 1rem; padding-right: 1rem; }
-      .px-8 { padding-left: 1.5rem; padding-right: 1.5rem; }
-    }
-    
-    @media (max-width: 768px) {
-      .md\\:grid-cols-2 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-      .md\\:grid-cols-3 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
-      .md\\:text-6xl { font-size: 2.25rem; }
-      .md\\:text-4xl { font-size: 1.875rem; }
-      .md\\:px-6 { padding-left: 1rem; padding-right: 1rem; }
-      .md\\:px-8 { padding-left: 1.5rem; padding-right: 1.5rem; }
-      .md\\:flex { display: flex; }
-      .md\\:hidden { display: none; }
-      .md\\:items-center { align-items: center; }
-      .md\\:space-x-6 > * + * { margin-left: 1.5rem; }
-    }
-    
-    @media (max-width: 1024px) {
-      .lg\\:grid-cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .lg\\:col-span-2 { grid-column: span 1 / span 1; }
-      .lg\\:col-span-1 { grid-column: span 1 / span 1; }
-      .lg\\:px-8 { padding-left: 1.5rem; padding-right: 1.5rem; }
-    }
-    
-    @media (max-width: 1280px) {
-      .xl\\:grid-cols-4 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     }
     
     /* Utility classes */
     .hidden { display: none; }
     .block { display: block; }
-    .inline-block { display: inline-block; }
-    .text-center { text-align: center; }
-    .text-left { text-align: left; }
-    .text-right { text-align: right; }
-    .truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .overflow-hidden { overflow: hidden; }
-    .sticky { position: sticky; }
-    .top-0 { top: 0; }
-    .top-4 { top: 1rem; }
-    .z-50 { z-index: 50; }
-    .relative { position: relative; }
-    .absolute { position: absolute; }
-    .fixed { position: fixed; }
-    .right-0 { right: 0; }
-    .right-2 { right: 0.5rem; }
-    .bottom-0 { bottom: 0; }
-    .left-0 { left: 0; }
-    
-    /* Transform utilities */
-    .transform { transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y)); }
-    .translate-y-1 { --tw-translate-y: 0.25rem; }
-    .translate-y-full { --tw-translate-y: 100%; }
-    .translate-x-full { --tw-translate-x: 100%; }
-    .-translate-y-1 { --tw-translate-y: -0.25rem; }
-    .-translate-y-1\\/2 { --tw-translate-y: -50%; }
-    
-    /* Focus states */
-    .focus\\:ring-2:focus { --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color); box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000); }
-    .focus\\:ring-blue-500:focus { --tw-ring-opacity: 1; --tw-ring-color: rgb(59 130 246 / var(--tw-ring-opacity)); }
-    .focus\\:border-transparent:focus { border-color: transparent; }
-    
-    /* Line clamp for descriptions */
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    /* PWA install prompt */
-    .pwa-install-prompt {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 1rem;
-      transform: translateY(100%);
-      transition: transform 0.3s ease;
-      z-index: 1000;
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
-    }
-    
-    .pwa-install-prompt.show {
-      transform: translateY(0);
-    }
-    
-    /* Notifications */
-    .notification {
-      position: fixed;
-      top: 1rem;
-      right: 1rem;
-      padding: 0.75rem 1.5rem;
-      border-radius: 0.5rem;
-      color: white;
-      font-weight: 500;
-      z-index: 50;
-      transform: translateX(100%);
-      transition: transform 0.3s ease;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      max-width: 24rem;
-      word-wrap: break-word;
-    }
-    
-    .notification.show {
-      transform: translateX(0);
-    }
-    
-    .notification.success {
-      background: linear-gradient(135deg, #10b981, #059669);
-    }
-    
-    .notification.error {
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-    
-    .notification.info {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    }
-    
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    ::-webkit-scrollbar-track {
-      background: #f1f5f9;
-    }
-    
-    ::-webkit-scrollbar-thumb {
-      background: #3b82f6;
-      border-radius: 3px;
-    }
-    
-    ::-webkit-scrollbar-thumb:hover {
-      background: #2563eb;
-    }
-    
-    /* Mobile-first animations */
-    @keyframes slideUp {
-      from {
-        transform: translateY(100%);
-        opacity: 0;
-      }
-      to {
-        transform: translateY(0);
-        opacity: 1;
-      }
-    }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    
-    .slide-up {
-      animation: slideUp 0.3s ease-out;
-    }
-    
-    .fade-in {
-      animation: fadeIn 0.5s ease-out;
-    }
-    
-    /* Ad container styles */
-    .ad-container {
-      background: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 1rem;
-      margin: 1rem 0;
-      text-align: center;
-    }
-    
-    .ad-label {
-      font-size: 0.75rem;
-      color: #64748b;
-      margin-bottom: 0.5rem;
-    }
-    
-    /* Cart badge styles */
-    .cart-badge {
-      background: #ef4444;
-      color: white;
-      border-radius: 9999px;
-      height: 1.25rem;
-      width: 1.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 600;
-      line-height: 1;
-      transition: all 0.2s ease;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.1);
-      }
-    }
-    
-    .cart-badge.hidden {
-      display: none;
-    }
-    
-    /* Status-specific styles for order tracking */
-    .status-pending {
-      background: linear-gradient(135deg, #f59e0b, #d97706);
-      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
-    }
-    
-    .status-preparing {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-    }
-    
-    .status-ready {
-      background: linear-gradient(135deg, #10b981, #059669);
-      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
-    }
-    
-    .status-completed {
-      background: linear-gradient(135deg, #6b7280, #4b5563);
-      box-shadow: 0 4px 12px rgba(107, 114, 128, 0.3);
-    }
-    
-    /* Status-specific animations */
-    .status-pending .order-status-icon {
-      animation: pulse 2s infinite;
-    }
-    
-    .status-preparing .order-status-icon {
-      animation: spin 2s linear infinite;
-    }
-    
-    .status-ready .order-status-icon {
-      animation: bounce 1s infinite;
-    }
-    
-    @keyframes bounce {
-      0%, 20%, 50%, 80%, 100% {
-        transform: translateY(0);
-      }
-      40% {
-        transform: translateY(-5px);
-      }
-      60% {
-        transform: translateY(-3px);
-      }
-    }
-    
-    /* Mobile responsiveness improvements */
-    @media (max-width: 768px) {
-      .order-tracking-bar {
-        padding: 8px 12px;
-        min-height: 45px;
-      }
-      
-      .order-info {
-        gap: 8px;
-      }
-      
-      .order-status-icon {
-        width: 30px;
-        height: 30px;
-        font-size: 14px;
-      }
-      
-      .order-details h4 {
-        font-size: 13px;
-      }
-      
-      .order-details p {
-        font-size: 11px;
-      }
-      
-      .track-order-btn {
-        padding: 5px 10px;
-        font-size: 11px;
-      }
-      
-      .pwa-install-prompt {
-        padding: 0.75rem;
-      }
-      
-      .pwa-install-prompt .flex {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      
-      .pwa-install-prompt button {
-        width: 100%;
-        margin: 0.25rem 0;
-      }
-      
-      /* Mobile navigation improvements */
-      .nav-link::after {
-        display: none;
-      }
-      
-      .nav-link:hover {
-        transform: none;
-      }
-      
-      /* Mobile logo improvements */
-      .logo-container:hover {
-        transform: none;
-      }
-      
-      /* Mobile cart badge improvements */
-      .cart-badge {
-        animation: none;
-      }
-      
-      /* Mobile order tracking improvements */
-      .order-actions {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      
-      .track-order-btn {
-        width: 100%;
-        justify-content: center;
-      }
-      
-      .close-tracking {
-        align-self: flex-end;
-    }
-    
-    /* Mobile navigation improvements */
-    .mobile-menu {
-      position: fixed;
-      top: 64px;
-      left: 0;
-      right: 0;
-      background: white;
-      border-top: 1px solid #e5e7eb;
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-      z-index: 40;
-      transform: translateY(-100%);
-      transition: transform 0.3s ease;
-    }
-    
-    .mobile-menu.show {
-      transform: translateY(0);
-    }
-    
-    .mobile-menu a {
-      padding: 0.75rem 1rem;
-      border-bottom: 1px solid #f3f4f6;
-      transition: background-color 0.2s ease;
-      display: block;
-      color: #374151;
-      text-decoration: none;
-    }
-    
-    .mobile-menu a:hover {
-      background-color: #f9fafb;
-      color: #1d4ed8;
-    }
-    
-    .mobile-menu a:last-child {
-      border-bottom: none;
-    }
-    
-    /* Mobile menu button improvements */
-    .mobile-menu-btn {
-      transition: all 0.2s ease;
-    }
-    
-    .mobile-menu-btn:hover {
-      transform: scale(1.05);
-    }
-    
-    .mobile-menu-btn:active {
-      transform: scale(0.95);
-    }
-      
-          /* Mobile user menu improvements */
-    .user-dropdown {
-      position: absolute;
-      right: 0;
-      top: 100%;
-      margin-top: 0.5rem;
-      background: white;
-      border: 1px solid #e5e7eb;
-      border-radius: 0.5rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-      z-index: 50;
-      min-width: 12rem;
-      transform: translateY(-10px);
-      opacity: 0;
-      transition: all 0.2s ease;
-      pointer-events: none;
-    }
-    
-    .user-dropdown.show {
-      transform: translateY(0);
-      opacity: 1;
-      pointer-events: auto;
-    }
-    
-    .user-dropdown a {
-      display: block;
-      padding: 0.75rem 1rem;
-      color: #374151;
-      text-decoration: none;
-      transition: background-color 0.2s ease;
-      border-radius: 0.25rem;
-      margin: 0.25rem;
-    }
-    
-    .user-dropdown a:hover {
-      background-color: #f9fafb;
-      color: #1d4ed8;
-    }
-    
-    .user-dropdown hr {
-      margin: 0.5rem 0;
-      border: none;
-      border-top: 1px solid #e5e7eb;
-    }
-    
-    /* User menu button improvements */
-    .user-menu-btn {
-      transition: all 0.2s ease;
-      border-radius: 0.5rem;
-      padding: 0.5rem;
-    }
-    
-    .user-menu-btn:hover {
-      background-color: #f3f4f6;
-      transform: translateY(-1px);
-    }
-    
-    .user-menu-btn:active {
-      transform: translateY(0);
-    }
-    }
-    
-    /* Enhanced hover effects */
-    .hover\:shadow-xl:hover {
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    .hover\:bg-blue-50:hover {
-      background-color: #eff6ff;
-    }
-    
-    .hover\:bg-gray-100:hover {
-      background-color: #f3f4f6;
-    }
-    
-    /* Logo and navigation improvements */
-    .logo-container {
-      transition: all 0.2s ease;
-    }
-    
-    .logo-container:hover {
-      transform: scale(1.05);
-    }
-    
-    .nav-link {
-      position: relative;
-      transition: all 0.2s ease;
-    }
-    
-    .nav-link::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 0;
-      width: 0;
-      height: 2px;
-      background: #3b82f6;
-      transition: width 0.2s ease;
-    }
-    
-    .nav-link:hover::after {
-      width: 100%;
-    }
-    
-    .nav-link:hover {
-      color: #1d4ed8;
-      transform: translateY(-1px);
-    }
-    
-    /* Smooth transitions */
-    .transition-all {
-      transition: all 0.3s ease;
-    }
-    
-    .duration-200 {
-      transition-duration: 200ms;
-    }
-    
-    .duration-300 {
-      transition-duration: 300ms;
-    }
+    .flex { display: flex; }
+    .inline-flex { display: inline-flex; }
     
     /* Loading states */
     .loading {
@@ -1036,51 +492,80 @@
       pointer-events: none;
     }
     
-    .loading::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 20px;
-      height: 20px;
-      margin: -10px 0 0 -10px;
-      border: 2px solid #f3f4f6;
-      border-top: 2px solid #3b82f6;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
+    /* Animations */
+    .fade-in {
+      animation: fadeIn 0.3s ease-in;
     }
     
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Cart badge */
+    .cart-badge {
+      background: #EF4444;
+      color: white;
+      border-radius: 9999px;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      min-width: 1.5rem;
+      text-align: center;
+    }
+    
+    /* Notifications */
+    .notification {
+      position: fixed;
+      top: 1rem;
+      right: 1rem;
+      z-index: 1001;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      color: white;
+      font-weight: 500;
+      max-width: 24rem;
+      transform: translateX(100%);
+      transition: transform 0.3s ease;
+    }
+    
+    .notification.show {
+      transform: translateX(0);
+    }
+    
+    .notification.success { background: #10B981; }
+    .notification.error { background: #EF4444; }
+    .notification.info { background: #3B82F6; }
+    
+    .notification-close {
+      background: none;
+      border: none;
+      color: white;
+      margin-left: 0.5rem;
+      cursor: pointer;
+      opacity: 0.7;
+    }
+    
+    .notification-close:hover {
+      opacity: 1;
     }
   </style>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-  
-  <!-- Google AdSense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
 </head>
-
-<body class="bg-gray-50">
-  <!-- Order Tracking Bar - Zomato Style -->
+<body>
+  <!-- Order Tracking Bar -->
   <div id="order-tracking-bar" class="order-tracking-bar hide">
     <div class="order-info">
       <div class="order-status-icon">
         <i class="fas fa-clock"></i>
       </div>
       <div class="order-details">
-        <h4 id="tracking-order-title">Order #<span id="tracking-order-id"></span></h4>
+        <h4>Order #<span id="tracking-order-id"></span></h4>
         <p id="tracking-order-status">Preparing your order...</p>
       </div>
     </div>
     <div class="order-actions">
       <a href="#" id="track-order-link" class="track-order-btn">
-        <i class="fas fa-eye mr-1"></i>Track Order
+        <i class="fas fa-eye mr-2"></i>Track Order
       </a>
       <button class="close-tracking" onclick="hideOrderTracking()">
         <i class="fas fa-times"></i>
@@ -1088,588 +573,336 @@
     </div>
   </div>
 
-  <!-- PWA Install Prompt -->
-  <div id="pwaInstallPrompt" class="pwa-install-prompt">
-    <div class="flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
-          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-          </svg>
-        </div>
-        <div>
-          <p class="font-semibold">Install SkipTheQueue</p>
-          <p class="text-sm text-blue-100">Add to home screen for quick access</p>
-        </div>
-      </div>
-      <div class="flex space-x-2">
-        <button onclick="installPWA()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold text-sm">
-          Install
-        </button>
-        <button onclick="dismissPWA()" class="text-white/80 hover:text-white">
-          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-          </svg>
-        </button>
-      </div>
-    </div>
-  </div>
-    
-    <!-- Navigation -->
-  <nav class="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4">
+  <!-- Navigation -->
+  <nav class="nav-container">
+    <div class="nav-content">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <div class="flex items-center space-x-3">
-          <a href="{% url 'home' %}" class="flex items-center space-x-2 logo-container">
-            <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                    </svg>
-            </div>
-            <div class="hidden sm:block">
-              <h1 class="text-xl font-bold text-gray-900">SkipTheQueue</h1>
-              <p class="text-xs text-gray-500">Smart Canteen Ordering</p>
-            </div>
+        <a href="{% url 'home' %}" class="nav-logo">
+          SkipTheQueue
+        </a>
+        
+        <!-- Desktop Navigation -->
+        <div class="hidden md:flex items-center space-x-8">
+          <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+            Home
           </a>
-        </div>
-
-        <!-- Navigation Links -->
-        <div class="hidden md:flex items-center space-x-6">
-          <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Home</a>
-          <a href="{% url 'menu' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Menu</a>
-          <a href="{% url 'view_cart' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 relative nav-link">
-            Cart
-            <span id="cart-badge" class="cart-badge absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
+          <a href="{% url 'menu' %}" class="nav-link {% if request.resolver_match.url_name == 'menu' %}active{% endif %}">
+            Menu
           </a>
           {% if user.is_authenticated %}
-            <a href="{% url 'order_history' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">My Orders</a>
-            <a href="{% url 'track_order' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 nav-link">Track Order</a>
+            <a href="{% url 'favorites' %}" class="nav-link {% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
+              Favorites
+            </a>
+            <a href="{% url 'order_history' %}" class="nav-link {% if request.resolver_match.url_name == 'order_history' %}active{% endif %}">
+              Orders
+            </a>
           {% endif %}
         </div>
-                
-                <!-- Mobile Menu Button -->
-        <div class="md:hidden">
-          <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600 mobile-menu-btn">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
-            </svg>
-                </button>
-        </div>
-                
-                <!-- User Menu -->
-        <div class="flex items-center space-x-4">
-                    {% if user.is_authenticated %}
-            <div class="relative">
-                                          <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600 user-menu-btn">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span class="text-blue-600 font-semibold text-sm">{{ user.first_name|first|upper }}</span>
-                </div>
-                <span class="hidden sm:block">{{ user.first_name }}</span>
-                            </button>
-              
-                            <!-- User Dropdown -->
-              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden user-dropdown">
-                <div class="py-2">
-                  <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Profile</a>
-                  <a href="{% url 'order_history' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
-                  <a href="{% url 'track_order' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Track Order</a>
-                  <hr class="my-2">
-                  <a href="{% url 'logout' %}" class="block px-4 py-2 text-red-600 hover:bg-red-50">Logout</a>
-                </div>
-              </div>
-                        </div>
-                    {% else %}
-            <a href="/auth/login/google-oauth2/" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-              Login
+        
+        <!-- Desktop Auth Buttons -->
+        <div class="hidden md:flex items-center space-x-4">
+          {% if user.is_authenticated %}
+            <a href="{% url 'view_cart' %}" class="relative btn-primary">
+              <i class="fas fa-shopping-cart mr-2"></i>
+              Cart
+              {% if cart_count > 0 %}
+                <span class="cart-badge ml-2">{{ cart_count }}</span>
+              {% endif %}
             </a>
-                    {% endif %}
-                </div>
+            <div class="relative group">
+              <button class="btn-secondary">
+                <i class="fas fa-user mr-2"></i>
+                {{ user.first_name|default:user.username }}
+                <i class="fas fa-chevron-down ml-1"></i>
+              </button>
+              <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 hidden group-hover:block">
+                <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-user mr-2"></i>Profile
+                </a>
+                <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                  <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                </a>
+              </div>
             </div>
+          {% else %}
+            <a href="{% url 'custom_login' %}" class="btn-secondary">Login</a>
+            <a href="{% url 'custom_login' %}" class="btn-primary">Get Started</a>
+          {% endif %}
         </div>
         
-        <!-- Mobile Menu -->
-    <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-200 mobile-menu">
-      <div class="px-4 py-2 space-y-1">
-        <a href="{% url 'home' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Home</a>
-        <a href="{% url 'menu' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Menu</a>
-        <a href="{% url 'view_cart' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg relative">
-          Cart
-          <span id="mobile-cart-badge" class="cart-badge absolute top-2 right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden">0</span>
-        </a>
-        {% if user.is_authenticated %}
-          <a href="{% url 'user_profile' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">My Profile</a>
-          <a href="{% url 'order_history' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">My Orders</a>
-          <a href="{% url 'track_order' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Track Order</a>
-          <hr class="my-2">
-          <a href="{% url 'logout' %}" class="block px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</a>
-        {% else %}
-          <a href="/auth/login/google-oauth2/" class="block px-3 py-2 bg-blue-600 text-white rounded-lg text-center">Login</a>
-                {% endif %}
-            </div>
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn md:hidden" onclick="toggleMobileMenu()">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+      
+      <!-- Mobile Menu -->
+      <div id="mobile-menu" class="mobile-menu">
+        <div class="nav-links">
+          <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+            Home
+          </a>
+          <a href="{% url 'menu' %}" class="nav-link {% if request.resolver_match.url_name == 'menu' %}active{% endif %}">
+            Menu
+          </a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'favorites' %}" class="nav-link {% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
+              Favorites
+            </a>
+            <a href="{% url 'order_history' %}" class="nav-link {% if request.resolver_match.url_name == 'order_history' %}active{% endif %}">
+              Orders
+            </a>
+            <a href="{% url 'user_profile' %}" class="nav-link">
+              Profile
+            </a>
+          {% endif %}
         </div>
-    </nav>
+        
+        <div class="auth-buttons">
+          {% if user.is_authenticated %}
+            <a href="{% url 'view_cart' %}" class="btn-primary text-center">
+              <i class="fas fa-shopping-cart mr-2"></i>
+              Cart
+              {% if cart_count > 0 %}
+                <span class="cart-badge ml-2">{{ cart_count }}</span>
+              {% endif %}
+            </a>
+            <a href="{% url 'logout' %}" class="btn-secondary text-center">
+              <i class="fas fa-sign-out-alt mr-2"></i>Logout
+            </a>
+          {% else %}
+            <a href="{% url 'custom_login' %}" class="btn-secondary text-center">Login</a>
+            <a href="{% url 'custom_login' %}" class="btn-primary text-center">Get Started</a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </nav>
 
   <!-- Main Content -->
   <main class="min-h-screen">
-    {% if messages %}
-      <div class="max-w-7xl mx-auto px-4 py-2">
-            {% for message in messages %}
-          <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% elif message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %}">
-            {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
 
-            {% block content %}{% endblock %}
-    </main>
-
-    <!-- Footer -->
-  <footer class="bg-gray-900 text-white">
-    <div class="max-w-7xl mx-auto px-4 py-12">
+  <!-- Footer -->
+  <footer class="bg-gray-900 text-white py-12">
+    <div class="max-w-7xl mx-auto px-4">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
           <h3 class="text-lg font-semibold mb-4">SkipTheQueue</h3>
-          <p class="text-gray-400 text-sm">
+          <p class="text-gray-400">
             The smart canteen ordering system for colleges and institutions. 
             Skip the queues, order online!
           </p>
-                    </div>
+        </div>
         
         <div>
-          <h4 class="font-semibold mb-4">Quick Links</h4>
-          <ul class="space-y-2 text-sm text-gray-400">
-            <li><a href="{% url 'home' %}" class="hover:text-white transition duration-200">Home</a></li>
-            <li><a href="{% url 'menu' %}" class="hover:text-white transition duration-200">Menu</a></li>
-            <li><a href="{% url 'help_center' %}" class="hover:text-white transition duration-200">Help Center</a></li>
+          <h4 class="text-md font-semibold mb-4">Quick Links</h4>
+          <ul class="space-y-2">
+            <li><a href="{% url 'home' %}" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
+            <li><a href="{% url 'menu' %}" class="text-gray-400 hover:text-white transition-colors">Menu</a></li>
+            <li><a href="{% url 'help_center' %}" class="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
           </ul>
         </div>
         
         <div>
-          <h4 class="font-semibold mb-4">Support</h4>
-          <ul class="space-y-2 text-sm text-gray-400">
-            <li><a href="#" class="hover:text-white transition duration-200">Help Center</a></li>
-            <li><a href="#" class="hover:text-white transition duration-200">Contact Us</a></li>
-            <li><a href="#" class="hover:text-white transition duration-200">Privacy Policy</a></li>
-                        </ul>
-                    </div>
+          <h4 class="text-md font-semibold mb-4">Support</h4>
+          <ul class="space-y-2">
+            <li><a href="{% url 'help_center' %}" class="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
+            <li><a href="mailto:skipthequeue.app@gmail.com" class="text-gray-400 hover:text-white transition-colors">Contact Us</a></li>
+            <li><a href="{% url 'privacy_policy' %}" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
+          </ul>
+        </div>
         
         <div>
-          <h4 class="font-semibold mb-4">Download App</h4>
-          <p class="text-gray-400 text-sm mb-4">
-            Get the best experience with our mobile app
-          </p>
-          <button onclick="installPWA()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-sm">
+          <h4 class="text-md font-semibold mb-4">Download App</h4>
+          <p class="text-gray-400 mb-4">Get the best experience with our mobile app</p>
+          <button onclick="installPWA()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
             Install App
           </button>
-                    </div>
-                </div>
-      
-      <div class="border-t border-gray-800 mt-8 pt-8 text-center">
-        <p class="text-gray-400 text-sm">
-          © 2024 SkipTheQueue. All rights reserved. Made with ❤️ for students.
-        </p>
-            </div>
         </div>
-    </footer>
-
-  <!-- PWA Service Worker Registration -->
-    <script>
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(registration => {
-            console.log('SW registered: ', registration);
-          })
-          .catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
-      });
-    }
-
-    // PWA Install Prompt
-    let deferredPrompt;
-    let pwaInstallPrompt;
-
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
+      </div>
       
-      // Show install prompt after 5 seconds
-      setTimeout(() => {
-        if (deferredPrompt && !localStorage.getItem('pwaDismissed') && pwaInstallPrompt) {
-          pwaInstallPrompt.classList.add('show');
-        }
-      }, 5000);
-    });
+      <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+        <p>&copy; 2024 SkipTheQueue. All rights reserved. Made with ❤️ for students.</p>
+      </div>
+    </div>
+  </footer>
 
-    function installPWA() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then((choiceResult) => {
-          if (choiceResult.outcome === 'accepted') {
-            console.log('User accepted the install prompt');
-          }
-          deferredPrompt = null;
-          pwaInstallPrompt.classList.remove('show');
-        });
-      }
-    }
-
-    function dismissPWA() {
-      pwaInstallPrompt.classList.remove('show');
-      localStorage.setItem('pwaDismissed', 'true');
-    }
-
+  <!-- JavaScript -->
+  <script>
     // Mobile menu toggle
-    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
-    const mobileMenu = document.getElementById('mobileMenu');
-
-    mobileMenuBtn.addEventListener('click', () => {
-      mobileMenu.classList.toggle('hidden');
-      if (!mobileMenu.classList.contains('hidden')) {
-        mobileMenu.classList.add('show');
-      } else {
+    function toggleMobileMenu() {
+      const mobileMenu = document.getElementById('mobile-menu');
+      mobileMenu.classList.toggle('show');
+    }
+    
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+      const mobileMenu = document.getElementById('mobile-menu');
+      const mobileMenuBtn = document.querySelector('.mobile-menu-btn');
+      
+      if (!mobileMenu.contains(event.target) && !mobileMenuBtn.contains(event.target)) {
         mobileMenu.classList.remove('show');
       }
     });
-
-    // User dropdown toggle
-    const userMenuBtn = document.getElementById('userMenuBtn');
-    const userDropdown = document.getElementById('userDropdown');
-
-    if (userMenuBtn) {
-      userMenuBtn.addEventListener('click', () => {
-        userDropdown.classList.toggle('hidden');
-        if (!userDropdown.classList.contains('hidden')) {
-          userDropdown.classList.add('show');
-        } else {
-          userDropdown.classList.remove('show');
-        }
-      });
-
-      // Close dropdown when clicking outside
-      document.addEventListener('click', (e) => {
-        if (!userMenuBtn.contains(e.target)) {
-          userDropdown.classList.add('hidden');
-          userDropdown.classList.remove('show');
-        }
-      });
-    }
-
-    // Add slide-up animation to main content and initialize PWA
-    document.addEventListener('DOMContentLoaded', () => {
-      const mainContent = document.querySelector('main');
-      if (mainContent) {
-        mainContent.classList.add('slide-up');
-      }
-      
-      // Initialize PWA install prompt
-      pwaInstallPrompt = document.getElementById('pwaInstallPrompt');
-      
-      // Hide prompt if dismissed
-      if (localStorage.getItem('pwaDismissed')) {
-        if (pwaInstallPrompt) {
-          pwaInstallPrompt.style.display = 'none';
-        }
-      }
-    });
-
-    // Global cart count update function
-    function updateGlobalCartCount(count) {
-      const cartLinks = document.querySelectorAll('a[href*="cart"]');
-      cartLinks.forEach(cartLink => {
-        const cartBadge = cartLink.querySelector('.cart-badge');
-        if (cartBadge) {
-          if (count > 0) {
-            cartBadge.textContent = count;
-            cartBadge.classList.remove('hidden');
-          } else {
-            cartBadge.classList.add('hidden');
-          }
-        }
-      });
-    }
-
-    // Make function globally available
-    window.updateGlobalCartCount = updateGlobalCartCount;
-
-    // Order Tracking JavaScript -->
-    <script>
+    
+    // Order tracking functionality
     let currentOrder = null;
-    let orderCheckInterval = null;
-
-    // Function to show order tracking bar
-    function showOrderTracking(orderData) {
-      currentOrder = orderData;
+    
+    function showOrderTracking(orderId, status, collegeName) {
+      currentOrder = { id: orderId, status: status, college: collegeName };
+      
+      document.getElementById('tracking-order-id').textContent = orderId;
+      document.getElementById('tracking-order-status').textContent = `Status: ${status}`;
+      document.getElementById('track-order-link').href = `/track-order/?order_id=${orderId}`;
+      
       const trackingBar = document.getElementById('order-tracking-bar');
-      const orderId = document.getElementById('tracking-order-id');
-      const orderStatus = document.getElementById('tracking-order-status');
-      const statusIcon = trackingBar.querySelector('.order-status-icon i');
-      const trackLink = document.getElementById('track-order-link');
-      
-      orderId.textContent = orderData.id;
-      trackLink.href = `/track-order/?order_id=${orderData.id}`;
-      
-      updateOrderStatusDisplay(orderData.status, orderStatus, statusIcon, trackingBar);
-      
       trackingBar.classList.remove('hide');
       trackingBar.classList.add('show');
       
-      // Adjust main content padding
-      document.body.style.paddingTop = '60px';
+      // Add status-specific styling
+      trackingBar.className = trackingBar.className.replace(/status-\w+/g, '');
+      if (status === 'Pending') trackingBar.classList.add('status-pending');
+      else if (status === 'In Progress') trackingBar.classList.add('status-preparing');
+      else if (status === 'Ready') trackingBar.classList.add('status-ready');
+      else if (status === 'Completed') trackingBar.classList.add('status-completed');
     }
-
-    // Function to hide order tracking bar
+    
     function hideOrderTracking() {
       const trackingBar = document.getElementById('order-tracking-bar');
-      trackingBar.classList.remove('show');
       trackingBar.classList.add('hide');
-      
-      // Reset main content padding
-      document.body.style.paddingTop = '0';
-      
-      // Clear current order
+      trackingBar.classList.remove('show');
       currentOrder = null;
-      
-      // Stop checking for order updates
-      if (orderCheckInterval) {
-        clearInterval(orderCheckInterval);
-        orderCheckInterval = null;
-      }
     }
-
-    // Function to update order status display
-    function updateOrderStatusDisplay(status, statusElement, iconElement, trackingBar) {
-      let statusText = '';
-      let iconClass = '';
-      let statusClass = '';
-      
-      switch(status) {
-        case 'Pending':
-          statusText = 'Order received, waiting for confirmation...';
-          iconClass = 'fas fa-clock';
-          statusClass = 'status-pending';
-          break;
-        case 'Accepted':
-          statusText = 'Order accepted, preparing your food...';
-          iconClass = 'fas fa-utensils';
-          statusClass = 'status-preparing';
-          break;
-        case 'In Progress':
-          statusText = 'Your order is being prepared...';
-          iconClass = 'fas fa-fire';
-          statusClass = 'status-preparing';
-          break;
-        case 'Ready':
-          statusText = 'Your order is ready for pickup!';
-          iconClass = 'fas fa-check-circle';
-          statusClass = 'status-ready';
-          break;
-        case 'Completed':
-          statusText = 'Order completed. Enjoy your meal!';
-          iconClass = 'fas fa-smile';
-          statusClass = 'status-completed';
-          break;
-        default:
-          statusText = 'Order status: ' + status;
-          iconClass = 'fas fa-info-circle';
-          statusClass = 'status-pending';
-      }
-      
-      statusElement.textContent = statusText;
-      iconElement.className = iconClass;
-      
-      // Update status class
-      trackingBar.className = `order-tracking-bar show ${statusClass}`;
-    }
-
-    // Function to check for active orders
-    async function checkForActiveOrders() {
+    
+    // Check for active orders and show tracking bar
+    async function checkActiveOrders() {
       try {
-        const response = await fetch('/api/check-active-orders/', {
-          method: 'GET',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Content-Type': 'application/json',
-          },
-          credentials: 'same-origin'
-        });
-        
+        const response = await fetch('/check-active-orders/');
         if (response.ok) {
           const data = await response.json();
-          
           if (data.has_active_order && data.order) {
-            if (!currentOrder || currentOrder.id !== data.order.id) {
-              showOrderTracking(data.order);
-              startOrderStatusPolling(data.order.id);
-            }
-          } else {
-            if (currentOrder) {
-              hideOrderTracking();
-            }
+            showOrderTracking(data.order.id, data.order.status, data.order.college_name);
           }
         }
       } catch (error) {
-        console.log('Error checking for active orders:', error);
+        console.log('No active orders to track');
       }
     }
-
-    // Function to start polling for order status updates
-    function startOrderStatusPolling(orderId) {
-      if (orderCheckInterval) {
-        clearInterval(orderCheckInterval);
+    
+    // PWA installation
+    function installPWA() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js')
+          .then(function(registration) {
+            console.log('SW registered: ', registration);
+          })
+          .catch(function(registrationError) {
+            console.log('SW registration failed: ', registrationError);
+          });
+      }
+    }
+    
+    // Performance optimization: Debounce function
+    function debounce(func, wait) {
+      let timeout;
+      return function executedFunction(...args) {
+        const later = () => {
+          clearTimeout(timeout);
+          func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+      };
+    }
+    
+    // Performance optimization: Throttle function
+    function throttle(func, limit) {
+      let inThrottle;
+      return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+          func.apply(context, args);
+          inThrottle = true;
+          setTimeout(() => inThrottle = false, limit);
+        }
+      }
+    }
+    
+    // Initialize with performance optimizations
+    document.addEventListener('DOMContentLoaded', function() {
+      // Check for active orders
+      if (document.body.classList.contains('user-authenticated')) {
+        checkActiveOrders();
+        // Check every 60 seconds (increased for better performance)
+        setInterval(checkActiveOrders, 60000);
       }
       
-      orderCheckInterval = setInterval(async () => {
-        try {
-          const response = await fetch(`/api/check-order-status/${orderId}/`, {
-            method: 'GET',
-            headers: {
-              'X-Requested-With': 'XMLHttpRequest',
-              'Content-Type': 'application/json',
-            },
-            credentials: 'same-origin'
-          });
-          
-          if (response.ok) {
-            const orderData = await response.json();
-            
-            if (orderData.success && orderData.order) {
-              if (currentOrder && currentOrder.status !== orderData.order.status) {
-                currentOrder = orderData.order;
-                const orderStatus = document.getElementById('tracking-order-status');
-                const statusIcon = document.querySelector('#order-tracking-bar .order-status-icon i');
-                const trackingBar = document.getElementById('order-tracking-bar');
-                
-                updateOrderStatusDisplay(orderData.order.status, orderStatus, statusIcon, trackingBar);
-                
-                // Show notification for status change
-                if (orderData.order.status === 'Ready') {
-                  showNotification('Your order is ready for pickup!', 'success');
-                }
-              }
-              
-              // Stop polling if order is completed
-              if (orderData.order.status === 'Completed') {
-                setTimeout(() => {
-                  hideOrderTracking();
-                }, 5000); // Hide after 5 seconds
-              }
+      // Add fade-in animation to content
+      const mainElement = document.querySelector('main');
+      if (mainElement) {
+        mainElement.classList.add('fade-in');
+      }
+      
+      // Performance optimization: Lazy load images
+      if ('IntersectionObserver' in window) {
+        const imageObserver = new IntersectionObserver((entries, observer) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              img.classList.remove('lazy');
+              observer.unobserve(img);
             }
-          }
-        } catch (error) {
-          console.log('Error polling order status:', error);
-        }
-      }, 10000); // Check every 10 seconds
-    }
-
-    // Function to show notifications
+          });
+        });
+        
+        document.querySelectorAll('img[data-src]').forEach(img => {
+          imageObserver.observe(img);
+        });
+      }
+    });
+    
+    // Show notification function
     function showNotification(message, type = 'info') {
       const notification = document.createElement('div');
-      notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
-      
-      if (type === 'success') {
-        notification.className += ' bg-green-500 text-white';
-      } else if (type === 'error') {
-        notification.className += ' bg-red-500 text-white';
-      } else {
-        notification.className += ' bg-blue-500 text-white';
-      }
-      
+      notification.className = `notification ${type}`;
       notification.innerHTML = `
-        <div class="flex items-center">
-          <span class="flex-1">${message}</span>
-          <button onclick="this.parentElement.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
+        ${message}
+        <button class="notification-close" onclick="this.parentElement.remove()">
+          <i class="fas fa-times"></i>
+        </button>
       `;
       
       document.body.appendChild(notification);
       
-      // Animate in
-      setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-      }, 100);
+      // Show notification
+      setTimeout(() => notification.classList.add('show'), 100);
       
       // Auto remove after 5 seconds
       setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => {
-          if (notification.parentElement) {
-            notification.remove();
-          }
-        }, 300);
+        notification.classList.remove('show');
+        setTimeout(() => notification.remove(), 300);
       }, 5000);
     }
-
-    // Initialize order tracking on page load
-    document.addEventListener('DOMContentLoaded', function() {
-      // Check for active orders immediately
-      checkForActiveOrders();
-      
-      // Check for active orders every 30 seconds
-      setInterval(checkForActiveOrders, 30000);
+    
+    // Global error handler
+    window.addEventListener('error', function(e) {
+      console.error('Global error:', e.error);
+    });
+    
+    // Unhandled promise rejection handler
+    window.addEventListener('unhandledrejection', function(e) {
+      console.error('Unhandled promise rejection:', e.reason);
     });
   </script>
 
-  <!-- Google Analytics -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'GA_MEASUREMENT_ID', {
-      'page_title': document.title,
-      'page_location': window.location.href
-    });
-  </script>
-
-  <!-- Tawk.to Chat Widget -->
-  <script type="text/javascript">
-    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
-    (function(){
-      var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
-      s1.async=true;
-      s1.src='https://embed.tawk.to/YOUR_TAWK_TO_WIDGET_ID/default';
-      s1.charset='UTF-8';
-      s1.setAttribute('crossorigin','*');
-      s0.parentNode.insertBefore(s1,s0);
-    })();
-    </script>
-
-  <!-- Tawk.to Customization -->
-  <script>
-    // Customize Tawk.to widget
-    Tawk_API.onLoad = function(){
-      // Set visitor information
-      Tawk_API.setAttributes({
-        'name': '{{ user.first_name|default:"Guest" }}',
-        'email': '{{ user.email|default:"" }}',
-        'role': '{% if user.is_authenticated %}Student{% else %}Guest{% endif %}',
-        'college': '{{ request.session.selected_college.name|default:"Not Selected" }}'
-      });
-
-      // Custom welcome message
-      Tawk_API.customStyle = {
-        visibility : 'hidden'
-      };
-      
-      // Show widget after 10 seconds
-      setTimeout(function() {
-        Tawk_API.showWidget();
-      }, 10000);
-    };
-
-    // Track page views
-    Tawk_API.onStatusChange = function(status){
-      if(status === 'online'){
-        console.log('Tawk.to chat is online');
-      }
-    };
-  </script>
+  {% block extra_js %}{% endblock %}
+  
+  <!-- Load performance optimization script -->
+  <script src="{% static 'js/performance.js' %}"></script>
 </body>
 </html>

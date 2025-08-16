@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'compressor',  # For static file optimization
     'orders',
     'social_django',
 ]
@@ -38,6 +39,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.performance_middleware.PerformanceMiddleware',  # Performance monitoring
+    'core.performance_middleware.DatabaseOptimizationMiddleware',  # Database optimization
     'core.middleware.SecurityMiddleware',
     'core.middleware.AuthenticationMiddleware',
     'core.middleware.LoggingMiddleware',
@@ -45,11 +48,12 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'core.urls'
 
+# Template optimization
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'APP_DIRS': True,  # Always enable app directories
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -65,15 +69,55 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database
+# Database optimization
 DATABASES = {
     'default': dj_database_url.config(
         default=f'sqlite:///{BASE_DIR}/db.sqlite3', 
-        conn_max_age=600,
+        conn_max_age=300,  # Reduced from 600 for better connection management
         conn_health_checks=True,
         ssl_require=False
     )
 }
+
+# Database query optimization
+DB_OPTIMIZATION = {
+    'ATOMIC_REQUESTS': False,  # Disable for better performance
+    'CONN_MAX_AGE': 300,
+    'OPTIONS': {
+        'timeout': 20,
+        'check_same_thread': False,
+        'isolation_level': 'READ_COMMITTED',  # Better performance isolation level
+    },
+    'POOL_OPTIONS': {
+        'max_connections': 20,
+        'min_connections': 5,
+        'connection_timeout': 30,
+    }
+}
+
+# Cache configuration for better performance
+# Enhanced cache configuration for better performance
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes default
+        'OPTIONS': {
+            'MAX_ENTRIES': 2000,  # Increased for better cache utilization
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
+
+# Cache optimization settings
+CACHE_MIDDLEWARE_SECONDS = 300
+CACHE_MIDDLEWARE_KEY_PREFIX = 'skipthequeue'
+CACHE_MIDDLEWARE_ALIAS = 'default'
+
+# Performance optimization settings
+SLOW_REQUEST_THRESHOLD = 1.0  # Log requests slower than 1 second
+DB_QUERY_TIMEOUT = 10  # Database query timeout in seconds
+MAX_CACHE_ENTRIES = 5000  # Maximum cache entries
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
@@ -150,19 +194,27 @@ LOGOUT_REDIRECT_URL = '/'
 # CSRF trusted origins (for Render)
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://skipthequeue.onrender.com').split(',') 
 
-# Session Configuration for persistent login
+# Session settings for better performance
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+SESSION_SAVE_EVERY_REQUEST = False  # Keep False for better performance
 SESSION_COOKIE_AGE = 30 * 24 * 60 * 60  # 30 days
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_SAVE_EVERY_REQUEST = False  # Changed to False for better performance
-SESSION_COOKIE_SECURE = not DEBUG  # Use secure cookies in production
-SESSION_COOKIE_HTTPONLY = True  # Prevent JavaScript access to session cookie
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
 
-# Security settings
+# Static files optimization
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_MAX_AGE = 31536000  # 1 year
+WHITENOISE_USE_FINDERS = True
+WHITENOISE_AUTOREFRESH = False  # Disable for production performance
+WHITENOISE_INDEX_FILE = True
+
+# Security settings - optimized for performance
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 
-# Enhanced Security Settings
+# Enhanced Security Settings - only in production
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SECURE_HSTS_SECONDS = 31536000  # 1 year
@@ -170,43 +222,20 @@ if not DEBUG:
     SECURE_HSTS_PRELOAD = True
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
-# CSRF Settings
+# CSRF Settings - optimized
 CSRF_COOKIE_SECURE = not DEBUG
-# Keep CSRF cookie readable by client to allow progressive enhancement in JS fetches when needed
 CSRF_COOKIE_HTTPONLY = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 
-# Session Security
+# Session Security - optimized
 SESSION_COOKIE_SAMESITE = 'Lax'
 
-# Rate Limiting
-RATE_LIMIT_ENABLED = False  # Disable rate limiting to prevent errors
-RATE_LIMIT_REQUESTS = 10000  # Increased significantly
+# Rate Limiting - optimized for performance
+RATE_LIMIT_ENABLED = False  # Keep disabled for performance
+RATE_LIMIT_REQUESTS = 10000
 RATE_LIMIT_WINDOW = 60
 
-# Performance optimizations
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'LOCATION': 'unique-snowflake',
-        'TIMEOUT': 600,  # 10 minutes
-        'OPTIONS': {
-            'MAX_ENTRIES': 2000,
-        }
-    }
-}
-
-# Session settings for better performance
-SESSION_ENGINE = 'django.contrib.sessions.backends.db'
-
-# Static files optimization
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-WHITENOISE_MAX_AGE = 31536000  # 1 year
-WHITENOISE_USE_FINDERS = True
-WHITENOISE_AUTOREFRESH = True
-WHITENOISE_INDEX_FILE = True  # Enable index file serving
-
-# Logging configuration for better debugging
+# Logging configuration - optimized for performance
 LOGGING = {
     'version': 1,
     'disable_existing_loggers': False,
@@ -222,31 +251,77 @@ LOGGING = {
     },
     'handlers': {
         'file': {
-            'level': 'INFO',
+            'level': 'WARNING',  # Reduced from INFO for better performance
             'class': 'logging.FileHandler',
             'filename': BASE_DIR / 'logs' / 'django.log',
             'formatter': 'verbose',
         },
         'console': {
-            'level': 'INFO',
+            'level': 'WARNING',  # Reduced from INFO for better performance
             'class': 'logging.StreamHandler',
             'formatter': 'simple',
         },
     },
     'root': {
         'handlers': ['console', 'file'],
-        'level': 'INFO',
+        'level': 'WARNING',  # Reduced from INFO for better performance
     },
     'loggers': {
         'django': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'WARNING',  # Reduced from INFO for better performance
             'propagate': False,
         },
         'orders': {
             'handlers': ['console', 'file'],
-            'level': 'INFO',
+            'level': 'WARNING',  # Reduced from INFO for better performance
+            'propagate': False,
+        },
+        'django.db.backends': {
+            'level': 'WARNING',  # Reduce SQL logging for performance
+            'handlers': ['console'],
             'propagate': False,
         },
     },
 }
+
+# Performance monitoring
+PERFORMANCE_MONITORING = {
+    'ENABLE_QUERY_LOGGING': False,  # Disable for production
+    'ENABLE_SLOW_QUERY_LOGGING': True,
+    'SLOW_QUERY_THRESHOLD': 0.5,  # Log queries slower than 0.5 seconds
+    'SLOW_REQUEST_THRESHOLD': 0.5,  # Log requests slower than 0.5 seconds
+    'ENABLE_PERFORMANCE_MONITORING': True,
+    'ENABLE_CACHE_MONITORING': True,
+    'CACHE_HIT_RATIO_THRESHOLD': 0.8,  # Alert if cache hit ratio is below 80%
+}
+
+# Cache key prefixes for better organization
+CACHE_KEY_PREFIX = 'skipthequeue'
+
+# Database query optimization
+DATABASE_OPTIMIZATION = {
+    'ENABLE_QUERY_OPTIMIZATION': True,
+    'SELECT_RELATED_DEPTH': 2,
+    'PREFETCH_RELATED_DEPTH': 2,
+    'BATCH_SIZE': 100,
+    'MAX_QUERIES_PER_REQUEST': 50,
+}
+
+# Template fragment caching
+TEMPLATE_FRAGMENT_CACHE = {
+    'ENABLED': True,
+    'DEFAULT_TIMEOUT': 300,
+    'KEY_PREFIX': 'template',
+}
+
+# Static file optimization
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
+# Compression settings
+COMPRESS_ENABLED = not DEBUG
+COMPRESS_CSS_FILTERS = ['compressor.filters.css_default.CssAbsoluteFilter', 'compressor.filters.cssmin.rCSSMinFilter']
+COMPRESS_JS_FILTERS = ['compressor.filters.jsmin.JSMinFilter']

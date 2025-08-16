@@ -1,105 +1,347 @@
 {% extends "orders/base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gray-50">
-  <!-- Header -->
-  <div class="bg-white shadow-sm border-b">
-    <div class="container" style="padding: 1rem 0;">
-      <div style="display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 1rem;">
-        <div style="text-align: center;">
-          <h1 style="font-size: 1.5rem; font-weight: 700; color: #111827;">Track Your Order</h1>
-          <p style="color: #6b7280; margin-top: 0.25rem; font-size: 0.875rem;">Monitor your order status in real-time</p>
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8 px-4">
+  <div class="max-w-4xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Track Your Order</h1>
+          <p class="text-gray-600">Monitor your order status in real-time</p>
         </div>
-        
-        <a href="{% url 'menu' %}" class="btn btn-primary">
-          Order More
+        <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors text-center">
+          Order More Food
         </a>
       </div>
     </div>
-  </div>
 
-  <div class="container" style="padding: 1rem 0;">
-    <!-- Search Form -->
-    <div class="card" style="margin-bottom: 2rem;">
-      <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Find Your Order</h2>
-      
-      <form method="get" style="display: flex; flex-direction: column; gap: 1rem;">
-        <div style="display: grid; grid-template-columns: 1fr; gap: 1rem;">
-          <div>
-            <label for="phone" style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Phone Number</label>
-            <input type="tel" id="phone" name="phone" value="{{ request.GET.phone }}" 
-                   class="input" placeholder="Enter your phone number">
+    <!-- Order Search Form -->
+    {% if not order %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Find Your Order</h2>
+        <form method="get" class="space-y-4">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label for="order_id" class="block text-sm font-medium text-gray-700 mb-2">Order ID</label>
+              <input type="text" id="order_id" name="order_id" value="{{ request.GET.order_id }}" 
+                     placeholder="Enter your order number" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <div>
+              <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
+              <input type="tel" id="phone" name="phone" value="{{ request.GET.phone }}" 
+                     placeholder="Enter your phone number" 
+                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
           </div>
-          
-          <div>
-            <label for="order_id" style="display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.5rem;">Order ID (Optional)</label>
-            <input type="number" id="order_id" name="order_id" value="{{ request.GET.order_id }}"
-                   class="input" placeholder="Enter order ID">
-          </div>
-        </div>
-        
-        <button type="submit" class="btn btn-primary" style="width: 100%;">
-          Track Order
-        </button>
-      </form>
-    </div>
+          <button type="submit" class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium">
+            Track Order
+          </button>
+        </form>
+      </div>
+    {% endif %}
 
-    <!-- Order Results -->
+    <!-- Order Tracking -->
     {% if order %}
-      <!-- Single Order View -->
-      <div class="card" style="overflow: hidden;">
-        <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb; background-color: #f9fafb;">
-          <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-            <h2 style="font-size: 1.25rem; font-weight: 600; color: #111827;">Order #{{ order.id }}</h2>
-            <span class="status-badge {{ order.get_status_color }}">
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+        <!-- Order Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+          <div>
+            <h2 class="text-2xl font-bold text-gray-900">Order #{{ order.id }}</h2>
+            <p class="text-gray-600">{{ order.college.name|default:"College not specified" }}</p>
+            <p class="text-sm text-gray-500">Placed on {{ order.created_at|date:"M d, Y H:i" }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-3xl font-bold text-blue-600">₹{{ order.total_price }}</p>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium 
+              {% if order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+              {% elif order.status == 'In Progress' %}bg-blue-100 text-blue-800
+              {% elif order.status == 'Ready' %}bg-green-100 text-green-800
+              {% elif order.status == 'Completed' %}bg-gray-100 text-gray-800
+              {% else %}bg-gray-100 text-gray-800{% endif %}">
               {{ order.status }}
             </span>
           </div>
         </div>
-        
-        <div style="padding: 1rem;">
-          <!-- Order Details -->
-          <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-            <div>
-              <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin-bottom: 0.75rem;">Order Information</h3>
-              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
-                  <span style="color: #6b7280;">Customer:</span>
-                  <span style="font-weight: 500;">{{ order.user_name }}</span>
+
+        <!-- Order Items -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Items</h3>
+          <div class="space-y-3">
+            {% for item in order.order_items.all %}
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div class="flex items-center space-x-3">
+                  <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                  <div>
+                    <p class="font-medium text-gray-900">{{ item.menu_item.name }}</p>
+                    <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
+                  </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
-                  <span style="color: #6b7280;">Phone:</span>
-                  <span style="font-weight: 500;">{{ order.user_phone }}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #f3f4f6;">
-                  <span style="color: #6b7280;">Order Date:</span>
-                  <span style="font-weight: 500;">{{ order.created_at|date:"F d, Y H:i" }}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 0.5rem 0;">
-                  <span style="color: #6b7280;">Total Amount:</span>
-                  <span style="font-weight: 700; color: #059669;">₹{{ order.total_price|floatformat:2 }}</span>
-                </div>
+                <p class="font-semibold text-gray-900">₹{{ item.total_price }}</p>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Order Progress -->
+        <div class="mb-8">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Order Progress</h3>
+          <div class="relative">
+            <!-- Progress Bar -->
+            <div class="w-full bg-gray-200 rounded-full h-2 mb-6">
+              <div id="progress-bar" class="bg-blue-600 h-2 rounded-full transition-all duration-500" 
+                   style="width: {% if order.status == 'Pending' %}25%{% elif order.status == 'In Progress' %}50%{% elif order.status == 'Ready' %}75%{% elif order.status == 'Completed' %}100%{% else %}0%{% endif %}">
               </div>
             </div>
-            
-            <div>
-              <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin-bottom: 0.75rem;">Order Items</h3>
-              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                {% for item in order.order_items.all %}
-                  <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; background-color: #f9fafb; border-radius: 0.5rem;">
-                    <span style="color: #374151;">{{ item.item.name }} × {{ item.quantity }}</span>
-                    <span style="color: #6b7280; font-weight: 500;">₹{{ item.total_price|floatformat:2 }}</span>
-                  </div>
-                {% endfor %}
+
+            <!-- Progress Steps -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <!-- Order Placed -->
+              <div class="text-center">
+                <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-2">
+                  <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                  </svg>
+                </div>
+                <p class="text-sm font-medium text-gray-900">Order Placed</p>
+                <p class="text-xs text-gray-500">{{ order.created_at|date:"H:i" }}</p>
+              </div>
+
+              <!-- Order Accepted -->
+              <div class="text-center">
+                <div id="step-accepted" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 
+                  {% if order.status in 'In Progress,Ready,Completed' %}bg-green-500{% else %}bg-gray-300{% endif %}">
+                  {% if order.status in 'In Progress,Ready,Completed' %}
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  {% else %}
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  {% endif %}
+                </div>
+                <p class="text-sm font-medium text-gray-900">Order Accepted</p>
+                <p id="accepted-time" class="text-xs text-gray-500">
+                  {% if order.status in 'In Progress,Ready,Completed' %}Processing{% else %}Waiting{% endif %}
+                </p>
+              </div>
+
+              <!-- Order Ready -->
+              <div class="text-center">
+                <div id="step-ready" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 
+                  {% if order.status in 'Ready,Completed' %}bg-green-500{% else %}bg-gray-300{% endif %}">
+                  {% if order.status in 'Ready,Completed' %}
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  {% else %}
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  {% endif %}
+                </div>
+                <p class="text-sm font-medium text-gray-900">Ready for Pickup</p>
+                <p id="ready-time" class="text-xs text-gray-500">
+                  {% if order.status in 'Ready,Completed' %}Ready!{% else %}Preparing{% endif %}
+                </p>
+              </div>
+
+              <!-- Order Completed -->
+              <div class="text-center">
+                <div id="step-completed" class="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2 
+                  {% if order.status == 'Completed' %}bg-green-500{% else %}bg-gray-300{% endif %}">
+                  {% if order.status == 'Completed' %}
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  {% else %}
+                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                  {% endif %}
+                </div>
+                <p class="text-sm font-medium text-gray-900">Completed</p>
+                <p id="completed-time" class="text-xs text-gray-500">
+                  {% if order.status == 'Completed' %}Delivered{% else %}Waiting{% endif %}
+                </p>
               </div>
             </div>
           </div>
+        </div>
+                    <!-- Estimated Time -->
+        {% if order.college and order.college.estimated_preparation_time %}
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-blue-900">Estimated Preparation Time</p>
+                <p class="text-blue-700">{{ order.college.estimated_preparation_time }} minutes</p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Special Instructions -->
+        {% if order.special_instructions %}
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+              </div>
+              <div>
+                <p class="font-medium text-yellow-900">Special Instructions</p>
+                <p class="text-yellow-700">{{ order.special_instructions }}</p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-3">
+          <a href="{% url 'menu' %}" class="flex-1 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-medium text-center">
+            Order More Food
+          </a>
+          <a href="{% url 'order_history' %}" class="flex-1 bg-gray-200 text-gray-700 py-3 px-4 rounded-lg hover:bg-gray-300 transition-colors font-medium text-center">
+            View Order History
+          </a>
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- No Order Found -->
+    {% if request.GET.order_id and not order %}
+      <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 text-center">
+        <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-gray-900 mb-2">Order Not Found</h3>
+        <p class="text-gray-600 mb-6">We couldn't find an order with the provided information.</p>
+        <div class="space-y-3">
+          <p class="text-sm text-gray-500">Please check:</p>
+          <ul class="text-sm text-gray-500 space-y-1">
+            <li>• Order ID is correct</li>
+            <li>• Phone number matches the order</li>
+            <li>• Order was placed recently</li>
+          </ul>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% if order %}
+<script>
+  // Order tracking functionality
+  let orderId = {{ order.id }};
+  let currentStatus = '{{ order.status }}';
+  
+  // Update progress bar and steps based on status
+  function updateProgress() {
+    const progressBar = document.getElementById('progress-bar');
+    const stepAccepted = document.getElementById('step-accepted');
+    const stepReady = document.getElementById('step-ready');
+    const stepCompleted = document.getElementById('step-completed');
+    
+    if (currentStatus === 'Pending') {
+      progressBar.style.width = '25%';
+    } else if (currentStatus === 'In Progress') {
+      progressBar.style.width = '50%';
+      stepAccepted.classList.remove('bg-gray-300');
+      stepAccepted.classList.add('bg-green-500');
+      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      document.getElementById('accepted-time').textContent = 'Processing';
+    } else if (currentStatus === 'Ready') {
+      progressBar.style.width = '75%';
+      stepAccepted.classList.remove('bg-gray-300');
+      stepAccepted.classList.add('bg-green-500');
+      stepReady.classList.remove('bg-gray-300');
+      stepReady.classList.add('bg-green-500');
+      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      stepReady.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      document.getElementById('accepted-time').textContent = 'Processing';
+      document.getElementById('ready-time').textContent = 'Ready!';
+    } else if (currentStatus === 'Completed') {
+      progressBar.style.width = '100%';
+      stepAccepted.classList.remove('bg-gray-300');
+      stepAccepted.classList.add('bg-green-500');
+      stepReady.classList.remove('bg-gray-300');
+      stepReady.classList.add('bg-green-500');
+      stepCompleted.classList.remove('bg-gray-300');
+      stepCompleted.classList.add('bg-green-500');
+      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      stepReady.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      stepCompleted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+      document.getElementById('accepted-time').textContent = 'Processing';
+      document.getElementById('ready-time').textContent = 'Ready!';
+      document.getElementById('completed-time').textContent = 'Delivered';
+    }
+  }
+  
+  // Check order status periodically
+  async function checkOrderStatus() {
+    try {
+      const response = await fetch(`/check-order-status/${orderId}/`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.order.status !== currentStatus) {
+          currentStatus = data.order.status;
+          updateProgress();
           
-          <!-- Status Timeline -->
-          <div style="margin-bottom: 1.5rem;">
-            <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827; margin-bottom: 1rem;">Order Status</h3>
-            <div style="position: relative;">
-              <div style="position: absolute; left: 1rem; top: 0; bottom: 0; width: 2px; background-color: #e5e7eb;"></div>
+          // Show notification for status change
+          if (typeof window.showNotification === 'function') {
+            window.showNotification(`Order status updated to: ${currentStatus}`, 'success');
+          }
+          
+          // Update status badge
+          const statusBadge = document.querySelector('.inline-flex.items-center.px-3.py-1.rounded-full.text-sm.font-medium');
+          if (statusBadge) {
+            statusBadge.textContent = currentStatus;
+            statusBadge.className = statusBadge.className.replace(/bg-\w+-100 text-\w+-800/g, '');
+            if (currentStatus === 'Pending') {
+              statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
+            } else if (currentStatus === 'In Progress') {
+              statusBadge.classList.add('bg-blue-100', 'text-blue-800');
+            } else if (currentStatus === 'Ready') {
+              statusBadge.classList.add('bg-green-100', 'text-green-800');
+            } else if (currentStatus === 'Completed') {
+              statusBadge.classList.add('bg-gray-100', 'text-gray-800');
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.log('Error checking order status:', error);
+    }
+  }
+  
+  // Initialize
+  document.addEventListener('DOMContentLoaded', function() {
+    updateProgress();
+    
+    // Check status every 10 seconds
+    setInterval(checkOrderStatus, 10000);
+    
+    // Also check immediately
+    checkOrderStatus();
+  });
+</script>
+{% endif %}
+
+{% endblock %}
               
               <div style="display: flex; flex-direction: column; gap: 1rem;">
                 <div style="position: relative; display: flex; align-items: center;">
@@ -173,101 +415,5 @@
         }, 30000);
       </script>
       
-    {% elif orders %}
-      <!-- Multiple Orders View -->
-      <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <h2 style="font-size: 1.5rem; font-weight: 700; color: #111827;">Your Orders</h2>
-        
-        {% for order in orders %}
-          <div class="card" style="overflow: hidden; transition: all 0.3s ease;">
-            <div style="padding: 1rem; border-bottom: 1px solid #e5e7eb;">
-              <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                <div>
-                  <h3 style="font-size: 1.125rem; font-weight: 600; color: #111827;">Order #{{ order.id }}</h3>
-                  <p style="font-size: 0.875rem; color: #6b7280;">{{ order.created_at|date:"F d, Y H:i" }}</p>
-                </div>
-                <span class="status-badge {{ order.get_status_color }}">
-                  {{ order.status }}
-                </span>
-              </div>
-            </div>
-            
-            <div style="padding: 1rem;">
-              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
-                <div>
-                  <p style="font-size: 0.875rem; color: #6b7280;">Total Amount</p>
-                  <p style="font-size: 1.125rem; font-weight: 700; color: #059669;">₹{{ order.total_price|floatformat:2 }}</p>
-                </div>
-                <div>
-                  <p style="font-size: 0.875rem; color: #6b7280;">Items</p>
-                  <p style="font-size: 1.125rem; font-weight: 500;">{{ order.order_items.count }} item{{ order.order_items.count|pluralize }}</p>
-                </div>
-              </div>
-              
-              <a href="?phone={{ request.GET.phone }}&order_id={{ order.id }}" class="btn btn-primary" style="width: 100%;">
-                View Details
-              </a>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-      
-    {% elif request.GET.phone or request.GET.order_id %}
-      <!-- No Orders Found -->
-      <div class="card" style="text-align: center; padding: 3rem 1rem;">
-        <div style="width: 4rem; height: 4rem; background-color: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem;">
-          <svg style="width: 2rem; height: 2rem; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-          </svg>
-        </div>
-        <h3 style="font-size: 1.25rem; font-weight: 600; color: #111827; margin-bottom: 0.5rem;">No Orders Found</h3>
-        <p style="color: #6b7280; margin-bottom: 1.5rem;">We couldn't find any orders matching your search criteria.</p>
-        <a href="{% url 'menu' %}" class="btn btn-primary">
-          Order Now
-        </a>
-      </div>
-    {% endif %}
-  </div>
-</div>
 
-<style>
-  @media (max-width: 768px) {
-    .container {
-      padding: 0 0.75rem;
-    }
-    
-    .card {
-      margin: 0.5rem;
-      padding: 1rem;
-    }
-    
-    .btn {
-      padding: 0.875rem 1.25rem;
-      font-size: 1rem;
-    }
-  }
-  
-  @media (max-width: 480px) {
-    .container {
-      padding: 0 0.5rem;
-    }
-    
-    .card {
-      margin: 0.25rem;
-      padding: 0.75rem;
-    }
-    
-    h1 {
-      font-size: 1.25rem;
-    }
-    
-    h2 {
-      font-size: 1.125rem;
-    }
-    
-    h3 {
-      font-size: 1rem;
-    }
-  }
-</style>
 {% endblock %}
