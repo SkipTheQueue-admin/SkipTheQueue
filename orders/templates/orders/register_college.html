@@ -186,33 +186,5 @@
   </div>
 </div>
 
-<script>
-// Auto-generate slug from college name
-document.getElementById('name').addEventListener('input', function() {
-  const name = this.value;
-  const slug = name.toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '');
-  document.getElementById('slug').value = slug;
-});
-
-// Form validation
-document.querySelector('form').addEventListener('submit', function(e) {
-  const name = document.getElementById('name').value.trim();
-  const slug = document.getElementById('slug').value.trim();
-  const email = document.getElementById('admin_email').value.trim();
-  
-  if (!name || !slug || !email) {
-    e.preventDefault();
-    alert('Please fill all required fields marked with *');
-    return false;
-  }
-  
-  if (!email.includes('@')) {
-    e.preventDefault();
-    alert('Please enter a valid email address');
-    return false;
-  }
-});
-</script>
+<!-- Form validation and slug generation handled by performance-optimized.js -->
 {% endblock %} 

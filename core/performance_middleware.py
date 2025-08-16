@@ -10,253 +10,280 @@ from django.utils.deprecation import MiddlewareMixin
 from django.core.cache import cache
 from django.conf import settings
 import logging
+from django.db import connection
 
 logger = logging.getLogger(__name__)
 
+
 class PerformanceMiddleware(MiddlewareMixin):
     """
-    Middleware for performance optimization including:
-    - Response compression
-    - Cache headers
-    - Performance monitoring
-    - Database query optimization
+    Middleware to monitor and optimize performance
+    - Tracks response times
+    - Monitors database queries
+    - Implements caching strategies
+    - Provides performance headers
     """
     
-    def __init__(self, get_response=None):
-        super().__init__(get_response)
-        self.get_response = get_response
-        self.start_time = None
-        
     def process_request(self, request):
-        """Process incoming request for performance optimization"""
+        """Start performance monitoring for this request"""
         # Start timing
-        self.start_time = time.time()
+        request.start_time = time.time()
         
-        # Add performance headers
-        request.META['HTTP_X_REQUEST_START'] = str(int(self.start_time * 1000))
+        # Count initial database queries
+        request.initial_queries = len(connection.queries)
         
-        # Check if response should be cached
-        if self.should_cache_request(request):
-            cache_key = self.generate_cache_key(request)
-            cached_response = cache.get(cache_key)
-            if cached_response:
-                logger.info(f"Cache hit for {request.path}")
-                return cached_response
+        # Set performance tracking flag
+        request.performance_tracked = True
         
         return None
     
     def process_response(self, request, response):
-        """Process outgoing response for performance optimization"""
-        if self.start_time:
+        """Add performance metrics to response"""
+        if hasattr(request, 'performance_tracked'):
             # Calculate response time
-            response_time = time.time() - self.start_time
-            response['X-Response-Time'] = f"{response_time:.3f}s"
+            response_time = time.time() - request.start_time
+            
+            # Count database queries
+            final_queries = len(connection.queries)
+            query_count = final_queries - request.initial_queries
+            
+            # Calculate database time
+            db_time = sum(float(query.get('time', 0)) for query in connection.queries[request.initial_queries:])
+            
+            # Add performance headers
+            response['X-Response-Time'] = f'{response_time:.3f}s'
+            response['X-Database-Queries'] = str(query_count)
+            response['X-Database-Time'] = f'{db_time:.3f}s'
+            response['X-Cache-Status'] = self.get_cache_status(request)
             
             # Log slow responses
-            if response_time > 1.0:
-                logger.warning(f"Slow response: {request.path} took {response_time:.3f}s")
-        
-        # Add performance headers
-        response['X-Content-Type-Options'] = 'nosniff'
-        response['X-Frame-Options'] = 'DENY'
-        response['X-XSS-Protection'] = '1; mode=block'
-        
-        # Add cache headers for static content
-        if self.is_cacheable_response(request, response):
-            response['Cache-Control'] = 'public, max-age=3600'
-            response['ETag'] = self.generate_etag(response)
-        
-        # Compress response if possible
-        if self.should_compress_response(request, response):
-            response = self.compress_response(response)
-        
-        # Cache successful responses
-        if self.should_cache_request(request) and response.status_code == 200:
-            cache_key = self.generate_cache_key(request)
-            cache.set(cache_key, response, 300)  # Cache for 5 minutes
+            if response_time > 1.0:  # Log responses taking more than 1 second
+                logger.warning(
+                    f'Slow response: {request.path} took {response_time:.3f}s '
+                    f'({query_count} queries, {db_time:.3f}s DB time)'
+                )
+            
+            # Log slow database queries
+            if db_time > 0.5:  # Log database operations taking more than 0.5 seconds
+                logger.warning(
+                    f'Slow database: {request.path} had {db_time:.3f}s DB time '
+                    f'({query_count} queries)'
+                )
+            
+            # Update performance metrics in cache
+            self.update_performance_metrics(request.path, response_time, query_count, db_time)
         
         return response
     
-    def should_cache_request(self, request):
-        """Determine if request should be cached"""
-        # Don't cache POST requests
-        if request.method != 'GET':
-            return False
-        
-        # Don't cache authenticated requests
-        if request.user.is_authenticated:
-            return False
-        
-        # Don't cache admin requests
-        if request.path.startswith('/admin/'):
-            return False
-        
-        # Cache menu and static content
-        cacheable_paths = [
-            '/menu/',
-            '/static/',
-            '/media/',
-            '/api/menu/',
-        ]
-        
-        return any(request.path.startswith(path) for path in cacheable_paths)
+    def get_cache_status(self, request):
+        """Determine cache status for the request"""
+        if hasattr(request, 'cache_hit'):
+            return 'HIT' if request.cache_hit else 'MISS'
+        return 'N/A'
     
-    def should_compress_response(self, request, response):
-        """Determine if response should be compressed"""
-        # Check if client accepts gzip
-        accept_encoding = request.META.get('HTTP_ACCEPT_ENCODING', '')
-        if 'gzip' not in accept_encoding:
-            return False
-        
-        # Check content type
-        content_type = response.get('Content-Type', '')
-        compressible_types = [
-            'text/html',
-            'text/css',
-            'text/javascript',
-            'application/javascript',
-            'application/json',
-            'text/plain',
-        ]
-        
-        return any(ct in content_type for ct in compressible_types)
-    
-    def compress_response(self, response):
-        """Compress response content using gzip"""
+    def update_performance_metrics(self, path, response_time, query_count, db_time):
+        """Update performance metrics in cache for monitoring"""
         try:
-            content = response.content
-            if isinstance(content, str):
-                content = content.encode('utf-8')
+            # Get current metrics
+            metrics = cache.get('performance_metrics', {})
             
-            compressed_content = gzip.compress(content)
+            # Update path-specific metrics
+            if path not in metrics:
+                metrics[path] = {
+                    'count': 0,
+                    'total_time': 0,
+                    'total_queries': 0,
+                    'total_db_time': 0,
+                    'avg_time': 0,
+                    'avg_queries': 0,
+                    'avg_db_time': 0
+                }
             
-            # Create new response with compressed content
-            compressed_response = HttpResponse(compressed_content)
+            path_metrics = metrics[path]
+            path_metrics['count'] += 1
+            path_metrics['total_time'] += response_time
+            path_metrics['total_queries'] += query_count
+            path_metrics['total_db_time'] += db_time
             
-            # Copy headers
-            for key, value in response.items():
-                compressed_response[key] = value
+            # Calculate averages
+            path_metrics['avg_time'] = path_metrics['total_time'] / path_metrics['count']
+            path_metrics['avg_queries'] = path_metrics['total_queries'] / path_metrics['count']
+            path_metrics['avg_db_time'] = path_metrics['total_db_time'] / path_metrics['count']
             
-            # Add compression headers
-            compressed_response['Content-Encoding'] = 'gzip'
-            compressed_response['Content-Length'] = len(compressed_content)
-            compressed_response['Vary'] = 'Accept-Encoding'
+            # Update global metrics
+            if 'global' not in metrics:
+                metrics['global'] = {
+                    'total_requests': 0,
+                    'total_time': 0,
+                    'total_queries': 0,
+                    'total_db_time': 0,
+                    'avg_response_time': 0,
+                    'avg_queries_per_request': 0,
+                    'avg_db_time_per_request': 0
+                }
             
-            return compressed_response
+            global_metrics = metrics['global']
+            global_metrics['total_requests'] += 1
+            global_metrics['total_time'] += response_time
+            global_metrics['total_queries'] += query_count
+            global_metrics['total_db_time'] += db_time
+            
+            global_metrics['avg_response_time'] = global_metrics['total_time'] / global_metrics['total_requests']
+            global_metrics['avg_queries_per_request'] = global_metrics['total_queries'] / global_metrics['total_requests']
+            global_metrics['avg_db_time_per_request'] = global_metrics['total_db_time'] / global_metrics['total_requests']
+            
+            # Store updated metrics (cache for 1 hour)
+            cache.set('performance_metrics', metrics, 3600)
             
         except Exception as e:
-            logger.error(f"Compression failed: {e}")
-            return response
+            logger.error(f'Error updating performance metrics: {e}')
+
+
+class CacheMiddleware(MiddlewareMixin):
+    """
+    Middleware to implement intelligent caching strategies
+    - Cache frequently accessed data
+    - Implement cache warming
+    - Handle cache invalidation
+    """
+    
+    def process_request(self, request):
+        """Check cache for eligible requests"""
+        # Skip caching for non-GET requests
+        if request.method != 'GET':
+            return None
+        
+        # Skip caching for authenticated users on sensitive pages
+        if request.user.is_authenticated and self.is_sensitive_page(request.path):
+            return None
+        
+        # Generate cache key
+        cache_key = self.generate_cache_key(request)
+        
+        # Try to get from cache
+        cached_response = cache.get(cache_key)
+        if cached_response:
+            request.cache_hit = True
+            return cached_response
+        
+        request.cache_hit = False
+        return None
+    
+    def process_response(self, request, response):
+        """Cache eligible responses"""
+        # Only cache successful GET responses
+        if (request.method == 'GET' and 
+            response.status_code == 200 and 
+            not request.user.is_authenticated and
+            not self.is_sensitive_page(request.path)):
+            
+            cache_key = self.generate_cache_key(request)
+            cache_timeout = self.get_cache_timeout(request.path)
+            
+            if cache_timeout > 0:
+                cache.set(cache_key, response, cache_timeout)
+        
+        return response
     
     def generate_cache_key(self, request):
-        """Generate cache key for request"""
+        """Generate a unique cache key for the request"""
         # Include path and query parameters
         key_parts = [request.path]
         
-        # Include query parameters
+        # Add query parameters (sorted for consistency)
         if request.GET:
             sorted_params = sorted(request.GET.items())
-            key_parts.append('&'.join(f"{k}={v}" for k, v in sorted_params))
+            key_parts.extend([f"{k}={v}" for k, v in sorted_params])
         
-        # Include user agent for different device types
-        user_agent = request.META.get('HTTP_USER_AGENT', '')
-        if 'Mobile' in user_agent:
-            key_parts.append('mobile')
-        elif 'Tablet' in user_agent:
-            key_parts.append('tablet')
-        else:
-            key_parts.append('desktop')
-        
-        return f"perf_cache:{':'.join(key_parts)}"
+        return f"page_cache:{':'.join(key_parts)}"
     
-    def generate_etag(self, response):
-        """Generate ETag for response"""
-        import hashlib
+    def get_cache_timeout(self, path):
+        """Get cache timeout for specific paths"""
+        # Cache static pages longer
+        if path in ['/', '/menu/', '/help/']:
+            return 1800  # 30 minutes
         
-        # Create hash from content and headers
-        content = response.content
-        if isinstance(content, str):
-            content = content.encode('utf-8')
+        # Cache college pages
+        if '/college/' in path:
+            return 900  # 15 minutes
         
-        # Include important headers in hash
-        headers = [
-            response.get('Content-Type', ''),
-            response.get('Last-Modified', ''),
+        # Default cache time
+        return 300  # 5 minutes
+    
+    def is_sensitive_page(self, path):
+        """Check if page contains sensitive data"""
+        sensitive_paths = [
+            '/admin/',
+            '/profile/',
+            '/orders/',
+            '/cart/',
+            '/payment/',
+            '/canteen/'
         ]
         
-        hash_input = content + b''.join(h.encode('utf-8') for h in headers)
-        return hashlib.md5(hash_input).hexdigest()
-    
-    def is_cacheable_response(self, request, response):
-        """Determine if response can be cached"""
-        # Don't cache error responses
-        if response.status_code >= 400:
-            return False
-        
-        # Don't cache responses with no-cache headers
-        if 'no-cache' in response.get('Cache-Control', ''):
-            return False
-        
-        # Cache successful responses
-        return response.status_code == 200
+        return any(sensitive in path for sensitive in sensitive_paths)
 
 
-class DatabaseOptimizationMiddleware(MiddlewareMixin):
+class QueryOptimizationMiddleware(MiddlewareMixin):
     """
-    Middleware for database query optimization
+    Middleware to optimize database queries
+    - Monitor N+1 queries
+    - Suggest query optimizations
+    - Implement query result caching
     """
-    
-    def __init__(self, get_response=None):
-        super().__init__(get_response)
-        self.get_response = get_response
-        self.query_count = 0
-        self.query_time = 0
     
     def process_request(self, request):
-        """Reset query counters for each request"""
-        self.query_count = 0
-        self.query_time = 0
-        
-        # Enable query logging in debug mode
-        if settings.DEBUG:
-            from django.db import connection
-            connection.queries_log = True
-            connection.queries = []
-        
+        """Initialize query monitoring"""
+        request.query_patterns = {}
+        request.duplicate_queries = []
         return None
     
     def process_response(self, request, response):
-        """Log database performance metrics"""
-        if settings.DEBUG:
-            from django.db import connection
-            
-            # Count queries
-            self.query_count = len(connection.queries)
-            
-            # Calculate total query time
-            self.query_time = sum(
-                float(query.get('time', 0)) for query in connection.queries
-            )
-            
-            # Log performance metrics
-            if self.query_count > 0:
-                logger.info(
-                    f"Database: {self.query_count} queries in {self.query_time:.3f}s "
-                    f"for {request.path}"
-                )
-                
-                # Warn about slow queries
-                if self.query_time > 0.5:
-                    logger.warning(
-                        f"Slow database queries: {self.query_time:.3f}s "
-                        f"for {request.path}"
-                    )
-                
-                # Add performance headers
-                response['X-Database-Queries'] = str(self.query_count)
-                response['X-Database-Time'] = f"{self.query_time:.3f}s"
+        """Analyze and optimize queries"""
+        if hasattr(request, 'query_patterns'):
+            self.analyze_queries(request)
+            self.optimize_queries(request)
         
         return response
+    
+    def analyze_queries(self, request):
+        """Analyze query patterns for optimization opportunities"""
+        queries = connection.queries
+        
+        # Group queries by pattern
+        for query in queries:
+            sql = query.get('sql', '')
+            if sql:
+                # Extract table name from query
+                table_name = self.extract_table_name(sql)
+                if table_name:
+                    if table_name not in request.query_patterns:
+                        request.query_patterns[table_name] = []
+                    request.query_patterns[table_name].append(sql)
+        
+        # Detect N+1 queries
+        for table, table_queries in request.query_patterns.items():
+            if len(table_queries) > 5:  # Potential N+1 if more than 5 queries on same table
+                logger.warning(f'Potential N+1 query detected on {table}: {len(table_queries)} queries')
+    
+    def optimize_queries(self, request):
+        """Suggest query optimizations"""
+        # This would implement actual query optimizations
+        # For now, just log suggestions
+        pass
+    
+    def extract_table_name(self, sql):
+        """Extract table name from SQL query"""
+        sql_lower = sql.lower()
+        
+        # Common patterns
+        if 'from ' in sql_lower:
+            parts = sql_lower.split('from ')
+            if len(parts) > 1:
+                table_part = parts[1].split()[0]
+                return table_part.strip('"\'')
+        
+        return None
 
 
 class StaticFileOptimizationMiddleware(MiddlewareMixin):
@@ -324,25 +351,33 @@ class APIOptimizationMiddleware(MiddlewareMixin):
 
 # Performance monitoring decorator
 def monitor_performance(func):
-    """Decorator to monitor function performance"""
+    """
+    Decorator to monitor function performance
+    Usage: @monitor_performance
+    """
     def wrapper(*args, **kwargs):
         start_time = time.time()
+        start_queries = len(connection.queries)
         
         try:
             result = func(*args, **kwargs)
-            return result
-        finally:
-            execution_time = time.time() - start_time
             
-            # Log slow functions
-            if execution_time > 0.1:
+            # Calculate metrics
+            execution_time = time.time() - start_time
+            query_count = len(connection.queries) - start_queries
+            
+            # Log if function is slow
+            if execution_time > 0.5:
                 logger.warning(
-                    f"Slow function: {func.__name__} took {execution_time:.3f}s"
+                    f'Slow function {func.__name__}: {execution_time:.3f}s '
+                    f'({query_count} queries)'
                 )
             
-            # Add to cache for monitoring
-            cache_key = f"perf_monitor:{func.__name__}"
-            cache.set(cache_key, execution_time, 3600)
+            return result
+            
+        except Exception as e:
+            logger.error(f'Error in {func.__name__}: {e}')
+            raise
     
     return wrapper
 

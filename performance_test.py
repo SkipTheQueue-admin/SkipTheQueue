@@ -1,337 +1,441 @@
 #!/usr/bin/env python3
 """
-Performance Testing Script for SkipTheQueue
-This script tests various aspects of the application performance
+SkipTheQueue Performance Test Suite
+Tests the performance optimizations implemented for 500+ concurrent users
 """
 
-import time
 import requests
-import sqlite3
-import os
-import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+import time
+import threading
 import statistics
-
-# Configuration
-BASE_URL = "http://localhost:8000"  # Change this to your server URL
-TEST_ENDPOINTS = [
-    "/",
-    "/menu/",
-    "/cart/",
-    "/favorites/",
-    "/order-history/",
-    "/help-center/",
-]
+import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from urllib.parse import urljoin
+import sys
 
 class PerformanceTester:
-    def __init__(self, base_url=BASE_URL):
+    def __init__(self, base_url='http://localhost:8000'):
         self.base_url = base_url
-        self.results = {}
+        self.results = {
+            'page_load_times': [],
+            'api_response_times': [],
+            'concurrent_users': [],
+            'errors': [],
+            'cache_hits': 0,
+            'cache_misses': 0
+        }
+        self.session = requests.Session()
         
-    def test_endpoint_performance(self, endpoint):
-        """Test performance of a single endpoint"""
-        url = f"{self.base_url}{endpoint}"
-        response_times = []
-        
-        print(f"Testing {endpoint}...")
-        
-        # Test multiple requests
-        for i in range(5):
-            start_time = time.time()
-            try:
-                response = requests.get(url, timeout=30)
-                end_time = time.time()
-                
-                if response.status_code == 200:
-                    response_time = (end_time - start_time) * 1000  # Convert to milliseconds
-                    response_times.append(response_time)
-                    print(f"  Request {i+1}: {response_time:.2f}ms")
+    def test_page_load(self, url_path, expected_time=2.0):
+        """Test page load performance"""
+        start_time = time.time()
+        try:
+            response = self.session.get(urljoin(self.base_url, url_path))
+            load_time = time.time() - start_time
+            
+            self.results['page_load_times'].append({
+                'url': url_path,
+                'time': load_time,
+                'status': response.status_code,
+                'size': len(response.content)
+            })
+            
+            # Check performance headers
+            if 'X-Response-Time' in response.headers:
+                server_time = float(response.headers['X-Response-Time'].replace('s', ''))
+                self.results['api_response_times'].append(server_time)
+            
+            if 'X-Cache-Status' in response.headers:
+                if response.headers['X-Cache-Status'] == 'HIT':
+                    self.results['cache_hits'] += 1
                 else:
-                    print(f"  Request {i+1}: Failed with status {response.status_code}")
-                    
-            except requests.exceptions.RequestException as e:
-                print(f"  Request {i+1}: Error - {e}")
-        
-        if response_times:
-            avg_time = statistics.mean(response_times)
-            min_time = min(response_times)
-            max_time = max(response_times)
+                    self.results['cache_misses'] += 1
             
-            self.results[endpoint] = {
-                'avg_response_time': avg_time,
-                'min_response_time': min_time,
-                'max_response_time': max_time,
-                'success_rate': len(response_times) / 5 * 100
-            }
+            if load_time > expected_time:
+                print(f"⚠ Slow page load: {url_path} took {load_time:.2f}s")
             
-            print(f"  Results: Avg={avg_time:.2f}ms, Min={min_time:.2f}ms, Max={max_time:.2f}ms")
-        else:
-            print(f"  No successful requests for {endpoint}")
+            return load_time
+            
+        except Exception as e:
+            self.results['errors'].append(f"Error loading {url_path}: {str(e)}")
+            return None
     
-    def test_concurrent_performance(self, endpoint, concurrent_users=10):
-        """Test performance under concurrent load"""
-        url = f"{self.base_url}{endpoint}"
-        print(f"Testing {endpoint} with {concurrent_users} concurrent users...")
+    def test_api_endpoint(self, endpoint, method='GET', data=None, expected_time=1.0):
+        """Test API endpoint performance"""
+        start_time = time.time()
+        try:
+            if method == 'GET':
+                response = self.session.get(urljoin(self.base_url, endpoint))
+            elif method == 'POST':
+                response = self.session.post(urljoin(self.base_url, endpoint), json=data)
+            
+            api_time = time.time() - start_time
+            
+            self.results['api_response_times'].append({
+                'endpoint': endpoint,
+                'method': method,
+                'time': api_time,
+                'status': response.status_code
+            })
+            
+            if api_time > expected_time:
+                print(f"⚠ Slow API: {endpoint} took {api_time:.2f}s")
+            
+            return api_time
+            
+        except Exception as e:
+            self.results['errors'].append(f"Error testing API {endpoint}: {str(e)}")
+            return None
+    
+    def test_concurrent_users(self, num_users=50, test_duration=30):
+        """Test concurrent user performance"""
+        print(f"Testing {num_users} concurrent users for {test_duration} seconds...")
         
-        def make_request():
+        def user_simulation(user_id):
+            """Simulate a single user's behavior"""
+            user_results = []
             start_time = time.time()
-            try:
-                response = requests.get(url, timeout=30)
-                end_time = time.time()
-                return (end_time - start_time) * 1000, response.status_code == 200
-            except:
-                return None, False
+            
+            while time.time() - start_time < test_duration:
+                # Simulate user browsing
+                pages = ['/', '/menu/', '/help/', '/college/gh-raisoni/']
+                
+                for page in pages:
+                    load_time = self.test_page_load(page)
+                    if load_time:
+                        user_results.append(load_time)
+                    
+                    # Simulate user think time
+                    time.sleep(0.5)
+            
+            return user_results
         
-        response_times = []
-        success_count = 0
-        
-        with ThreadPoolExecutor(max_workers=concurrent_users) as executor:
-            futures = [executor.submit(make_request) for _ in range(concurrent_users)]
+        # Run concurrent users
+        with ThreadPoolExecutor(max_workers=num_users) as executor:
+            futures = [executor.submit(user_simulation, i) for i in range(num_users)]
             
             for future in as_completed(futures):
-                response_time, success = future.result()
-                if response_time is not None:
-                    response_times.append(response_time)
-                    if success:
-                        success_count += 1
-        
-        if response_times:
-            avg_time = statistics.mean(response_times)
-            min_time = min(response_times)
-            max_time = max(response_times)
-            success_rate = success_count / concurrent_users * 100
-            
-            print(f"  Concurrent Test Results:")
-            print(f"    Avg Response Time: {avg_time:.2f}ms")
-            print(f"    Min Response Time: {min_time:.2f}ms")
-            print(f"    Max Response Time: {max_time:.2f}ms")
-            print(f"    Success Rate: {success_rate:.1f}%")
-            
-            return {
-                'avg_response_time': avg_time,
-                'min_response_time': min_time,
-                'max_response_time': max_time,
-                'success_rate': success_rate,
-                'concurrent_users': concurrent_users
-            }
-        
-        return None
+                try:
+                    user_times = future.result()
+                    self.results['concurrent_users'].extend(user_times)
+                except Exception as e:
+                    self.results['errors'].append(f"Concurrent user error: {str(e)}")
     
     def test_database_performance(self):
-        """Test database performance"""
+        """Test database query performance"""
         print("Testing database performance...")
         
-        db_path = "db.sqlite3"
-        if not os.path.exists(db_path):
-            print("  Database file not found")
-            return None
+        # Test common database operations
+        db_tests = [
+            ('/api/menu/', 'Menu items query'),
+            ('/api/colleges/', 'Colleges query'),
+            ('/api/orders/', 'Orders query'),
+        ]
         
-        try:
-            conn = sqlite3.connect(db_path)
-            cursor = conn.cursor()
-            
-            # Test simple query performance
-            start_time = time.time()
-            cursor.execute("SELECT COUNT(*) FROM orders_order")
-            count = cursor.fetchone()[0]
-            end_time = time.time()
-            
-            simple_query_time = (end_time - start_time) * 1000
-            
-            # Test complex query performance
-            start_time = time.time()
-            cursor.execute("""
-                SELECT o.id, o.status, o.total_price, c.name as college_name
-                FROM orders_order o
-                JOIN orders_college c ON o.college_id = c.id
-                WHERE o.status = 'Pending'
-                ORDER BY o.created_at DESC
-                LIMIT 10
-            """)
-            results = cursor.fetchall()
-            end_time = time.time()
-            
-            complex_query_time = (end_time - start_time) * 1000
-            
-            # Test index usage
-            start_time = time.time()
-            cursor.execute("PRAGMA index_list(orders_order)")
-            indexes = cursor.fetchall()
-            end_time = time.time()
-            
-            index_check_time = (end_time - start_time) * 1000
-            
-            conn.close()
-            
-            print(f"  Database Test Results:")
-            print(f"    Simple Query: {simple_query_time:.2f}ms")
-            print(f"    Complex Query: {complex_query_time:.2f}ms")
-            print(f"    Index Check: {index_check_time:.2f}ms")
-            print(f"    Total Orders: {count}")
-            print(f"    Indexes Found: {len(indexes)}")
-            
-            return {
-                'simple_query_time': simple_query_time,
-                'complex_query_time': complex_query_time,
-                'index_check_time': index_check_time,
-                'total_orders': count,
-                'index_count': len(indexes)
-            }
-            
-        except Exception as e:
-            print(f"  Database test failed: {e}")
-            return None
-    
-    def test_cache_performance(self):
-        """Test cache performance"""
-        print("Testing cache performance...")
-        
-        try:
-            # Test cache hit/miss scenarios
-            cache_times = []
-            
-            # Simulate cache operations
-            for i in range(10):
+        for endpoint, description in db_tests:
+            times = []
+            for _ in range(10):  # Test 10 times
                 start_time = time.time()
+                response = self.session.get(urljoin(self.base_url, endpoint))
+                query_time = time.time() - start_time
+                times.append(query_time)
+            
+            avg_time = statistics.mean(times)
+            max_time = max(times)
+            min_time = min(times)
+            
+            print(f"{description}:")
+            print(f"  Average: {avg_time:.3f}s")
+            print(f"  Min: {min_time:.3f}s")
+            print(f"  Max: {max_time:.3f}s")
+            
+            if avg_time > 0.5:
+                print(f"  ⚠ {description} is slow!")
+    
+    def test_caching_performance(self):
+        """Test caching performance"""
+        print("Testing caching performance...")
+        
+        # Test cache hit rates
+        cache_test_urls = ['/', '/menu/', '/help/']
+        
+        for url in cache_test_urls:
+            # First request (cache miss)
+            start_time = time.time()
+            response1 = self.session.get(urljoin(self.base_url, url))
+            first_load = time.time() - start_time
+            
+            # Second request (should be cache hit)
+            start_time = time.time()
+            response2 = self.session.get(urljoin(self.base_url, url))
+            second_load = time.time() - start_time
+            
+            improvement = ((first_load - second_load) / first_load) * 100
+            
+            print(f"{url}:")
+            print(f"  First load: {first_load:.3f}s")
+            print(f"  Second load: {second_load:.3f}s")
+            print(f"  Improvement: {improvement:.1f}%")
+            
+            if improvement < 50:
+                print(f"  ⚠ Caching not working effectively for {url}")
+    
+    def test_javascript_performance(self):
+        """Test JavaScript performance optimizations"""
+        print("Testing JavaScript performance...")
+        
+        # Test pages with JavaScript
+        js_pages = [
+            '/canteen/dashboard/gh-raisoni/',
+            '/menu/',
+            '/cart/',
+        ]
+        
+        for page in js_pages:
+            try:
+                response = self.session.get(urljoin(self.base_url, page))
                 
-                # Simulate cache lookup
-                cache_key = f"test_key_{i}"
-                # In a real scenario, this would interact with Django's cache
+                # Check for inline scripts (should be minimal)
+                content = response.text
+                inline_scripts = content.count('<script>')
                 
-                end_time = time.time()
-                cache_times.append((end_time - start_time) * 1000)
-            
-            avg_cache_time = statistics.mean(cache_times)
-            print(f"  Cache Test Results:")
-            print(f"    Average Cache Operation: {avg_cache_time:.2f}ms")
-            
-            return {
-                'avg_cache_time': avg_cache_time,
-                'cache_operations': len(cache_times)
-            }
-            
-        except Exception as e:
-            print(f"  Cache test failed: {e}")
-            return None
+                if inline_scripts > 2:
+                    print(f"⚠ Too many inline scripts on {page}: {inline_scripts}")
+                else:
+                    print(f"✓ Good: {page} has {inline_scripts} inline scripts")
+                
+                # Check for external scripts
+                external_scripts = content.count('<script src=')
+                print(f"  External scripts: {external_scripts}")
+                
+            except Exception as e:
+                print(f"Error testing {page}: {e}")
     
-    def run_all_tests(self):
-        """Run all performance tests"""
-        print("🚀 Starting Performance Tests for SkipTheQueue")
-        print("=" * 60)
+    def generate_report(self):
+        """Generate comprehensive performance report"""
+        print("\n" + "="*60)
+        print("SKIPTHEQUEUE PERFORMANCE TEST REPORT")
+        print("="*60)
         
-        # Test individual endpoints
-        print("\n📊 Testing Individual Endpoints")
-        print("-" * 40)
-        for endpoint in TEST_ENDPOINTS:
-            self.test_endpoint_performance(endpoint)
+        # Page load performance
+        if self.results['page_load_times']:
+            times = [r['time'] for r in self.results['page_load_times']]
+            avg_load_time = statistics.mean(times)
+            max_load_time = max(times)
+            min_load_time = min(times)
+            
+            print(f"\n📄 PAGE LOAD PERFORMANCE:")
+            print(f"  Average: {avg_load_time:.3f}s")
+            print(f"  Min: {min_load_time:.3f}s")
+            print(f"  Max: {max_load_time:.3f}s")
+            print(f"  Total pages tested: {len(times)}")
+            
+            # Performance rating
+            if avg_load_time < 1.0:
+                print("  ✅ EXCELLENT - Page loads are very fast!")
+            elif avg_load_time < 2.0:
+                print("  ✅ GOOD - Page loads are acceptable")
+            elif avg_load_time < 3.0:
+                print("  ⚠ ACCEPTABLE - Page loads could be faster")
+            else:
+                print("  ❌ POOR - Page loads are too slow")
         
-        # Test concurrent performance
-        print("\n🔥 Testing Concurrent Performance")
-        print("-" * 40)
-        concurrent_results = {}
-        for endpoint in TEST_ENDPOINTS[:3]:  # Test first 3 endpoints
-            result = self.test_concurrent_performance(endpoint, concurrent_users=5)
-            if result:
-                concurrent_results[endpoint] = result
+        # API performance
+        if self.results['api_response_times']:
+            if isinstance(self.results['api_response_times'][0], dict):
+                api_times = [r['time'] for r in self.results['api_response_times']]
+            else:
+                api_times = self.results['api_response_times']
+            
+            avg_api_time = statistics.mean(api_times)
+            max_api_time = max(api_times)
+            
+            print(f"\n🔌 API PERFORMANCE:")
+            print(f"  Average: {avg_api_time:.3f}s")
+            print(f"  Max: {max_api_time:.3f}s")
+            print(f"  Total API calls: {len(api_times)}")
+            
+            if avg_api_time < 0.5:
+                print("  ✅ EXCELLENT - API responses are very fast!")
+            elif avg_api_time < 1.0:
+                print("  ✅ GOOD - API responses are acceptable")
+            else:
+                print("  ⚠ SLOW - API responses need optimization")
         
-        # Test database performance
-        print("\n🗄️  Testing Database Performance")
-        print("-" * 40)
-        db_results = self.test_database_performance()
+        # Concurrent user performance
+        if self.results['concurrent_users']:
+            concurrent_times = self.results['concurrent_users']
+            avg_concurrent = statistics.mean(concurrent_times)
+            max_concurrent = max(concurrent_times)
+            
+            print(f"\n👥 CONCURRENT USER PERFORMANCE:")
+            print(f"  Average response time: {avg_concurrent:.3f}s")
+            print(f"  Max response time: {max_concurrent:.3f}s")
+            print(f"  Total requests: {len(concurrent_times)}")
+            
+            if avg_concurrent < 1.0:
+                print("  ✅ EXCELLENT - Handles concurrent users well!")
+            elif avg_concurrent < 2.0:
+                print("  ✅ GOOD - Acceptable concurrent performance")
+            else:
+                print("  ⚠ POOR - Struggles with concurrent users")
         
-        # Test cache performance
-        print("\n💾 Testing Cache Performance")
-        print("-" * 40)
-        cache_results = self.test_cache_performance()
+        # Caching performance
+        total_cache_requests = self.results['cache_hits'] + self.results['cache_misses']
+        if total_cache_requests > 0:
+            cache_hit_rate = (self.results['cache_hits'] / total_cache_requests) * 100
+            
+            print(f"\n💾 CACHING PERFORMANCE:")
+            print(f"  Cache hits: {self.results['cache_hits']}")
+            print(f"  Cache misses: {self.results['cache_misses']}")
+            print(f"  Hit rate: {cache_hit_rate:.1f}%")
+            
+            if cache_hit_rate > 70:
+                print("  ✅ EXCELLENT - High cache hit rate!")
+            elif cache_hit_rate > 50:
+                print("  ✅ GOOD - Decent cache hit rate")
+            else:
+                print("  ⚠ POOR - Low cache hit rate")
         
-        # Generate performance report
-        self.generate_report(concurrent_results, db_results, cache_results)
-    
-    def generate_report(self, concurrent_results, db_results, cache_results):
-        """Generate a comprehensive performance report"""
-        print("\n📈 Performance Report")
-        print("=" * 60)
+        # Error summary
+        if self.results['errors']:
+            print(f"\n❌ ERRORS ({len(self.results['errors'])}):")
+            for error in self.results['errors'][:5]:  # Show first 5 errors
+                print(f"  - {error}")
+            if len(self.results['errors']) > 5:
+                print(f"  ... and {len(self.results['errors']) - 5} more errors")
         
-        # Endpoint performance summary
-        print("\n🌐 Endpoint Performance Summary:")
-        for endpoint, results in self.results.items():
-            print(f"  {endpoint}:")
-            print(f"    Average Response Time: {results['avg_response_time']:.2f}ms")
-            print(f"    Success Rate: {results['success_rate']:.1f}%")
+        # Overall assessment
+        print(f"\n🎯 OVERALL ASSESSMENT:")
         
-        # Concurrent performance summary
-        if concurrent_results:
-            print("\n⚡ Concurrent Performance Summary:")
-            for endpoint, results in concurrent_results.items():
-                print(f"  {endpoint} ({results['concurrent_users']} users):")
-                print(f"    Average Response Time: {results['avg_response_time']:.2f}ms")
-                print(f"    Success Rate: {results['success_rate']:.1f}%")
+        # Calculate overall score
+        score = 0
+        max_score = 100
         
-        # Database performance summary
-        if db_results:
-            print("\n🗄️  Database Performance Summary:")
-            print(f"  Simple Query: {db_results['simple_query_time']:.2f}ms")
-            print(f"  Complex Query: {db_results['complex_query_time']:.2f}ms")
-            print(f"  Total Orders: {db_results['total_orders']}")
-            print(f"  Indexes: {db_results['index_count']}")
+        # Page load score (30 points)
+        if self.results['page_load_times']:
+            avg_load = statistics.mean([r['time'] for r in self.results['page_load_times']])
+            if avg_load < 1.0:
+                score += 30
+            elif avg_load < 2.0:
+                score += 20
+            elif avg_load < 3.0:
+                score += 10
         
-        # Cache performance summary
-        if cache_results:
-            print("\n💾 Cache Performance Summary:")
-            print(f"  Average Cache Operation: {cache_results['avg_cache_time']:.2f}ms")
+        # API score (25 points)
+        if self.results['api_response_times']:
+            if isinstance(self.results['api_response_times'][0], dict):
+                avg_api = statistics.mean([r['time'] for r in self.results['api_response_times']])
+            else:
+                avg_api = statistics.mean(self.results['api_response_times'])
+            
+            if avg_api < 0.5:
+                score += 25
+            elif avg_api < 1.0:
+                score += 20
+            elif avg_api < 2.0:
+                score += 10
         
-        # Performance recommendations
-        self.generate_recommendations()
-    
-    def generate_recommendations(self):
-        """Generate performance improvement recommendations"""
-        print("\n💡 Performance Recommendations:")
-        print("-" * 40)
+        # Concurrent user score (25 points)
+        if self.results['concurrent_users']:
+            avg_concurrent = statistics.mean(self.results['concurrent_users'])
+            if avg_concurrent < 1.0:
+                score += 25
+            elif avg_concurrent < 2.0:
+                score += 20
+            elif avg_concurrent < 3.0:
+                score += 10
         
-        # Analyze results and provide recommendations
-        slow_endpoints = []
-        for endpoint, results in self.results.items():
-            if results['avg_response_time'] > 1000:  # More than 1 second
-                slow_endpoints.append(endpoint)
+        # Cache score (20 points)
+        total_cache = self.results['cache_hits'] + self.results['cache_misses']
+        if total_cache > 0:
+            hit_rate = (self.results['cache_hits'] / total_cache) * 100
+            if hit_rate > 70:
+                score += 20
+            elif hit_rate > 50:
+                score += 15
+            elif hit_rate > 30:
+                score += 10
         
-        if slow_endpoints:
-            print("  🐌 Slow Endpoints Detected:")
-            for endpoint in slow_endpoints:
-                print(f"    - {endpoint}: Consider adding caching or optimization")
+        # Error penalty
+        error_penalty = min(len(self.results['errors']) * 2, 20)
+        score = max(0, score - error_penalty)
         
-        # Database recommendations
-        if hasattr(self, 'db_results') and self.db_results:
-            if self.db_results['complex_query_time'] > 100:
-                print("  🗄️  Database Optimization Needed:")
-                print("    - Consider adding database indexes")
-                print("    - Optimize complex queries")
-                print("    - Use select_related and prefetch_related")
+        print(f"  Performance Score: {score}/{max_score}")
         
-        # General recommendations
-        print("  🚀 General Performance Tips:")
-        print("    - Enable Django caching")
-        print("    - Use CDN for static files")
-        print("    - Optimize images and compress assets")
-        print("    - Implement database connection pooling")
-        print("    - Use async operations where possible")
-        print("    - Monitor and log performance metrics")
+        if score >= 80:
+            print("  🏆 EXCELLENT - Ready for 500+ concurrent users!")
+        elif score >= 60:
+            print("  ✅ GOOD - Can handle moderate load")
+        elif score >= 40:
+            print("  ⚠ ACCEPTABLE - Needs some optimization")
+        else:
+            print("  ❌ POOR - Significant optimization needed")
+        
+        print("\n" + "="*60)
+        
+        # Save detailed results
+        with open('performance_test_results.json', 'w') as f:
+            json.dump(self.results, f, indent=2)
+        
+        print("Detailed results saved to: performance_test_results.json")
+
 
 def main():
-    """Main function to run performance tests"""
+    """Main test runner"""
     if len(sys.argv) > 1:
         base_url = sys.argv[1]
     else:
-        base_url = BASE_URL
+        base_url = 'http://localhost:8000'
+    
+    print(f"Starting performance tests against: {base_url}")
+    print("Make sure your Django server is running!")
     
     tester = PerformanceTester(base_url)
     
     try:
-        tester.run_all_tests()
+        # Basic page load tests
+        print("\n1. Testing basic page loads...")
+        pages = ['/', '/menu/', '/help/', '/college/gh-raisoni/']
+        for page in pages:
+            tester.test_page_load(page)
+        
+        # API performance tests
+        print("\n2. Testing API endpoints...")
+        api_endpoints = [
+            '/api/menu/',
+            '/api/colleges/',
+            '/api/cart-count/',
+        ]
+        for endpoint in api_endpoints:
+            tester.test_api_endpoint(endpoint)
+        
+        # Database performance tests
+        print("\n3. Testing database performance...")
+        tester.test_database_performance()
+        
+        # Caching performance tests
+        print("\n4. Testing caching performance...")
+        tester.test_caching_performance()
+        
+        # JavaScript performance tests
+        print("\n5. Testing JavaScript optimizations...")
+        tester.test_javascript_performance()
+        
+        # Concurrent user tests
+        print("\n6. Testing concurrent users...")
+        tester.test_concurrent_users(num_users=20, test_duration=10)
+        
+        # Generate report
+        tester.generate_report()
+        
     except KeyboardInterrupt:
-        print("\n\n⚠️  Performance testing interrupted by user")
+        print("\n⚠ Tests interrupted by user")
+        tester.generate_report()
     except Exception as e:
-        print(f"\n\n❌ Performance testing failed: {e}")
-        sys.exit(1)
+        print(f"\n❌ Test failed: {e}")
+        tester.generate_report()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     main()

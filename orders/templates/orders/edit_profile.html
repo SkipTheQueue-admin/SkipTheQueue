@@ -120,36 +120,5 @@
   </div>
 </div>
 
-<script>
-// Phone number validation
-document.getElementById('phone_number').addEventListener('input', function(e) {
-  // Remove non-numeric characters
-  let value = e.target.value.replace(/\D/g, '');
-  
-  // Limit to 10 digits
-  if (value.length > 10) {
-    value = value.substring(0, 10);
-  }
-  
-  // Format as XXX-XXX-XXXX
-  if (value.length >= 6) {
-    value = value.substring(0, 3) + '-' + value.substring(3, 6) + '-' + value.substring(6);
-  } else if (value.length >= 3) {
-    value = value.substring(0, 3) + '-' + value.substring(3);
-  }
-  
-  e.target.value = value;
-});
-
-// Form validation
-document.querySelector('form').addEventListener('submit', function(e) {
-  const phone = document.getElementById('phone_number').value.replace(/\D/g, '');
-  
-  if (phone.length !== 10) {
-    e.preventDefault();
-    alert('Please enter a valid 10-digit phone number.');
-    return false;
-  }
-});
-</script>
+<!-- Phone validation and form handling handled by performance-optimized.js -->
 {% endblock %}

@@ -42,7 +42,8 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.performance_middleware.PerformanceMiddleware',  # Performance monitoring
-    'core.performance_middleware.DatabaseOptimizationMiddleware',  # Database optimization
+    'core.performance_middleware.CacheMiddleware',  # Intelligent caching
+    'core.performance_middleware.QueryOptimizationMiddleware',  # Query optimization
     'core.middleware.SecurityMiddleware',
     'core.middleware.AuthenticationMiddleware',
     'core.middleware.LoggingMiddleware',

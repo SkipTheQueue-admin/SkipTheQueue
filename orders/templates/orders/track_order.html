@@ -244,101 +244,12 @@
 </div>
 
 {% if order %}
-<script>
-  // Order tracking functionality
-  let orderId = {{ order.id }};
-  let currentStatus = '{{ order.status }}';
-  
-  // Update progress bar and steps based on status
-  function updateProgress() {
-    const progressBar = document.getElementById('progress-bar');
-    const stepAccepted = document.getElementById('step-accepted');
-    const stepReady = document.getElementById('step-ready');
-    const stepCompleted = document.getElementById('step-completed');
-    
-    if (currentStatus === 'Pending') {
-      progressBar.style.width = '25%';
-    } else if (currentStatus === 'In Progress') {
-      progressBar.style.width = '50%';
-      stepAccepted.classList.remove('bg-gray-300');
-      stepAccepted.classList.add('bg-green-500');
-      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      document.getElementById('accepted-time').textContent = 'Processing';
-    } else if (currentStatus === 'Ready') {
-      progressBar.style.width = '75%';
-      stepAccepted.classList.remove('bg-gray-300');
-      stepAccepted.classList.add('bg-green-500');
-      stepReady.classList.remove('bg-gray-300');
-      stepReady.classList.add('bg-green-500');
-      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      stepReady.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      document.getElementById('accepted-time').textContent = 'Processing';
-      document.getElementById('ready-time').textContent = 'Ready!';
-    } else if (currentStatus === 'Completed') {
-      progressBar.style.width = '100%';
-      stepAccepted.classList.remove('bg-gray-300');
-      stepAccepted.classList.add('bg-green-500');
-      stepReady.classList.remove('bg-gray-300');
-      stepReady.classList.add('bg-green-500');
-      stepCompleted.classList.remove('bg-gray-300');
-      stepCompleted.classList.add('bg-green-500');
-      stepAccepted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      stepReady.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      stepCompleted.innerHTML = '<svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
-      document.getElementById('accepted-time').textContent = 'Processing';
-      document.getElementById('ready-time').textContent = 'Ready!';
-      document.getElementById('completed-time').textContent = 'Delivered';
-    }
-  }
-  
-  // Check order status periodically
-  async function checkOrderStatus() {
-    try {
-      const response = await fetch(`/check-order-status/${orderId}/`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.order.status !== currentStatus) {
-          currentStatus = data.order.status;
-          updateProgress();
-          
-          // Show notification for status change
-          if (typeof window.showNotification === 'function') {
-            window.showNotification(`Order status updated to: ${currentStatus}`, 'success');
-          }
-          
-          // Update status badge
-          const statusBadge = document.querySelector('.inline-flex.items-center.px-3.py-1.rounded-full.text-sm.font-medium');
-          if (statusBadge) {
-            statusBadge.textContent = currentStatus;
-            statusBadge.className = statusBadge.className.replace(/bg-\w+-100 text-\w+-800/g, '');
-            if (currentStatus === 'Pending') {
-              statusBadge.classList.add('bg-yellow-100', 'text-yellow-800');
-            } else if (currentStatus === 'In Progress') {
-              statusBadge.classList.add('bg-blue-100', 'text-blue-800');
-            } else if (currentStatus === 'Ready') {
-              statusBadge.classList.add('bg-green-100', 'text-green-800');
-            } else if (currentStatus === 'Completed') {
-              statusBadge.classList.add('bg-gray-100', 'text-gray-800');
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.log('Error checking order status:', error);
-    }
-  }
-  
-  // Initialize
-  document.addEventListener('DOMContentLoaded', function() {
-    updateProgress();
-    
-    // Check status every 10 seconds
-    setInterval(checkOrderStatus, 10000);
-    
-    // Also check immediately
-    checkOrderStatus();
-  });
-</script>
+<!-- Order tracking functionality handled by performance-optimized.js -->
+<div id="order-tracking-data" 
+     data-order-id="{{ order.id }}" 
+     data-current-status="{{ order.status }}"
+     data-order-phone="{{ order.user_phone }}"
+     class="hidden"></div>
 {% endif %}
 
 {% endblock %}
@@ -407,13 +318,7 @@
         </div>
       </div>
       
-      <!-- Real-time Status Check -->
-      <script>
-        // Check order status every 30 seconds
-        setInterval(function() {
-          checkOrderStatus({{ order.id }}, '{{ order.user_phone }}');
-        }, 30000);
-      </script>
+      <!-- Real-time Status Check handled by performance-optimized.js -->
       
 
 {% endblock %}

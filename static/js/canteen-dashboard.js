@@ -56,12 +56,53 @@ class CanteenDashboard {
   }
 
   startAutoRefresh() {
-    // Refresh every 30 seconds
-    this.refreshTimer = setInterval(() => {
+    // Smart refresh every 30 seconds - no hard reloads
+    this.refreshTimer = setInterval(async () => {
       if (!this.isRefreshing) {
-        location.reload();
+        await this.smartRefresh();
       }
     }, 30000);
+  }
+
+  async smartRefresh() {
+    try {
+      const response = await fetch(`/api/canteen/orders/${this.getCollegeSlug()}/`);
+      if (response.ok) {
+        const data = await response.json();
+        this.updateOrdersDisplay(data.orders);
+      }
+    } catch (error) {
+      console.error('Smart refresh failed:', error);
+    }
+  }
+
+  updateOrdersDisplay(orders) {
+    const ordersContainer = document.getElementById('orders-container');
+    if (ordersContainer && orders) {
+      // Update orders without full page reload
+      ordersContainer.innerHTML = orders.map(order => this.createOrderHTML(order)).join('');
+    }
+  }
+
+  createOrderHTML(order) {
+    return `
+      <div class="order-item p-4 border rounded-lg mb-4" data-order-id="${order.id}">
+        <div class="flex justify-between items-center">
+          <div>
+            <h3 class="font-semibold">Order #${order.id}</h3>
+            <p class="text-gray-600">${order.customer_name}</p>
+          </div>
+          <div class="flex space-x-2">
+            <button class="accept-btn bg-green-500 text-white px-4 py-2 rounded" data-order-id="${order.id}">
+              <i class="fas fa-check mr-2"></i>Accept
+            </button>
+            <button class="decline-btn bg-red-500 text-white px-4 py-2 rounded" data-order-id="${order.id}">
+              <i class="fas fa-times mr-2"></i>Decline
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   async acceptOrder(orderId) {
@@ -99,7 +140,8 @@ class CanteenDashboard {
         const data = await response.json();
         if (data.success) {
           this.showNotification('Order accepted successfully!', 'success');
-          setTimeout(() => location.reload(), 1000);
+          // Smart update instead of reload
+          setTimeout(() => this.smartRefresh(), 1000);
         } else {
           this.showNotification(data.error || 'Failed to accept order', 'error');
           this.resetButton(button, 'Accept Order', 'fas fa-check');
@@ -154,7 +196,8 @@ class CanteenDashboard {
         const data = await response.json();
         if (data.success) {
           this.showNotification('Order declined successfully!', 'success');
-          setTimeout(() => location.reload(), 1000);
+          // Smart update instead of reload
+          setTimeout(() => this.smartRefresh(), 1000);
         } else {
           this.showNotification(data.error || 'Failed to decline order', 'error');
           this.resetButton(button, 'Decline', 'fas fa-times');
@@ -206,7 +249,8 @@ class CanteenDashboard {
         const data = await response.json();
         if (data.success) {
           this.showNotification('Order marked as ready!', 'success');
-          setTimeout(() => location.reload(), 1000);
+          // Smart update instead of reload
+          setTimeout(() => this.smartRefresh(), 1000);
         } else {
           this.showNotification(data.error || 'Failed to mark order as ready', 'error');
           this.resetButton(button, 'Mark Ready', 'fas fa-check');
@@ -258,7 +302,8 @@ class CanteenDashboard {
         const data = await response.json();
         if (data.success) {
           this.showNotification('Order marked as completed!', 'success');
-          setTimeout(() => location.reload(), 1000);
+          // Smart update instead of reload
+          setTimeout(() => this.smartRefresh(), 1000);
         } else {
           this.showNotification(data.error || 'Failed to mark order as completed', 'error');
           this.resetButton(button, 'Mark Completed', 'fas fa-check-double');

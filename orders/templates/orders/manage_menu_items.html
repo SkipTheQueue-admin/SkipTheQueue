@@ -219,14 +219,5 @@
 
 <div id="menu-item-ids" data-ids='[{% for item in menu_items %}{{ item.id }}{% if not forloop.last %}, {% endif %}{% endfor %}]'></div>
 
-<script>
-function editItem(id) {
-  document.getElementById('editItemId').value = id;
-  document.getElementById('editModal').classList.remove('hidden');
-}
-
-function closeEditModal() {
-  document.getElementById('editModal').classList.add('hidden');
-}
-</script>
+<!-- Modal functionality handled by performance-optimized.js -->
 {% endblock %} 
