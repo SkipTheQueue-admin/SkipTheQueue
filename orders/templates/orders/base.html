@@ -113,125 +113,333 @@
       }
     }
     
-    /* Enhanced button styles */
+    /* Enhanced button styles with proper fallbacks */
     .btn-primary {
-      @apply bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #2563eb;
+      color: #ffffff;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    
+    .btn-primary:hover {
+      background-color: #1d4ed8;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+    
+    .btn-primary:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
     }
     
     .btn-secondary {
-      @apply bg-gray-600 hover:bg-gray-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #4b5563;
+      color: #ffffff;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    
+    .btn-secondary:hover {
+      background-color: #374151;
+      transform: translateY(-1px);
+    }
+    
+    .btn-secondary:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.5);
     }
     
     .btn-success {
-      @apply bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #059669;
+      color: #ffffff;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    
+    .btn-success:hover {
+      background-color: #047857;
+      transform: translateY(-1px);
+    }
+    
+    .btn-success:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.5);
     }
     
     .btn-danger {
-      @apply bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #dc2626;
+      color: #ffffff;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+    }
+    
+    .btn-danger:hover {
+      background-color: #b91c1c;
+      transform: translateY(-1px);
+    }
+    
+    .btn-danger:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
     }
     
     /* Enhanced form styles */
     .form-input {
-      @apply w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      line-height: 1.25rem;
+      transition: all 0.2s ease;
+      background-color: #ffffff;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .form-input:disabled {
+      background-color: #f3f4f6;
+      cursor: not-allowed;
+      opacity: 0.6;
     }
     
     .form-label {
-      @apply block text-sm font-medium text-gray-700 mb-2;
+      display: block;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #374151;
+      margin-bottom: 0.5rem;
     }
     
     /* Enhanced card styles */
     .card {
-      @apply bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-all duration-200;
+      background-color: #ffffff;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+      border: 1px solid #e5e7eb;
+      transition: all 0.2s ease;
+    }
+    
+    .card:hover {
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
     
     .card-header {
-      @apply px-6 py-4 border-b border-gray-200;
+      padding: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
     }
     
     .card-body {
-      @apply px-6 py-4;
+      padding: 1.5rem;
     }
     
     /* Enhanced navigation styles */
     .nav-link {
-      @apply text-gray-600 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-all duration-200;
+      color: #4b5563;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0.375rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+    }
+    
+    .nav-link:hover {
+      color: #111827;
+      background-color: #f3f4f6;
     }
     
     .nav-link.active {
-      @apply text-blue-600 bg-blue-50;
+      color: #2563eb;
+      background-color: #eff6ff;
     }
     
     /* Enhanced table styles */
     .table {
-      @apply min-w-full divide-y divide-gray-200;
+      width: 100%;
+      border-collapse: collapse;
     }
     
     .table th {
-      @apply px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider;
+      padding: 0.75rem 1.5rem;
+      text-align: left;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid #e5e7eb;
+      background-color: #f9fafb;
     }
     
     .table td {
-      @apply px-6 py-4 whitespace-nowrap text-sm text-gray-900;
+      padding: 0.75rem 1.5rem;
+      font-size: 0.875rem;
+      color: #111827;
+      border-bottom: 1px solid #e5e7eb;
+      white-space: nowrap;
+    }
+    
+    .table tbody tr:hover {
+      background-color: #f9fafb;
     }
     
     /* Enhanced alert styles */
     .alert {
-      @apply p-4 rounded-lg border;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      border: 1px solid;
+      margin-bottom: 1rem;
     }
     
     .alert-success {
-      @apply bg-green-50 border-green-200 text-green-800;
+      background-color: #f0fdf4;
+      border-color: #bbf7d0;
+      color: #166534;
     }
     
     .alert-error {
-      @apply bg-red-50 border-red-200 text-red-800;
+      background-color: #fef2f2;
+      border-color: #fecaca;
+      color: #991b1b;
     }
     
     .alert-warning {
-      @apply bg-yellow-50 border-yellow-200 text-yellow-800;
+      background-color: #fffbeb;
+      border-color: #fed7aa;
+      color: #92400e;
     }
     
     .alert-info {
-      @apply bg-blue-50 border-blue-200 text-blue-800;
+      background-color: #eff6ff;
+      border-color: #bfdbfe;
+      color: #1e40af;
     }
     
     /* Enhanced badge styles */
     .badge {
-      @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      line-height: 1;
     }
     
     .badge-success {
-      @apply bg-green-100 text-green-800;
+      background-color: #dcfce7;
+      color: #166534;
     }
     
     .badge-warning {
-      @apply bg-yellow-100 text-yellow-800;
+      background-color: #fef3c7;
+      color: #92400e;
     }
     
     .badge-error {
-      @apply bg-red-100 text-red-800;
+      background-color: #fee2e2;
+      color: #991b1b;
     }
     
     .badge-info {
-      @apply bg-blue-100 text-blue-800;
+      background-color: #dbeafe;
+      color: #1e40af;
     }
     
     /* Enhanced modal styles */
     .modal {
-      @apply fixed inset-0 z-50 overflow-y-auto;
+      position: fixed;
+      inset: 0;
+      z-index: 50;
+      overflow-y: auto;
     }
     
     .modal-overlay {
-      @apply fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity;
+      position: fixed;
+      inset: 0;
+      background-color: rgba(107, 114, 128, 0.75);
+      transition: opacity 0.2s ease;
     }
     
     .modal-content {
-      @apply inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full;
+      display: inline-block;
+      vertical-align: bottom;
+      background-color: #ffffff;
+      border-radius: 0.5rem;
+      text-align: left;
+      overflow: hidden;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      transform: translateY(0);
+      transition: all 0.2s ease;
+      max-width: 32rem;
+      width: 100%;
+      margin: 2rem auto;
     }
     
     /* Enhanced responsive utilities */
     .container-responsive {
-      @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+      max-width: 80rem;
+      margin: 0 auto;
+      padding: 0 1rem;
+    }
+    
+    @media (min-width: 640px) {
+      .container-responsive {
+        padding: 0 1.5rem;
+      }
+    }
+    
+    @media (min-width: 1024px) {
+      .container-responsive {
+        padding: 0 2rem;
+      }
     }
     
     /* Enhanced accessibility */
@@ -301,56 +509,176 @@
     /* Enhanced dark mode support */
     @media (prefers-color-scheme: dark) {
       .dark-mode-auto {
-        @apply bg-gray-900 text-white;
+        background-color: #111827;
+        color: #ffffff;
       }
     }
     
     /* Enhanced mobile optimizations */
     @media (max-width: 640px) {
       .mobile-optimized {
-        @apply text-sm;
+        font-size: 0.875rem;
       }
       
       .mobile-full-width {
-        @apply w-full;
+        width: 100%;
       }
+      
+      .mobile-text-center {
+        text-align: center;
+      }
+      
+      .mobile-p-4 {
+        padding: 1rem;
+      }
+    }
+    
+    /* Enhanced utility classes */
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    /* Enhanced animations */
+    .animate-fade-in {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    .animate-slide-up {
+      animation: slideUp 0.3s ease-out;
+    }
+    
+    .animate-scale-in {
+      animation: scaleIn 0.2s ease-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes slideUp {
+      from { 
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to { 
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    @keyframes scaleIn {
+      from { 
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to { 
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    
+    /* Enhanced hover effects */
+    .hover-lift {
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .hover-lift:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    }
+    
+    /* Enhanced focus rings */
+    .focus-ring {
+      transition: box-shadow 0.2s ease;
+    }
+    
+    .focus-ring:focus {
+      outline: none;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+    }
+    
+    /* Enhanced disabled states */
+    .disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+    
+    /* Enhanced loading states */
+    .loading-skeleton {
+      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+      background-size: 200% 100%;
+      animation: loading-shimmer 1.5s infinite;
+    }
+    
+    @keyframes loading-shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
     }
   </style>
   
   <!-- Fallback CSS for when Tailwind fails to load -->
   <link rel="stylesheet" href="{% static 'css/tailwind-fallback.css' %}">
+  
+  <!-- Enhanced UI CSS -->
+  <link rel="stylesheet" href="{% static 'css/enhanced-ui.css' %}">
 </head>
 <body class="bg-gray-50">
   <!-- Order Tracking Bar (Zomato Style) -->
-  <div id="order-tracking-bar" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform transition-transform duration-300 -translate-y-full">
+  <div id="order-tracking-bar" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-xl transform transition-all duration-500 -translate-y-full">
     <div class="container-responsive py-3">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
+          <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
             <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <div>
-            <h3 class="font-semibold text-sm">Order #<span id="tracking-order-id">-</span></h3>
-            <p class="text-xs text-blue-100">Status: <span id="tracking-status">-</span></p>
+          <div class="flex-1 min-w-0">
+            <h3 class="font-semibold text-sm truncate">Order #<span id="tracking-order-id" class="font-mono">-</span></h3>
+            <p class="text-xs text-blue-100 truncate">Status: <span id="tracking-status" class="font-medium">-</span></p>
           </div>
         </div>
         
-        <div class="flex items-center space-x-2">
-          <span id="tracking-time" class="text-xs text-blue-100">-</span>
-          <button onclick="hideOrderTracking()" class="text-white hover:text-blue-100 transition-colors">
+        <div class="flex items-center space-x-3">
+          <div class="hidden sm:flex items-center space-x-2 text-blue-100">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span id="tracking-time" class="text-xs font-medium">-</span>
+          </div>
+          <button onclick="hideOrderTracking()" 
+                  class="text-white hover:text-blue-100 transition-colors p-1 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
+                  aria-label="Hide order tracking">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
       </div>
+      
+      <!-- Progress Bar -->
+      <div class="mt-2 w-full bg-white/20 rounded-full h-1">
+        <div id="tracking-progress" class="bg-white h-1 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+      </div>
     </div>
   </div>
 
   <!-- Navigation Header -->
-  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
+  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40" x-data="{ mobileMenuOpen: false }">
     <div class="container-responsive">
       <div class="flex items-center justify-between h-16">
         <!-- Logo and Brand -->
@@ -387,28 +715,40 @@
         <!-- User Actions -->
         <div class="flex items-center space-x-3">
           <!-- Cart -->
-          <a href="{% url 'view_cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors">
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <a href="{% url 'view_cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors group">
+            <svg class="w-6 h-6 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
             </svg>
-            <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+            <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">0</span>
           </a>
           
           <!-- User Menu -->
           {% if user.is_authenticated %}
-            <div class="relative" x-data="{ open: false }">
-              <button @click="open = !open" class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors">
+            <div class="relative" x-data="{ userMenuOpen: false }">
+              <button @click="userMenuOpen = !userMenuOpen" 
+                      @click.away="userMenuOpen = false"
+                      class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-1"
+                      aria-label="User menu"
+                      aria-expanded="false"
+                      :aria-expanded="userMenuOpen">
                 <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
                   <span class="text-white font-medium text-sm">{{ user.username|first|upper }}</span>
                 </div>
                 <span class="hidden sm:block text-sm font-medium">{{ user.username }}</span>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': userMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                 </svg>
               </button>
               
               <!-- Dropdown Menu -->
-              <div x-show="open" @click.away="open = false" x-transition class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+              <div x-show="userMenuOpen" 
+                   x-transition:enter="transition ease-out duration-200"
+                   x-transition:enter-start="opacity-0 transform scale-95"
+                   x-transition:enter-end="opacity-100 transform scale-100"
+                   x-transition:leave="transition ease-in duration-150"
+                   x-transition:leave-start="opacity-100 transform scale-100"
+                   x-transition:leave-end="opacity-0 transform scale-95"
+                   class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
                 <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
                   <i class="fas fa-user mr-2"></i>Profile
                 </a>
@@ -430,7 +770,11 @@
         
         <!-- Mobile Menu Button -->
         <div class="md:hidden">
-          <button @click="mobileMenuOpen = !mobileMenuOpen" class="text-gray-600 hover:text-blue-600 transition-colors">
+          <button @click="mobileMenuOpen = !mobileMenuOpen" 
+                  class="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label="Toggle mobile menu"
+                  aria-expanded="false"
+                  :aria-expanded="mobileMenuOpen">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
@@ -439,23 +783,49 @@
       </div>
       
       <!-- Mobile Navigation -->
-      <div x-show="mobileMenuOpen" x-transition class="md:hidden border-t border-gray-200 py-4">
-        <div class="space-y-2">
-          <a href="{% url 'home' %}" class="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-            <i class="fas fa-home mr-2"></i>Home
+      <div x-show="mobileMenuOpen" 
+           x-transition:enter="transition ease-out duration-200"
+           x-transition:enter-start="opacity-0 transform -translate-y-2"
+           x-transition:enter-end="opacity-100 transform translate-y-0"
+           x-transition:leave="transition ease-in duration-150"
+           x-transition:leave-start="opacity-100 transform translate-y-0"
+           x-transition:leave-end="opacity-0 transform -translate-y-2"
+           class="md:hidden border-t border-gray-200 py-4 bg-white">
+        <div class="space-y-2 px-4">
+          <a href="{% url 'home' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'home' %}text-blue-600 bg-blue-50{% endif %}">
+            <i class="fas fa-home mr-3 w-5 text-center"></i>Home
           </a>
-          <a href="{% url 'menu' %}" class="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-            <i class="fas fa-utensils mr-2"></i>Menu
+          <a href="{% url 'menu' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'menu' %}text-blue-600 bg-blue-50{% endif %}">
+            <i class="fas fa-utensils mr-3 w-5 text-center"></i>Menu
           </a>
-          <a href="{% url 'favorites' %}" class="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-            <i class="fas fa-heart mr-2"></i>Favorites
+          <a href="{% url 'favorites' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'favorites' %}text-blue-600 bg-blue-50{% endif %}">
+            <i class="fas fa-heart mr-3 w-5 text-center"></i>Favorites
           </a>
-          <a href="{% url 'order_history' %}" class="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-            <i class="fas fa-history mr-2"></i>Orders
+          <a href="{% url 'order_history' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'order_history' %}text-blue-600 bg-blue-50{% endif %}">
+            <i class="fas fa-history mr-3 w-5 text-center"></i>Orders
           </a>
-          <a href="{% url 'help_center' %}" class="block px-3 py-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors">
-            <i class="fas fa-question-circle mr-2"></i>Help
+          <a href="{% url 'help_center' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'help_center' %}text-blue-600 bg-blue-50{% endif %}">
+            <i class="fas fa-question-circle mr-3 w-5 text-center"></i>Help
           </a>
+          
+          <!-- Mobile User Actions -->
+          {% if user.is_authenticated %}
+            <hr class="my-3 border-gray-200">
+            <a href="{% url 'user_profile' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+              <i class="fas fa-user mr-3 w-5 text-center"></i>Profile
+            </a>
+            <a href="{% url 'edit_profile' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
+              <i class="fas fa-edit mr-3 w-5 text-center"></i>Edit Profile
+            </a>
+            <a href="{% url 'logout' %}" class="block px-3 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200">
+              <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>Logout
+            </a>
+          {% else %}
+            <hr class="my-3 border-gray-200">
+            <a href="{% url 'custom_login' %}" class="block px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-center">
+              <i class="fas fa-sign-in-alt mr-2"></i>Login
+            </a>
+          {% endif %}
         </div>
       </div>
     </div>
@@ -546,9 +916,10 @@
   
   <!-- Order tracking script -->
   <script>
-    // Order tracking functionality
+    // Enhanced Order tracking functionality
     let currentOrderId = null;
     let trackingInterval = null;
+    let progressInterval = null;
     
     function showOrderTracking(orderId, status, estimatedTime) {
       currentOrderId = orderId;
@@ -558,18 +929,28 @@
       document.getElementById('tracking-status').textContent = status;
       document.getElementById('tracking-time').textContent = `Est. ${estimatedTime} min`;
       
-      // Show tracking bar
+      // Show tracking bar with smooth animation
       const trackingBar = document.getElementById('order-tracking-bar');
-      trackingBar.classList.remove('-translate-y-full');
       trackingBar.classList.remove('hidden');
+      
+      // Trigger animation after a small delay
+      setTimeout(() => {
+        trackingBar.classList.remove('-translate-y-full');
+      }, 10);
       
       // Start tracking updates
       startOrderTracking();
+      startProgressAnimation(estimatedTime);
     }
     
     function hideOrderTracking() {
       const trackingBar = document.getElementById('order-tracking-bar');
       trackingBar.classList.add('-translate-y-full');
+      
+      // Hide after animation completes
+      setTimeout(() => {
+        trackingBar.classList.add('hidden');
+      }, 500);
       
       // Stop tracking updates
       if (trackingInterval) {
@@ -577,7 +958,40 @@
         trackingInterval = null;
       }
       
+      if (progressInterval) {
+        clearInterval(progressInterval);
+        progressInterval = null;
+      }
+      
+      // Reset progress bar
+      const progressBar = document.getElementById('tracking-progress');
+      if (progressBar) {
+        progressBar.style.width = '0%';
+      }
+      
       currentOrderId = null;
+    }
+    
+    function startProgressAnimation(estimatedTime) {
+      const progressBar = document.getElementById('tracking-progress');
+      if (!progressBar) return;
+      
+      // Reset progress
+      progressBar.style.width = '0%';
+      
+      // Calculate progress increment per second
+      const totalSeconds = estimatedTime * 60;
+      const increment = 100 / totalSeconds;
+      let currentProgress = 0;
+      
+      progressInterval = setInterval(() => {
+        currentProgress += increment;
+        if (currentProgress >= 100) {
+          currentProgress = 100;
+          clearInterval(progressInterval);
+        }
+        progressBar.style.width = `${currentProgress}%`;
+      }, 1000);
     }
     
     function startOrderTracking() {
@@ -595,21 +1009,127 @@
             const data = await response.json();
             
             if (data.status === 'Completed' || data.status === 'Cancelled') {
+              // Show completion message
+              if (data.status === 'Completed') {
+                showNotification('Order completed successfully! 🎉', 'success', 5000);
+              } else {
+                showNotification('Order was cancelled', 'info', 5000);
+              }
+              
               // Hide tracking bar when order is completed
               hideOrderTracking();
               return;
             }
             
             // Update status display
-            document.getElementById('tracking-status').textContent = data.status;
+            const statusElement = document.getElementById('tracking-status');
+            if (statusElement) {
+              statusElement.textContent = data.status;
+              
+              // Add status-specific styling
+              statusElement.className = 'font-medium';
+              if (data.status === 'Preparing') {
+                statusElement.classList.add('text-yellow-200');
+              } else if (data.status === 'Ready') {
+                statusElement.classList.add('text-green-200');
+              }
+            }
+            
             if (data.estimated_time) {
-              document.getElementById('tracking-time').textContent = `Est. ${data.estimated_time} min`;
+              const timeElement = document.getElementById('tracking-time');
+              if (timeElement) {
+                timeElement.textContent = `Est. ${data.estimated_time} min`;
+              }
             }
           }
         } catch (error) {
           console.error('Error updating order status:', error);
+          // Don't show error to user for background updates
         }
       }, 10000);
+    }
+    
+    // Enhanced cart count update with error handling
+    async function updateCartCount() {
+      try {
+        const response = await fetch('/api/cart-count/');
+        if (response.ok) {
+          const data = await response.json();
+          const cartCountElement = document.getElementById('cart-count');
+          if (cartCountElement) {
+            const newCount = data.count || 0;
+            const oldCount = parseInt(cartCountElement.textContent) || 0;
+            
+            cartCountElement.textContent = newCount;
+            
+            // Add animation for count changes
+            if (newCount > oldCount) {
+              cartCountElement.classList.add('animate-bounce');
+              setTimeout(() => {
+                cartCountElement.classList.remove('animate-bounce');
+              }, 1000);
+            }
+            
+            // Show/hide cart badge based on count
+            const cartBadge = document.querySelector('.cart-badge');
+            if (cartBadge) {
+              if (newCount > 0) {
+                cartBadge.classList.remove('hidden');
+              } else {
+                cartBadge.classList.add('hidden');
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error updating cart count:', error);
+        // Fallback: try to get count from cart items in DOM
+        const cartItems = document.querySelectorAll('[data-item-id]');
+        const cartCountElement = document.getElementById('cart-count');
+        if (cartCountElement && cartItems.length > 0) {
+          cartCountElement.textContent = cartItems.length;
+        }
+      }
+    }
+    
+    // Enhanced notification system
+    function showNotification(message, type = 'info', duration = 5000) {
+      // Check if notification system is available
+      if (window.showNotification) {
+        window.showNotification(message, type, duration);
+      } else {
+        // Fallback notification
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm transform transition-all duration-300 translate-x-full`;
+        
+        // Set colors based on type
+        const colors = {
+          success: 'bg-green-500 text-white',
+          error: 'bg-red-500 text-white',
+          warning: 'bg-yellow-500 text-white',
+          info: 'bg-blue-500 text-white'
+        };
+        
+        notification.className += ` ${colors[type] || colors.info}`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+          notification.classList.remove('translate-x-full');
+        }, 10);
+        
+        // Auto-remove
+        setTimeout(() => {
+          notification.classList.add('translate-x-full');
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.parentNode.removeChild(notification);
+            }
+          }, 300);
+        }, duration);
+      }
     }
     
     // Check for active orders on page load
@@ -629,23 +1149,42 @@
       } catch (error) {
         console.error('Error checking active orders:', error);
       }
+      
+      // Update cart count on page load
+      updateCartCount();
+      
+      // Set up periodic cart count updates
+      setInterval(updateCartCount, 30000); // Update every 30 seconds
     });
     
-    // Update cart count
-    async function updateCartCount() {
-      try {
-        const response = await fetch('/api/cart-count/');
-        if (response.ok) {
-          const data = await response.json();
-          document.getElementById('cart-count').textContent = data.count || 0;
-        }
-      } catch (error) {
-        console.error('Error updating cart count:', error);
-      }
+    // Enhanced error handling for fetch requests
+    window.addEventListener('unhandledrejection', function(event) {
+      console.error('Unhandled promise rejection:', event.reason);
+      // Don't show error to user for background operations
+    });
+    
+    // Performance optimization: Debounce cart updates
+    let cartUpdateTimeout;
+    function debouncedCartUpdate() {
+      clearTimeout(cartUpdateTimeout);
+      cartUpdateTimeout = setTimeout(updateCartCount, 100);
     }
     
-    // Update cart count on page load
-    document.addEventListener('DOMContentLoaded', updateCartCount);
+    // Listen for cart changes
+    document.addEventListener('cartUpdated', debouncedCartUpdate);
+    
+    // Enhanced mobile menu handling
+    document.addEventListener('click', function(event) {
+      const target = event.target;
+      
+      // Close mobile menu when clicking outside
+      if (target.closest('[x-data]')) return;
+      
+      const mobileMenu = document.querySelector('[x-data*="mobileMenuOpen"]');
+      if (mobileMenu && mobileMenu.__x && mobileMenu.__x.$data.mobileMenuOpen) {
+        mobileMenu.__x.$data.mobileMenuOpen = false;
+      }
+    });
   </script>
   
   {% block extra_js %}{% endblock %}

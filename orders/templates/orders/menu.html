@@ -3,7 +3,7 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50">
   <!-- Header Section -->
-  <div class="bg-white shadow-sm border-b">
+  <div class="bg-white shadow-sm border-b sticky top-16 z-30">
     <div class="max-w-7xl mx-auto px-4 py-6">
       <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         <div>
@@ -14,14 +14,15 @@
         </div>
         
         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <!-- Search Bar -->
+          <!-- Enhanced Search Bar -->
           <form method="get" class="w-full sm:w-auto">
             <div class="relative">
               <input type="text" name="search" value="{{ search_query }}" 
                      placeholder="Search menu items..." 
-                     class="w-full sm:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-              <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
-                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     class="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
+                     aria-label="Search menu items">
+              <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
@@ -32,7 +33,7 @@
           <div class="flex items-center gap-3">
             <!-- Favorites Link -->
             {% if user.is_authenticated %}
-              <a href="{% url 'favorites' %}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition duration-300 whitespace-nowrap">
+              <a href="{% url 'favorites' %}" class="bg-yellow-500 text-white px-4 py-3 rounded-lg hover:bg-yellow-600 transition-all duration-300 whitespace-nowrap hover-lift focus-ring">
                 <span class="flex items-center">
                   <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
@@ -42,15 +43,15 @@
               </a>
             {% endif %}
             
-            <!-- Cart Link -->
-            <a href="{% url 'view_cart' %}" class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 whitespace-nowrap">
+            <!-- Enhanced Cart Link -->
+            <a href="{% url 'view_cart' %}" class="relative bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 whitespace-nowrap hover-lift focus-ring">
               <span class="flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
                 </svg>
                 <span class="cart-text">Cart</span>
                 {% if cart_count > 0 %}
-                  <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge">{{ cart_count }}</span>
+                  <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge font-medium">{{ cart_count }}</span>
                 {% else %}
                   <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge hidden">0</span>
                 {% endif %}
@@ -66,11 +67,11 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Search Results Info -->
     {% if search_query %}
-      <div class="mb-6">
-        <p class="text-gray-600">
+      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+        <p class="text-blue-800">
           Search results for "<strong>{{ search_query }}</strong>" 
           ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
-          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 ml-2">Clear search</a>
+          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 ml-2 underline">Clear search</a>
         </p>
       </div>
     {% endif %}
@@ -89,7 +90,7 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {% for item in favorite_items %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-fade-in" data-item-id="{{ item.id }}">
               {% if item.image_url %}
                 <div class="h-48 bg-gray-200">
                   <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
@@ -103,32 +104,42 @@
               {% endif %}
               
               <div class="p-4">
-                <div class="flex items-start justify-between mb-2">
-                  <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
-                  <button onclick="toggleFavorite('{{ item.id }}')" class="text-yellow-500 hover:text-yellow-600 transition-colors">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{{ item.name }}</h3>
+                {% if item.description %}
+                  <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ item.description }}</p>
+                {% endif %}
+                
+                <div class="flex items-center justify-between mb-3">
+                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                  {% if item.is_stock_managed %}
+                    <span class="text-xs {% if item.stock_quantity > 0 %}text-green-600{% else %}text-red-600{% endif %}">
+                      {% if item.stock_quantity > 0 %}
+                        Stock: {{ item.stock_quantity }}
+                      {% else %}
+                        Out of stock
+                      {% endif %}
+                    </span>
+                  {% endif %}
+                </div>
+                
+                <div class="flex items-center gap-2">
+                  <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
+                          onclick="addToCart('{{ item.id }}')"
+                          {% if item.is_stock_managed and item.stock_quantity <= 0 %}disabled{% endif %}>
+                    <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                    </svg>
+                    Add to Cart
+                  </button>
+                  
+                  <button class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 focus-ring"
+                          onclick="removeFromFavorites('{{ item.id }}')"
+                          title="Remove from favorites">
                     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                     </svg>
                   </button>
                 </div>
-                
-                {% if item.description %}
-                  <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ item.description }}</p>
-                {% endif %}
-                
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-xl font-bold text-blue-600">₹{{ item.price }}</span>
-                  {% if item.is_stock_managed %}
-                    <span class="text-sm text-gray-500">
-                      Stock: {{ item.stock_quantity }}
-                    </span>
-                  {% endif %}
-                </div>
-                
-                <button onclick="addToCart('{{ item.id }}')" 
-                        class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                  Add to Cart
-                </button>
               </div>
             </div>
           {% endfor %}
