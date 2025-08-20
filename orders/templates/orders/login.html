@@ -34,6 +34,7 @@
             {% endif %}
             <button type="submit" class="btn btn-primary w-full" style="width: 100%;">Login</button>
         </form>
+        {% if 'social_core.backends.google.GoogleOAuth2' in AUTHENTICATION_BACKENDS %}
         <div class="mt-8 text-center">
             <p style="color: #6b7280;">Or login with Google:</p>
             <a href="{% url 'social:begin' 'google-oauth2' %}" class="btn btn-secondary w-full" style="margin-top: 0.5rem; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;">
@@ -46,6 +47,7 @@
                 Login with Google
             </a>
         </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %} 

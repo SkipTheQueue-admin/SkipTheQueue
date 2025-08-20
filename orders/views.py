@@ -491,9 +491,6 @@ def home(request):
         if request.user.is_authenticated:
             user_email = request.user.email
             
-            # Log access attempt for security monitoring
-            logger.info(f"User {request.user.username} ({user_email}) accessed home page")
-            
             # Check if user is the main admin (skipthequeue.app@gmail.com)
             if user_email == 'skipthequeue.app@gmail.com':
                 if not request.user.is_superuser:
@@ -501,7 +498,6 @@ def home(request):
                     request.user.is_superuser = True
                     request.user.is_staff = True
                     request.user.save()
-                    logger.info(f"Updated {user_email} to superuser and redirected to dashboard")
                 # Store user type in session for consistent behavior
                 request.session['user_type'] = 'super_admin'
                 request.session['user_email'] = user_email
@@ -517,7 +513,6 @@ def home(request):
                     request.session['college_slug'] = canteen_staff.college.slug
                     request.session['college_name'] = canteen_staff.college.name
                     request.session['user_email'] = user_email
-                    logger.info(f"Canteen staff {user_email} redirected to {canteen_staff.college.name} dashboard")
                     return redirect('canteen_staff_dashboard', college_slug=canteen_staff.college.slug)
                 else:
                     # College is inactive or doesn't exist, log out the user
@@ -533,21 +528,19 @@ def home(request):
                     request.session['college_slug'] = college_admin.slug
                     request.session['college_name'] = college_admin.name
                     request.session['user_email'] = user_email
-                    logger.info(f"College admin {user_email} redirected to {college_admin.name} dashboard")
                     return redirect('college_admin_dashboard', college_slug=college_admin.slug)
                 except College.DoesNotExist:
                     # Regular user - continue to normal home page
-                    logger.info(f"Regular user {user_email} accessing home page")
-                    # Store user type in session for consistent behavior
                     request.session['user_type'] = 'regular_user'
                     request.session['user_email'] = user_email
         
-        # Get active colleges with caching
-        colleges_cache_key = 'active_colleges'
+        # Get active colleges with optimized caching
+        colleges_cache_key = 'active_colleges_home'
         colleges = cache.get(colleges_cache_key)
         
         if colleges is None:
-            colleges = College.objects.filter(is_active=True).order_by('name')
+            # Use select_related to optimize database queries
+            colleges = list(College.objects.filter(is_active=True).select_related().order_by('name'))
             cache.set(colleges_cache_key, colleges, 1800)  # Cache for 30 minutes
         
         # Get selected college from session
@@ -1054,14 +1047,38 @@ def decline_order(request, college_slug, order_id):
         return redirect('canteen_dashboard', college_slug=college_slug)
 
 def custom_login(request):
-    """Custom login view that handles redirects after OAuth"""
+    """Custom login view that handles redirects after OAuth or email login"""
     next_url = request.GET.get('next', '/')
     
     # Store the next URL in session for after login
     request.session['next_url'] = next_url
     
-    # Redirect to Google OAuth
-    return redirect('social:begin', backend='google-oauth2')
+    # Check if OAuth is configured
+    from django.conf import settings
+    if hasattr(settings, 'SOCIAL_AUTH_GOOGLE_OAUTH2_KEY') and settings.SOCIAL_AUTH_GOOGLE_OAUTH2_KEY:
+        # Redirect to Google OAuth
+        return redirect('social:begin', backend='google-oauth2')
+    else:
+        # Fallback to email login form
+        if request.method == 'POST':
+            email = request.POST.get('email')
+            password = request.POST.get('password')
+            
+            if email and password:
+                # Use the custom authentication backend
+                from django.contrib.auth import authenticate, login
+                user = authenticate(request, username=email, password=password)
+                
+                if user is not None:
+                    login(request, user)
+                    # Redirect to oauth_complete to handle user type routing
+                    return redirect('oauth_complete')
+                else:
+                    messages.error(request, 'Invalid email or password.')
+            else:
+                messages.error(request, 'Please provide both email and password.')
+        
+        return render(request, 'orders/login.html', {'next': next_url})
 
 def oauth_complete(request):
     """Handle redirect after successful OAuth login with proper user type routing"""
@@ -1457,30 +1474,42 @@ def track_order(request):
 
 # PWA Manifest view
 def pwa_manifest(request):
-    """PWA manifest for mobile app installation"""
-    manifest = {
-        "name": "SkipTheQueue - Smart Canteen Ordering",
-        "short_name": "SkipTheQueue",
-        "description": "Order food from your college canteen and skip the queues",
-        "start_url": "/",
-        "display": "standalone",
-        "background_color": "#ffffff",
-        "theme_color": "#3B82F6",
-        "orientation": "portrait-primary",
-        "icons": [
-            {
-                "src": "/static/images/icon-192x192.png",
-                "sizes": "192x192",
-                "type": "image/png"
-            },
-            {
-                "src": "/static/images/icon-512x512.png",
-                "sizes": "512x512",
-                "type": "image/png"
-            }
-        ]
-    }
-    return JsonResponse(manifest, content_type='application/manifest+json')
+    """Serve PWA manifest file"""
+    from django.conf import settings
+    import os
+    
+    # Try to read the static manifest file
+    manifest_path = os.path.join(settings.BASE_DIR, 'static', 'manifest.json')
+    
+    if os.path.exists(manifest_path):
+        with open(manifest_path, 'r') as f:
+            content = f.read()
+        return HttpResponse(content, content_type='application/manifest+json')
+    else:
+        # Fallback manifest if file doesn't exist
+        manifest = {
+            "name": "SkipTheQueue - Smart Canteen Ordering",
+            "short_name": "SkipTheQueue",
+            "description": "Order food from your college canteen and skip the queues",
+            "start_url": "/",
+            "display": "standalone",
+            "background_color": "#ffffff",
+            "theme_color": "#3B82F6",
+            "orientation": "portrait-primary",
+            "icons": [
+                {
+                    "src": "/static/images/icon-192x192.png",
+                    "sizes": "192x192",
+                    "type": "image/png"
+                },
+                {
+                    "src": "/static/images/icon-512x512.png",
+                    "sizes": "512x512",
+                    "type": "image/png"
+                }
+            ]
+        }
+        return JsonResponse(manifest, content_type='application/manifest+json')
 
 def pwa_service_worker(request):
     """Serve PWA service worker"""

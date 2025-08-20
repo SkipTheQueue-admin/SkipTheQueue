@@ -66,6 +66,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'social_django.context_processors.backends',
                 'social_django.context_processors.login_redirect',
+                'orders.context_processors.authentication_backends',
             ],
         },
     },
@@ -163,11 +164,13 @@ SOCIAL_AUTH_PIPELINE = (
 # Disable OAuth if not configured
 if not SOCIAL_AUTH_GOOGLE_OAUTH2_KEY or not SOCIAL_AUTH_GOOGLE_OAUTH2_SECRET:
     AUTHENTICATION_BACKENDS = [
+        'orders.backends.EmailBackend',
         'django.contrib.auth.backends.ModelBackend',
     ]
 else:
     AUTHENTICATION_BACKENDS = [
         'social_core.backends.google.GoogleOAuth2',
+        'orders.backends.EmailBackend',
         'django.contrib.auth.backends.ModelBackend',
     ]
 

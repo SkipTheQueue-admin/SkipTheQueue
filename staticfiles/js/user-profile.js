@@ -23,15 +23,21 @@ class UserProfileManager {
       }
     });
 
-    // Global error handlers
+    // Global error handlers - only show errors for critical issues
     window.addEventListener('error', (e) => {
       console.error('Global error in user profile:', e.error);
-      this.showNotification('An unexpected error occurred. Please check the console.', 'error');
+      // Only show notification for critical errors, not all errors
+      if (e.error && e.error.message && e.error.message.includes('fetch')) {
+        this.showNotification('Network error. Please check your connection.', 'error');
+      }
     });
 
     window.addEventListener('unhandledrejection', (e) => {
       console.error('Unhandled promise rejection in user profile:', e.reason);
-      this.showNotification('A network error occurred. Please try again.', 'error');
+      // Only show notification for network errors
+      if (e.reason && e.reason.message && e.reason.message.includes('fetch')) {
+        this.showNotification('Network error. Please try again.', 'error');
+      }
     });
   }
 

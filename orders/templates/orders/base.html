@@ -16,7 +16,7 @@
   <meta name="msapplication-tap-highlight" content="no">
     
   <!-- PWA Manifest -->
-      <link rel="manifest" href="{% url 'pwa_manifest' %}">
+      <link rel="manifest" href="/manifest.json">
   
   <!-- Apple Touch Icons -->
   <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
@@ -28,14 +28,16 @@
   <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-96x96.png' %}">
   <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-96x96.png' %}">
   
-  <!-- Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Font Awesome for icons - optimized loading -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
   
-  <!-- Tailwind CSS CDN with fallback -->
-  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Tailwind CSS CDN with fallback - optimized loading -->
+  <script src="https://cdn.tailwindcss.com" defer></script>
   
   <!-- Performance optimization: Preload critical resources -->
-  <link rel="preload" href="{% static 'css/tailwind-fallback.css' %}" as="style">
+  <link rel="preload" href="{% static 'css/performance-optimized.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+  <noscript><link rel="stylesheet" href="{% static 'css/performance-optimized.css' %}"></noscript>
   <link rel="preload" href="{% static 'js/notifications.js' %}" as="script">
   <link rel="preload" href="{% static 'js/performance.js' %}" as="script">
   
@@ -914,14 +916,14 @@
     </div>
   </footer>
 
-  <!-- Alpine.js for interactive components -->
+  <!-- Alpine.js for interactive components - optimized loading -->
   <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
   
   <!-- Performance monitoring script -->
-  <script src="{% static 'js/performance.js' %}"></script>
+  <script src="{% static 'js/performance.js' %}" defer></script>
   
   <!-- Notifications script -->
-  <script src="{% static 'js/notifications.js' %}"></script>
+  <script src="{% static 'js/notifications.js' %}" defer></script>
   
   <!-- UI Utilities script -->
   <script src="{% static 'js/ui-utilities.js' %}" defer></script>
