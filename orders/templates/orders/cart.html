@@ -39,13 +39,13 @@
   <!-- Header -->
   <div class="bg-white shadow-sm border-b">
     <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="flex items-center justify-between">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Shopping Cart</h1>
           <p class="text-gray-600 mt-1"><span id="cart-count">{{ cart_items|length }}</span> item{{ cart_items|length|pluralize }}</p>
         </div>
         
-        <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+        <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300 w-full sm:w-auto text-center">
           Continue Shopping
         </a>
       </div>
@@ -229,7 +229,7 @@
 </div>
 
 <!-- Success Notification -->
-<div id="successNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+<div id="successNotification" class="fixed top-4 right-4 left-4 sm:left-auto bg-green-500 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
   <div class="flex items-center">
     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -239,7 +239,7 @@
 </div>
 
 <!-- Error Notification -->
-<div id="errorNotification" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+<div id="errorNotification" class="fixed top-4 right-4 left-4 sm:left-auto bg-red-500 text-white px-4 sm:px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
   <div class="flex items-center">
     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>

@@ -216,6 +216,27 @@
                       </svg>
                       <span class="text-sm text-gray-600">Payment: {{ order.payment_method }}</span>
                     </div>
+                    
+                    <!-- Cash Payment Notice -->
+                    {% if order.payment_method == 'Cash' and order.status == 'Ready' %}
+                      <div class="flex items-start mt-2">
+                        <svg class="w-4 h-4 text-orange-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                          <p class="text-xs text-orange-600 font-medium">⚠️ Collect within 10 minutes or order will be given to someone else</p>
+                        </div>
+                      </div>
+                    {% elif order.payment_method == 'Cash' %}
+                      <div class="flex items-start mt-2">
+                        <svg class="w-4 h-4 text-yellow-500 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <div>
+                          <p class="text-xs text-yellow-600">Cash payment: 10-minute pickup limit applies</p>
+                        </div>
+                      </div>
+                    {% endif %}
                   </div>
                   
                   <div class="text-right">

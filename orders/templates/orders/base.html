@@ -42,6 +42,18 @@
       font-family: 'Inter', sans-serif;
     }
     
+    /* Prevent horizontal scroll on small screens */
+    html, body {
+      overflow-x: hidden;
+    }
+    
+    /* Ensure images scale within containers */
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+    
     /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 6px;

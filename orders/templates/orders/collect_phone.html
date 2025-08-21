@@ -1,10 +1,10 @@
 {% extends "orders/base.html" %}
 
 {% block content %}
-<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12">
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-start sm:items-center justify-center py-6 sm:py-12">
   <div class="max-w-2xl mx-auto px-4">
     <!-- Order Details Card -->
-    <div class="bg-white rounded-2xl shadow-xl p-8">
+    <div class="bg-white rounded-2xl shadow-xl p-4 sm:p-8">
       <!-- Header -->
       <div class="text-center mb-8">
         <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -26,14 +26,14 @@
         <div class="space-y-3">
           {% if menu_items %}
             {% for item in menu_items %}
-              <div class="flex justify-between items-center">
-                <div class="flex items-center space-x-3">
+              <div class="flex items-center justify-between space-x-3">
+                <div class="flex items-center space-x-3 min-w-0">
                   <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
                     <span class="text-sm font-semibold text-blue-600">{{ item.quantity }}</span>
                   </div>
-                  <span class="font-medium text-gray-900">{{ item.name }}</span>
+                  <span class="font-medium text-gray-900 truncate">{{ item.name }}</span>
                 </div>
-                <span class="text-gray-600">₹{{ item.total|floatformat:2 }}</span>
+                <span class="text-gray-600 shrink-0">₹{{ item.total|floatformat:2 }}</span>
               </div>
             {% endfor %}
           {% else %}
@@ -47,7 +47,7 @@
           
           {% if total > 0 %}
             <div class="border-t border-gray-200 pt-3">
-              <div class="flex justify-between font-semibold text-lg">
+              <div class="flex items-center justify-between font-semibold text-lg">
                 <span>Total</span>
                 <span class="text-blue-600">₹{{ total|floatformat:2 }}</span>
               </div>
@@ -81,9 +81,9 @@
             
             <div class="space-y-3">
               {% if college.payment_gateway_enabled %}
-                <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label class="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                   <input type="radio" name="payment_method" value="Online" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
-                  <div class="ml-3">
+                  <div class="ml-3 min-w-0">
                     <div class="flex items-center">
                       <svg class="w-5 h-5 text-green-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
@@ -96,9 +96,9 @@
               {% endif %}
               
               {% if college.allow_pay_later %}
-                <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+                <label class="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                   <input type="radio" name="payment_method" value="Cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" {% if not college.payment_gateway_enabled %}checked{% endif %}>
-                  <div class="ml-3">
+                  <div class="ml-3 min-w-0">
                     <div class="flex items-center">
                       <svg class="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -108,6 +108,21 @@
                     <p class="text-sm text-gray-600">Pay with cash when you collect your order</p>
                   </div>
                 </label>
+                
+                <!-- Cash Payment Notice -->
+                <div class="ml-7 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                  <div class="flex items-start">
+                    <svg class="w-4 h-4 text-orange-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <div>
+                      <p class="text-xs text-orange-700">
+                        <strong>Important:</strong> Cash payment orders must be collected within <strong>10 minutes</strong> after being marked "Ready", 
+                        or they will be given to someone else.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               {% endif %}
             </div>
             
@@ -132,9 +147,9 @@
               Payment Method *
             </label>
             <div class="space-y-3">
-              <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
+              <label class="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer">
                 <input type="radio" name="payment_method" value="Cash" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300" checked>
-                <div class="ml-3">
+                <div class="ml-3 min-w-0">
                   <div class="flex items-center">
                     <svg class="w-5 h-5 text-orange-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"></path>
@@ -144,6 +159,21 @@
                   <p class="text-sm text-gray-600">Pay with cash when you collect your order</p>
                 </div>
               </label>
+              
+              <!-- Cash Payment Notice -->
+              <div class="ml-7 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+                <div class="flex items-start">
+                  <svg class="w-4 h-4 text-orange-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                  </svg>
+                  <div>
+                    <p class="text-xs text-orange-700">
+                      <strong>Important:</strong> Cash payment orders must be collected within <strong>10 minutes</strong> after being marked "Ready", 
+                      or they will be given to someone else.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         {% endif %}
@@ -180,7 +210,7 @@
             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
             </svg>
-            Continue to Payment
+            <span id="submitLabel">Continue to Payment</span>
           </button>
           
           <a href="{% url 'view_cart' %}" class="flex-1 bg-gray-200 text-gray-700 py-4 px-6 rounded-lg hover:bg-gray-300 transition duration-300 font-semibold text-lg flex items-center justify-center">
@@ -241,5 +271,21 @@ document.getElementById('phone').addEventListener('input', function() {
   }
   this.value = value;
 });
+
+// Toggle submit label based on payment method
+(function() {
+  const submitLabel = document.getElementById('submitLabel');
+  const radios = document.querySelectorAll('input[name="payment_method"]');
+  function updateLabel() {
+    const selected = document.querySelector('input[name="payment_method"]:checked');
+    if (selected && selected.value === 'Cash') {
+      submitLabel.textContent = 'Place Order';
+    } else {
+      submitLabel.textContent = 'Continue to Payment';
+    }
+  }
+  radios.forEach(r => r.addEventListener('change', updateLabel));
+  updateLabel();
+})();
 </script>
 {% endblock %}

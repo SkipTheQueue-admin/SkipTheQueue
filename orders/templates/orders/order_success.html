@@ -68,6 +68,24 @@
           </svg>
           {{ order.status }}
         </span>
+        
+        <!-- Cash Payment Pickup Notice -->
+        {% if order.payment_method == 'Cash' %}
+          <div class="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-orange-600 mr-3 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              <div>
+                <h4 class="text-sm font-semibold text-orange-800 mb-1">Important: Cash Payment Pickup</h4>
+                <p class="text-sm text-orange-700">
+                  Since you chose cash payment, you must collect your order within <strong>10 minutes</strong> after it's marked as "Ready". 
+                  If you don't collect it within this time, your order will be given to someone else.
+                </p>
+              </div>
+            </div>
+          </div>
+        {% endif %}
       </div>
       
       <!-- Action Buttons -->

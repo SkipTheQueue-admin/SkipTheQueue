@@ -19,19 +19,19 @@
         <!-- Cart Items -->
         <div class="space-y-4 mb-6">
           {% for item in cart_items %}
-            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div class="flex items-center">
+            <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg gap-4">
+              <div class="flex items-center min-w-0">
                 <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
                   <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                   </svg>
                 </div>
-                <div>
-                  <h3 class="font-semibold text-gray-900">{{ item.item.name }}</h3>
+                <div class="min-w-0">
+                  <h3 class="font-semibold text-gray-900 truncate">{{ item.item.name }}</h3>
                   <p class="text-sm text-gray-600">Quantity: {{ item.quantity }}</p>
                 </div>
               </div>
-              <div class="text-right">
+              <div class="text-right shrink-0">
                 <p class="font-semibold text-gray-900">₹{{ item.total|floatformat:2 }}</p>
                 <p class="text-sm text-gray-600">₹{{ item.item.price|floatformat:2 }} each</p>
               </div>
@@ -93,6 +93,21 @@
                 <p class="text-sm text-gray-600">Pay when you collect your order</p>
               </div>
             </label>
+            
+            <!-- Cash Payment Notice -->
+            <div class="ml-7 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <div class="flex items-start">
+                <svg class="w-4 h-4 text-orange-600 mr-2 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <div>
+                  <p class="text-xs text-orange-700">
+                    <strong>Important:</strong> Cash payment orders must be collected within <strong>10 minutes</strong> after being marked "Ready", 
+                    or they will be given to someone else.
+                  </p>
+                </div>
+              </div>
+            </div>
           {% endif %}
         </div>
       </div>
