@@ -4,7 +4,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}SkipTheQueue - Smart Canteen Ordering{% endblock %}</title>
   
   <!-- PWA Meta Tags -->
@@ -14,560 +14,62 @@
   <meta name="apple-mobile-web-app-title" content="SkipTheQueue">
   <meta name="msapplication-TileColor" content="#3B82F6">
   <meta name="msapplication-tap-highlight" content="no">
-    
-  <!-- PWA Manifest -->
-      <link rel="manifest" href="/manifest.json">
   
-  <!-- Apple Touch Icons -->
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="{% url 'pwa_manifest' %}">
+  
+  <!-- Apple Touch Icons (zap symbol) -->
   <link rel="apple-touch-icon" href="/static/images/icon-192x192.png">
   <link rel="apple-touch-icon" sizes="152x152" href="/static/images/icon-152x152.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/static/images/icon-180x180.png">
   <link rel="apple-touch-icon" sizes="167x167" href="/static/images/icon-167x167.png">
-    
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-96x96.png' %}">
-  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-96x96.png' %}">
   
-  <!-- Font Awesome for icons - optimized loading -->
-  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+  <!-- Favicon (zap symbol) -->
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/icon-128x128.png' %}">
+  <link rel="icon" type="image/png" sizes="16x16" href="{% static 'images/icon-72x72.png' %}">
   
-  <!-- Tailwind CSS CDN with fallback - optimized loading -->
-  <script src="https://cdn.tailwindcss.com" defer></script>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Performance optimization: Preload critical resources -->
-  <link rel="preload" href="{% static 'css/performance-optimized.css' %}" as="style" onload="this.onload=null;this.rel='stylesheet'">
-  <noscript><link rel="stylesheet" href="{% static 'css/performance-optimized.css' %}"></noscript>
-  <link rel="preload" href="{% static 'js/notifications.js' %}" as="script">
-  <link rel="preload" href="{% static 'js/performance.js' %}" as="script">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
-  <!-- Comprehensive CSS Solution -->
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR_PUBLISHER_ID" crossorigin="anonymous"></script>
+  
   <style>
-    /* Reset and base styles */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-    
-    html {
-      font-size: 16px;
-      -webkit-text-size-adjust: 100%;
-      -ms-text-size-adjust: 100%;
-      scroll-behavior: smooth;
-    }
-    
     body {
-      font-family: 'Inter', 'Arial', sans-serif;
-      line-height: 1.6;
-      background-color: #f9fafb;
-      color: #111827;
-      padding-top: 0;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
+      font-family: 'Inter', sans-serif;
     }
     
-    /* Performance optimization: Reduce paint operations */
-    .bg-gradient-to-br {
-      will-change: transform;
-    }
-    
-    .backdrop-blur-lg {
-      will-change: backdrop-filter;
-    }
-    
-    /* Optimize transitions for better performance */
-    .transition-all {
-      transition-property: all;
-      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-      transition-duration: 200ms;
-    }
-    
-    /* Optimize hover effects */
-    .hover\:shadow-xl:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-    }
-    
-    /* Loading states for better UX */
-    .loading {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-    
-    .loading::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 20px;
-      height: 20px;
-      margin: -10px 0 0 -10px;
-      border: 2px solid #3b82f6;
-      border-radius: 50%;
-      border-top-color: transparent;
-      animation: spin 1s linear infinite;
-    }
-    
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-    
-    /* Enhanced button styles with proper fallbacks */
-    .btn-primary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #2563eb;
-      color: #ffffff;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-    }
-    
-    .btn-primary:hover {
-      background-color: #1d4ed8;
-      transform: translateY(-1px);
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    
-    .btn-primary:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-    }
-    
-    .btn-secondary {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #4b5563;
-      color: #ffffff;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-    }
-    
-    .btn-secondary:hover {
-      background-color: #374151;
-      transform: translateY(-1px);
-    }
-    
-    .btn-secondary:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.5);
-    }
-    
-    .btn-success {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #059669;
-      color: #ffffff;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-    }
-    
-    .btn-success:hover {
-      background-color: #047857;
-      transform: translateY(-1px);
-    }
-    
-    .btn-success:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.5);
-    }
-    
-    .btn-danger {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      background-color: #dc2626;
-      color: #ffffff;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: 0.5rem;
-      transition: all 0.2s ease;
-      text-decoration: none;
-      border: none;
-      cursor: pointer;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-    }
-    
-    .btn-danger:hover {
-      background-color: #b91c1c;
-      transform: translateY(-1px);
-    }
-    
-    .btn-danger:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.5);
-    }
-    
-    /* Enhanced form styles */
-    .form-input {
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border: 1px solid #d1d5db;
-      border-radius: 0.5rem;
-      font-size: 0.875rem;
-      line-height: 1.25rem;
-      transition: all 0.2s ease;
-      background-color: #ffffff;
-    }
-    
-    .form-input:focus {
-      outline: none;
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    }
-    
-    .form-input:disabled {
-      background-color: #f3f4f6;
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    
-    .form-label {
-      display: block;
-      font-size: 0.875rem;
-      font-weight: 500;
-      color: #374151;
-      margin-bottom: 0.5rem;
-    }
-    
-    /* Enhanced card styles */
-    .card {
-      background-color: #ffffff;
-      border-radius: 0.5rem;
-      box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-      border: 1px solid #e5e7eb;
-      transition: all 0.2s ease;
-    }
-    
-    .card:hover {
-      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
-    
-    .card-header {
-      padding: 1.5rem;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .card-body {
-      padding: 1.5rem;
-    }
-    
-    /* Enhanced navigation styles */
-    .nav-link {
-      color: #4b5563;
-      padding: 0.5rem 0.75rem;
-      border-radius: 0.375rem;
-      font-size: 0.875rem;
-      font-weight: 500;
-      text-decoration: none;
-      transition: all 0.2s ease;
-      display: inline-flex;
-      align-items: center;
-    }
-    
-    .nav-link:hover {
-      color: #111827;
-      background-color: #f3f4f6;
-    }
-    
-    .nav-link.active {
-      color: #2563eb;
-      background-color: #eff6ff;
-    }
-    
-    /* Enhanced table styles */
-    .table {
-      width: 100%;
-      border-collapse: collapse;
-    }
-    
-    .table th {
-      padding: 0.75rem 1.5rem;
-      text-align: left;
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: #6b7280;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      border-bottom: 1px solid #e5e7eb;
-      background-color: #f9fafb;
-    }
-    
-    .table td {
-      padding: 0.75rem 1.5rem;
-      font-size: 0.875rem;
-      color: #111827;
-      border-bottom: 1px solid #e5e7eb;
-      white-space: nowrap;
-    }
-    
-    .table tbody tr:hover {
-      background-color: #f9fafb;
-    }
-    
-    /* Enhanced alert styles */
-    .alert {
-      padding: 1rem;
-      border-radius: 0.5rem;
-      border: 1px solid;
-      margin-bottom: 1rem;
-    }
-    
-    .alert-success {
-      background-color: #f0fdf4;
-      border-color: #bbf7d0;
-      color: #166534;
-    }
-    
-    .alert-error {
-      background-color: #fef2f2;
-      border-color: #fecaca;
-      color: #991b1b;
-    }
-    
-    .alert-warning {
-      background-color: #fffbeb;
-      border-color: #fed7aa;
-      color: #92400e;
-    }
-    
-    .alert-info {
-      background-color: #eff6ff;
-      border-color: #bfdbfe;
-      color: #1e40af;
-    }
-    
-    /* Enhanced badge styles */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.5rem;
-      border-radius: 9999px;
-      font-size: 0.75rem;
-      font-weight: 500;
-      line-height: 1;
-    }
-    
-    .badge-success {
-      background-color: #dcfce7;
-      color: #166534;
-    }
-    
-    .badge-warning {
-      background-color: #fef3c7;
-      color: #92400e;
-    }
-    
-    .badge-error {
-      background-color: #fee2e2;
-      color: #991b1b;
-    }
-    
-    .badge-info {
-      background-color: #dbeafe;
-      color: #1e40af;
-    }
-    
-    /* Enhanced modal styles */
-    .modal {
-      position: fixed;
-      inset: 0;
-      z-index: 50;
-      overflow-y: auto;
-    }
-    
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background-color: rgba(107, 114, 128, 0.75);
-      transition: opacity 0.2s ease;
-    }
-    
-    .modal-content {
-      display: inline-block;
-      vertical-align: bottom;
-      background-color: #ffffff;
-      border-radius: 0.5rem;
-      text-align: left;
-      overflow: hidden;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-      transform: translateY(0);
-      transition: all 0.2s ease;
-      max-width: 32rem;
-      width: 100%;
-      margin: 2rem auto;
-    }
-    
-    /* Enhanced responsive utilities */
-    .container-responsive {
-      max-width: 80rem;
-      margin: 0 auto;
-      padding: 0 1rem;
-    }
-    
-    @media (min-width: 640px) {
-      .container-responsive {
-        padding: 0 1.5rem;
-      }
-    }
-    
-    @media (min-width: 1024px) {
-      .container-responsive {
-        padding: 0 2rem;
-      }
-    }
-    
-    /* Enhanced accessibility */
-    .sr-only {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
-    
-    /* Enhanced focus styles */
-    .focus-visible:focus {
-      outline: 2px solid #3b82f6;
-      outline-offset: 2px;
-    }
-    
-    /* Enhanced loading animations */
-    .animate-pulse {
-      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: .5;
-      }
-    }
-    
-    /* Enhanced scrollbar */
+    /* Custom scrollbar */
     ::-webkit-scrollbar {
-      width: 8px;
+      width: 6px;
     }
     
     ::-webkit-scrollbar-track {
-      background: #f1f1f1;
-      border-radius: 4px;
+      background: #f1f5f9;
     }
     
     ::-webkit-scrollbar-thumb {
-      background: #c1c1c1;
-      border-radius: 4px;
+      background: #3b82f6;
+      border-radius: 3px;
     }
     
     ::-webkit-scrollbar-thumb:hover {
-      background: #a8a8a8;
+      background: #2563eb;
     }
     
-    /* Enhanced print styles */
-    @media print {
-      .no-print {
-        display: none !important;
+    /* Mobile-first animations */
+    @keyframes slideUp {
+      from {
+        transform: translateY(100%);
+        opacity: 0;
       }
-      
-      body {
-        background: white !important;
-        color: black !important;
+      to {
+        transform: translateY(0);
+        opacity: 1;
       }
-    }
-    
-    /* Enhanced dark mode support */
-    @media (prefers-color-scheme: dark) {
-      .dark-mode-auto {
-        background-color: #111827;
-        color: #ffffff;
-      }
-    }
-    
-    /* Enhanced mobile optimizations */
-    @media (max-width: 640px) {
-      .mobile-optimized {
-        font-size: 0.875rem;
-      }
-      
-      .mobile-full-width {
-        width: 100%;
-      }
-      
-      .mobile-text-center {
-        text-align: center;
-      }
-      
-      .mobile-p-4 {
-        padding: 1rem;
-      }
-    }
-    
-    /* Alpine.js x-cloak directive */
-    [x-cloak] {
-      display: none !important;
-    }
-    
-    /* Enhanced utility classes */
-    .line-clamp-2 {
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    .line-clamp-3 {
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-    
-    /* Enhanced animations */
-    .animate-fade-in {
-      animation: fadeIn 0.3s ease-out;
-    }
-    
-    .animate-slide-up {
-      animation: slideUp 0.3s ease-out;
-    }
-    
-    .animate-scale-in {
-      animation: scaleIn 0.2s ease-out;
     }
     
     @keyframes fadeIn {
@@ -575,363 +77,380 @@
       to { opacity: 1; }
     }
     
-    @keyframes slideUp {
-      from { 
-        opacity: 0;
-        transform: translateY(10px);
-      }
-      to { 
-        opacity: 1;
-        transform: translateY(0);
-      }
+    .slide-up {
+      animation: slideUp 0.3s ease-out;
     }
     
-    @keyframes scaleIn {
-      from { 
-        opacity: 0;
-        transform: scale(0.95);
-      }
-      to { 
-        opacity: 1;
-        transform: scale(1);
-      }
+    .fade-in {
+      animation: fadeIn 0.5s ease-out;
     }
     
-    /* Enhanced hover effects */
-    .hover-lift {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    /* PWA Install Prompt */
+    .pwa-install-prompt {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 1rem;
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      z-index: 1000;
     }
     
-    .hover-lift:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    .pwa-install-prompt.show {
+      transform: translateY(0);
     }
     
-    /* Enhanced focus rings */
-    .focus-ring {
-      transition: box-shadow 0.2s ease;
+    /* Ad container styles */
+    .ad-container {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      text-align: center;
     }
     
-    .focus-ring:focus {
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
-    }
-    
-    /* Enhanced disabled states */
-    .disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      pointer-events: none;
-    }
-    
-    /* Enhanced loading states */
-    .loading-skeleton {
-      background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
-      background-size: 200% 100%;
-      animation: loading-shimmer 1.5s infinite;
-    }
-    
-    @keyframes loading-shimmer {
-      0% { background-position: -200% 0; }
-      100% { background-position: 200% 0; }
+    .ad-label {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-bottom: 0.5rem;
     }
   </style>
-  
-  <!-- Fallback CSS for when Tailwind fails to load -->
-  <link rel="stylesheet" href="{% static 'css/tailwind-fallback.css' %}">
-  
-  <!-- Enhanced UI CSS -->
-  <link rel="stylesheet" href="{% static 'css/enhanced-ui.css' %}">
 </head>
+
 <body class="bg-gray-50">
-  <!-- Order Tracking Bar (Zomato Style) -->
-  <div id="order-tracking-bar" class="hidden fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 text-white shadow-xl transform transition-all duration-500 -translate-y-full" x-data="{ isVisible: false }" x-show="isVisible" x-cloak>
-    <div class="container-responsive py-3">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center space-x-3">
-          <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center animate-pulse">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-          </div>
-          <div class="flex-1 min-w-0">
-            <h3 class="font-semibold text-sm truncate">Order #<span id="tracking-order-id" class="font-mono">-</span></h3>
-            <p class="text-xs text-blue-100 truncate">Status: <span id="tracking-status" class="font-medium">-</span></p>
-          </div>
+  <!-- PWA Install Prompt -->
+  <div id="pwaInstallPrompt" class="pwa-install-prompt">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 bg-white/20 rounded-lg flex items-center justify-center">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+          </svg>
         </div>
-        
-        <div class="flex items-center space-x-3">
-          <div class="hidden sm:flex items-center space-x-2 text-blue-100">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <span id="tracking-time" class="text-xs font-medium">-</span>
-          </div>
-          <button data-action="hide-order-tracking" 
-                  class="text-white hover:text-blue-100 transition-colors p-1 rounded-full hover:bg-white/10 focus:outline-none focus:ring-2 focus:ring-white/50"
-                  aria-label="Hide order tracking">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-            </svg>
-          </button>
+        <div>
+          <p class="font-semibold">Install SkipTheQueue</p>
+          <p class="text-sm text-blue-100">Add to home screen for quick access</p>
         </div>
       </div>
-      
-      <!-- Progress Bar -->
-      <div class="mt-2 w-full bg-white/20 rounded-full h-1">
-        <div id="tracking-progress" class="bg-white h-1 rounded-full transition-all duration-1000 ease-out" style="width: 0%"></div>
+      <div class="flex space-x-2">
+        <button onclick="installPWA()" class="bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold text-sm">
+          Install
+        </button>
+        <button onclick="dismissPWA()" class="text-white/80 hover:text-white">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
       </div>
     </div>
   </div>
 
-  <!-- Navigation Header -->
-  <nav class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40" x-data="{ mobileMenuOpen: false }">
-    <div class="container-responsive">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-lg border-b border-gray-200 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4">
       <div class="flex items-center justify-between h-16">
-        <!-- Logo and Brand -->
+        <!-- Logo -->
         <div class="flex items-center space-x-3">
-          <a href="{% url 'home' %}" class="flex items-center space-x-2 text-blue-600 hover:text-blue-700 transition-colors">
-            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+          <a href="{% url 'home' %}" class="flex items-center space-x-2">
+            <div class="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
-            <span class="text-xl font-bold">SkipTheQueue</span>
-          </a>
-        </div>
-        
-        <!-- Navigation Links -->
-        <div class="hidden md:flex items-center space-x-1">
-          <a href="{% url 'home' %}" class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
-            <i class="fas fa-home mr-2"></i>Home
-          </a>
-          <a href="{% url 'menu' %}" class="nav-link {% if request.resolver_match.url_name == 'menu' %}active{% endif %}">
-            <i class="fas fa-utensils mr-2"></i>Menu
-          </a>
-          <a href="{% url 'favorites' %}" class="nav-link {% if request.resolver_match.url_name == 'favorites' %}active{% endif %}">
-            <i class="fas fa-heart mr-2"></i>Favorites
-          </a>
-          <a href="{% url 'order_history' %}" class="nav-link {% if request.resolver_match.url_name == 'order_history' %}active{% endif %}">
-            <i class="fas fa-history mr-2"></i>Orders
-          </a>
-          <a href="{% url 'help_center' %}" class="nav-link {% if request.resolver_match.url_name == 'help_center' %}active{% endif %}">
-            <i class="fas fa-question-circle mr-2"></i>Help
-          </a>
-        </div>
-        
-        <!-- User Actions -->
-        <div class="flex items-center space-x-3">
-          <!-- Cart -->
-          <a href="{% url 'view_cart' %}" class="relative text-gray-600 hover:text-blue-600 transition-colors group">
-            <svg class="w-6 h-6 group-hover:scale-110 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-            </svg>
-            <span id="cart-count" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium animate-pulse">0</span>
-          </a>
-          
-          <!-- User Menu -->
-          {% if user.is_authenticated %}
-            <div class="relative" x-data="{ userMenuOpen: false }" x-cloak>
-              <button @click="userMenuOpen = !userMenuOpen" 
-                      @click.away="userMenuOpen = false"
-                      @keydown.escape="userMenuOpen = false"
-                      class="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-lg p-1"
-                      aria-label="User menu"
-                      aria-expanded="false"
-                      :aria-expanded="userMenuOpen">
-                <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
-                  <span class="text-white font-medium text-sm">{{ user.username|first|upper }}</span>
-                </div>
-                <span class="hidden sm:block text-sm font-medium">{{ user.username }}</span>
-                <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': userMenuOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                </svg>
-              </button>
-              
-              <!-- Dropdown Menu -->
-              <div x-show="userMenuOpen" 
-                   x-transition:enter="transition ease-out duration-200"
-                   x-transition:enter-start="opacity-0 transform scale-95"
-                   x-transition:enter-end="opacity-100 transform scale-100"
-                   x-transition:leave="transition ease-in duration-150"
-                   x-transition:leave-start="opacity-100 transform scale-100"
-                   x-transition:leave-end="opacity-0 transform scale-95"
-                   x-cloak
-                   class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
-                <a href="{% url 'user_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                  <i class="fas fa-user mr-2"></i>Profile
-                </a>
-                <a href="{% url 'edit_profile' %}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors">
-                  <i class="fas fa-edit mr-2"></i>Edit Profile
-                </a>
-                <hr class="my-2">
-                <a href="{% url 'logout' %}" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
-                  <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </a>
-              </div>
+            <div class="hidden sm:block">
+              <h1 class="text-xl font-bold text-gray-900">SkipTheQueue</h1>
+              <p class="text-xs text-gray-500">Smart Canteen Ordering</p>
             </div>
-          {% else %}
-            <a href="{% url 'custom_login' %}" class="btn-primary">
-              <i class="fas fa-sign-in-alt mr-2"></i>Login
-            </a>
+          </a>
+        </div>
+
+        <!-- Navigation Links -->
+        <div class="hidden md:flex items-center space-x-6">
+          <a href="{% url 'home' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Home</a>
+          <a href="{% url 'menu' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Menu</a>
+          {% if user.is_authenticated %}
+            <a href="{% url 'order_history' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">My Orders</a>
+            <a href="{% url 'track_order' %}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">Track Order</a>
           {% endif %}
         </div>
-        
+
         <!-- Mobile Menu Button -->
         <div class="md:hidden">
-          <button @click="mobileMenuOpen = !mobileMenuOpen" 
-                  @keydown.escape="mobileMenuOpen = false"
-                  class="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                  aria-label="Toggle mobile menu"
-                  aria-expanded="false"
-                  :aria-expanded="mobileMenuOpen">
+          <button id="mobileMenuBtn" class="text-gray-700 hover:text-blue-600">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
             </svg>
           </button>
         </div>
-      </div>
-      
-      <!-- Mobile Navigation -->
-      <div x-show="mobileMenuOpen" 
-           x-transition:enter="transition ease-out duration-200"
-           x-transition:enter-start="opacity-0 transform -translate-y-2"
-           x-transition:enter-end="opacity-100 transform translate-y-0"
-           x-transition:leave="transition ease-in duration-150"
-           x-transition:leave-start="opacity-100 transform translate-y-0"
-           x-transition:leave-end="opacity-0 transform -translate-y-2"
-           x-cloak
-           class="md:hidden border-t border-gray-200 py-4 bg-white">
-        <div class="space-y-2 px-4">
-          <a href="{% url 'home' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'home' %}text-blue-600 bg-blue-50{% endif %}">
-            <i class="fas fa-home mr-3 w-5 text-center"></i>Home
-          </a>
-          <a href="{% url 'menu' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'menu' %}text-blue-600 bg-blue-50{% endif %}">
-            <i class="fas fa-utensils mr-3 w-5 text-center"></i>Menu
-          </a>
-          <a href="{% url 'favorites' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'favorites' %}text-blue-600 bg-blue-50{% endif %}">
-            <i class="fas fa-heart mr-3 w-5 text-center"></i>Favorites
-          </a>
-          <a href="{% url 'order_history' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'order_history' %}text-blue-600 bg-blue-50{% endif %}">
-            <i class="fas fa-history mr-3 w-5 text-center"></i>Orders
-          </a>
-          <a href="{% url 'help_center' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 {% if request.resolver_match.url_name == 'help_center' %}text-blue-600 bg-blue-50{% endif %}">
-            <i class="fas fa-question-circle mr-3 w-5 text-center"></i>Help
-          </a>
-          
-          <!-- Mobile User Actions -->
+
+        <!-- User Menu -->
+        <div class="flex items-center space-x-4">
           {% if user.is_authenticated %}
-            <hr class="my-3 border-gray-200">
-            <a href="{% url 'user_profile' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-              <i class="fas fa-user mr-3 w-5 text-center"></i>Profile
-            </a>
-            <a href="{% url 'edit_profile' %}" class="block px-3 py-3 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200">
-              <i class="fas fa-edit mr-3 w-5 text-center"></i>Edit Profile
-            </a>
-            <a href="{% url 'logout' %}" class="block px-3 py-3 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200">
-              <i class="fas fa-sign-out-alt mr-3 w-5 text-center"></i>Logout
-            </a>
+            <div class="relative">
+              <button id="userMenuBtn" class="flex items-center space-x-2 text-gray-700 hover:text-blue-600">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span class="text-blue-600 font-semibold text-sm">{{ user.first_name|first|upper }}</span>
+                </div>
+                <span class="hidden sm:block">{{ user.first_name }}</span>
+              </button>
+              
+              <!-- User Dropdown -->
+              <div id="userDropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden">
+                <div class="py-2">
+                  <a href="{% url 'order_history' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">My Orders</a>
+                  <a href="{% url 'track_order' %}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">Track Order</a>
+                  <hr class="my-2">
+                  <a href="{% url 'logout' %}" class="block px-4 py-2 text-red-600 hover:bg-red-50">Logout</a>
+                </div>
+              </div>
+            </div>
           {% else %}
-            <hr class="my-3 border-gray-200">
-            <a href="{% url 'custom_login' %}" class="block px-3 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-center">
-              <i class="fas fa-sign-in-alt mr-2"></i>Login
+            <a href="{% url 'custom_login' %}" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+              Login
             </a>
           {% endif %}
         </div>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobileMenu" class="md:hidden hidden bg-white border-t border-gray-200">
+      <div class="px-4 py-2 space-y-1">
+        <a href="{% url 'home' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Home</a>
+        <a href="{% url 'menu' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Menu</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'order_history' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">My Orders</a>
+          <a href="{% url 'track_order' %}" class="block px-3 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">Track Order</a>
+          <hr class="my-2">
+          <a href="{% url 'logout' %}" class="block px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg">Logout</a>
+        {% else %}
+          <a href="{% url 'custom_login' %}" class="block px-3 py-2 bg-blue-600 text-white rounded-lg text-center">Login</a>
+        {% endif %}
       </div>
     </div>
   </nav>
 
   <!-- Main Content -->
   <main class="min-h-screen">
+    {% if messages %}
+      <div class="max-w-7xl mx-auto px-4 py-2">
+        {% for message in messages %}
+          <div class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 border border-red-400 text-red-700{% elif message.tags == 'success' %}bg-green-100 border border-green-400 text-green-700{% else %}bg-blue-100 border border-blue-400 text-blue-700{% endif %}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
     {% block content %}{% endblock %}
   </main>
 
   <!-- Footer -->
-  <footer class="bg-gray-900 text-white py-12">
-    <div class="container-responsive">
+  <footer class="bg-gray-900 text-white">
+    <div class="max-w-7xl mx-auto px-4 py-12">
       <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
-        <!-- Company Info -->
-        <div class="col-span-1 md:col-span-2">
-          <div class="flex items-center space-x-2 mb-4">
-            <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-              </svg>
-            </div>
-            <span class="text-xl font-bold">SkipTheQueue</span>
-          </div>
-          <p class="text-gray-400 mb-4">
-            Revolutionizing canteen ordering with smart technology. Skip the queue, order ahead, and enjoy your meal without waiting.
+        <div>
+          <h3 class="text-lg font-semibold mb-4">SkipTheQueue</h3>
+          <p class="text-gray-400 text-sm">
+            The smart canteen ordering system for colleges and institutions. 
+            Skip the queues, order online!
           </p>
-          <div class="flex space-x-4">
-            <a href="#" class="text-gray-400 hover:text-white transition-colors">
-              <i class="fab fa-facebook-f text-lg"></i>
-            </a>
-            <a href="#" class="text-gray-400 hover:text-white transition-colors">
-              <i class="fab fa-twitter text-lg"></i>
-            </a>
-            <a href="#" class="text-gray-400 hover:text-white transition-colors">
-              <i class="fab fa-instagram text-lg"></i>
-            </a>
-            <a href="#" class="text-gray-400 hover:text-white transition-colors">
-              <i class="fab fa-linkedin-in text-lg"></i>
-            </a>
-          </div>
         </div>
         
-        <!-- Quick Links -->
         <div>
-          <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
-          <ul class="space-y-2">
-            <li><a href="{% url 'home' %}" class="text-gray-400 hover:text-white transition-colors">Home</a></li>
-            <li><a href="{% url 'menu' %}" class="text-gray-400 hover:text-white transition-colors">Menu</a></li>
-            <li><a href="{% url 'favorites' %}" class="text-gray-400 hover:text-white transition-colors">Favorites</a></li>
-            <li><a href="{% url 'order_history' %}" class="text-gray-400 hover:text-white transition-colors">Order History</a></li>
+          <h4 class="font-semibold mb-4">Quick Links</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="{% url 'home' %}" class="hover:text-white transition duration-200">Home</a></li>
+            <li><a href="{% url 'menu' %}" class="hover:text-white transition duration-200">Menu</a></li>
+            <li><a href="{% url 'register_college' %}" class="hover:text-white transition duration-200">Register College</a></li>
           </ul>
         </div>
         
-        <!-- Support -->
         <div>
-          <h3 class="text-lg font-semibold mb-4">Support</h3>
-          <ul class="space-y-2">
-            <li><a href="{% url 'help_center' %}" class="text-gray-400 hover:text-white transition-colors">Help Center</a></li>
-            <li><a href="{% url 'privacy_policy' %}" class="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
-            <li><a href="{% url 'terms_of_service' %}" class="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-            <li><a href="mailto:support@skipthequeue.com" class="text-gray-400 hover:text-white transition-colors">Contact Support</a></li>
+          <h4 class="font-semibold mb-4">Support</h4>
+          <ul class="space-y-2 text-sm text-gray-400">
+            <li><a href="#" class="hover:text-white transition duration-200">Help Center</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Contact Us</a></li>
+            <li><a href="#" class="hover:text-white transition duration-200">Privacy Policy</a></li>
           </ul>
+        </div>
+        
+        <div>
+          <h4 class="font-semibold mb-4">Download App</h4>
+          <p class="text-gray-400 text-sm mb-4">
+            Get the best experience with our mobile app
+          </p>
+          <button onclick="installPWA()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-sm">
+            Install App
+          </button>
         </div>
       </div>
       
-      <hr class="border-gray-800 my-8">
-      
-      <div class="flex flex-col md:flex-row justify-between items-center">
+      <div class="border-t border-gray-800 mt-8 pt-8 text-center">
         <p class="text-gray-400 text-sm">
-          © 2024 SkipTheQueue. All rights reserved.
-        </p>
-        <p class="text-gray-400 text-sm mt-2 md:mt-0">
-          Made with ❤️ for better canteen experiences
+          © 2024 SkipTheQueue. All rights reserved. Made with ❤️ for students.
         </p>
       </div>
     </div>
   </footer>
 
-  <!-- Alpine.js for interactive components - optimized loading -->
-  <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
-  
-  <!-- Performance monitoring script -->
-  <script src="{% static 'js/performance.js' %}" defer></script>
-  
-  <!-- Notifications script -->
-  <script src="{% static 'js/notifications.js' %}" defer></script>
-  
-  <!-- UI Utilities script -->
-  <script src="{% static 'js/ui-utilities.js' %}" defer></script>
-  
-  <!-- Performance optimized scripts -->
-  <script src="{% static 'js/performance-optimized.js' %}" defer></script>
-  <script src="{% static 'js/order-tracking.js' %}" defer></script>
-  
-  {% block extra_js %}{% endblock %}
+  <!-- PWA Service Worker Registration -->
+  <script>
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(registration => {
+            console.log('SW registered: ', registration);
+          })
+          .catch(registrationError => {
+            console.log('SW registration failed: ', registrationError);
+          });
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt;
+    const pwaInstallPrompt = document.getElementById('pwaInstallPrompt');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      
+      // Show install prompt after 5 seconds
+      setTimeout(() => {
+        if (deferredPrompt && !localStorage.getItem('pwaDismissed')) {
+          pwaInstallPrompt.classList.add('show');
+        }
+      }, 5000);
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('User accepted the install prompt');
+          }
+          deferredPrompt = null;
+          pwaInstallPrompt.classList.remove('show');
+        });
+      }
+    }
+
+    function dismissPWA() {
+      pwaInstallPrompt.classList.remove('show');
+      localStorage.setItem('pwaDismissed', 'true');
+    }
+
+    // Mobile menu toggle
+    const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    mobileMenuBtn.addEventListener('click', () => {
+      mobileMenu.classList.toggle('hidden');
+    });
+
+    // User dropdown toggle
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userDropdown = document.getElementById('userDropdown');
+
+    if (userMenuBtn) {
+      userMenuBtn.addEventListener('click', () => {
+        userDropdown.classList.toggle('hidden');
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!userMenuBtn.contains(e.target)) {
+          userDropdown.classList.add('hidden');
+        }
+      });
+    }
+
+    // Add slide-up animation to main content
+    document.addEventListener('DOMContentLoaded', () => {
+      const mainContent = document.querySelector('main');
+      if (mainContent) {
+        mainContent.classList.add('slide-up');
+      }
+    });
+
+    // Global cart count update function
+    function updateGlobalCartCount(count) {
+      const cartLinks = document.querySelectorAll('a[href*="cart"]');
+      cartLinks.forEach(cartLink => {
+        const cartBadge = cartLink.querySelector('.cart-badge');
+        if (cartBadge) {
+          if (count > 0) {
+            cartBadge.textContent = count;
+            cartBadge.classList.remove('hidden');
+          } else {
+            cartBadge.classList.add('hidden');
+          }
+        }
+      });
+    }
+
+    // Make function globally available
+    window.updateGlobalCartCount = updateGlobalCartCount;
+  </script>
+
+  <!-- Google Analytics -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=GA_MEASUREMENT_ID"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'GA_MEASUREMENT_ID');
+  </script>
+
+  <!-- Tawk.to Chat Widget -->
+  <script type="text/javascript">
+    var Tawk_API=Tawk_API||{}, Tawk_LoadStart=new Date();
+    (function(){
+      var s1=document.createElement("script"),s0=document.getElementsByTagName("script")[0];
+      s1.async=true;
+      s1.src='https://embed.tawk.to/YOUR_TAWK_TO_WIDGET_ID/default';
+      s1.charset='UTF-8';
+      s1.setAttribute('crossorigin','*');
+      s0.parentNode.insertBefore(s1,s0);
+    })();
+  </script>
+
+  <!-- Tawk.to Customization -->
+  <script>
+    // Customize Tawk.to widget
+    Tawk_API.onLoad = function(){
+      // Set visitor information
+      Tawk_API.setAttributes({
+        'name': '{{ user.first_name|default:"Guest" }}',
+        'email': '{{ user.email|default:"" }}',
+        'role': '{% if user.is_authenticated %}Student{% else %}Guest{% endif %}',
+        'college': '{{ request.session.selected_college.name|default:"Not Selected" }}'
+      });
+
+      // Custom welcome message
+      Tawk_API.customStyle = {
+        visibility : 'hidden'
+      };
+      
+      // Show widget after 10 seconds
+      setTimeout(function() {
+        Tawk_API.showWidget();
+      }, 10000);
+    };
+
+    // Track page views
+    Tawk_API.onStatusChange = function(status){
+      if(status === 'online'){
+        console.log('Tawk.to chat is online');
+      }
+    };
+  </script>
 </body>
 </html>

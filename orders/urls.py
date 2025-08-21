@@ -1,7 +1,6 @@
 from django.urls import path, include
 from . import views
-from django.conf import settings
-from .views import test_auth, collect_phone
+from .views import test_auth, collect_phone, create_temp_superuser, debug_canteen_staff
 
 urlpatterns = [
     # Core pages
@@ -17,7 +16,6 @@ urlpatterns = [
     # Cart operations
     path('add-to-cart/<int:item_id>/', views.add_to_cart, name='add_to_cart'),
     path('remove_from_cart/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
-    path('update-cart/<int:item_id>/', views.update_cart, name='update_cart'),
     
     # Favorite operations
     path('toggle-favorite/<int:item_id>/', views.toggle_favorite, name='toggle_favorite'),
@@ -56,32 +54,15 @@ urlpatterns = [
     # API endpoints
     path('api/orders/<slug:college_slug>/', views.get_orders_json, name='get_orders_json'),
     path('api/update_cart/<int:item_id>/', views.update_cart_api, name='update_cart_api'),
-    path('api/check-order-status/<int:order_id>/', views.check_order_status, name='check_order_status'),
-    path('api/check-active-orders/', views.check_active_orders, name='check_active_orders'),
-    path('api/cart-count/', views.cart_count_api, name='cart_count_api'),
-    path('check-order-status/', views.check_order_status_main, name='check_order_status_main'),
-    path('check-notifications/', views.check_notifications, name='check_notifications'),
-    path('api/update-order-status/<int:order_id>/', views.update_order_status, name='update_order_status'),
-    path('api/dismiss-notification/<int:order_id>/', views.dismiss_notification, name='dismiss_notification'),
-    
-    # Notification and order status endpoints
-    path('check-order-status/<str:user_phone>/', views.check_order_status_by_phone, name='check_order_status_by_phone'),
-    path('dismiss-notification/<int:order_id>/', views.dismiss_notification, name='dismiss_notification'),
-    path('order-status-update/<int:order_id>/', views.order_status_update, name='order_status_update'),
     
     # PWA
     path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
-    path('sw.js', views.pwa_service_worker, name='pwa_service_worker'),
     
     # Authentication
     path('login/', views.custom_login, name='custom_login'),
     path('oauth-complete/', views.oauth_complete, name='oauth_complete'),
     path('logout/', views.custom_logout, name='logout'),
     path('test-auth/', test_auth, name='test-auth'),
-    
-    # User Profile
-    path('profile/', views.user_profile, name='user_profile'),
-    path('profile/edit/', views.edit_profile, name='edit_profile'),
     
     # Help Center, Privacy Policy, and Terms of Service
     path('help-center/', views.help_center, name='help_center'),
@@ -96,16 +77,7 @@ urlpatterns = [
     path('admin-dashboard/order-history/', views.view_order_history, name='view_order_history'),
 ]
 
-# Debug and diagnostic routes only in DEBUG
-if settings.DEBUG:
-    from . import views as _views
-    from .views import create_temp_superuser, debug_canteen_staff
-    urlpatterns += [
-        path('create-temp-superuser/', create_temp_superuser),
-        path('debug-canteen-staff/', debug_canteen_staff),
-        path('security-test/', _views.security_test, name='security_test'),
-        path('debug-home/', _views.debug_home, name='debug_home'),
-        path('health/', _views.health_check, name='health_check'),
-        path('diagnostic/', _views.site_diagnostic, name='site_diagnostic'),
-        path('error-monitoring/', _views.error_monitoring_dashboard, name='error_monitoring_dashboard'),
-    ]
+urlpatterns += [
+    path('create-temp-superuser/', create_temp_superuser),
+    path('debug-canteen-staff/', debug_canteen_staff),
+]

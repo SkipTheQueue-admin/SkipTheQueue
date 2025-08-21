@@ -1,240 +1,337 @@
 """
 Security Middleware for SkipTheQueue
 Protects against various hacking attempts and security threats
-Optimized for performance
 """
 
-import logging
-import time
 import re
+import logging
+from django.http import HttpResponseForbidden, JsonResponse
 from django.conf import settings
-from django.http import HttpResponseForbidden, HttpResponse
-from django.utils.deprecation import MiddlewareMixin
 from django.core.cache import cache
-from .security import SecurityValidator, SessionSecurity, RateLimiter
+from django.utils import timezone
+from django.utils.deprecation import MiddlewareMixin
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('django.security')
 
 class SecurityMiddleware(MiddlewareMixin):
-    """Comprehensive security middleware - optimized for performance"""
+    """Comprehensive security middleware"""
     
     def process_request(self, request):
-        """Process incoming requests for security checks - optimized for performance"""
+        """Process each request for security threats"""
         
-        # Skip security checks for static files, admin, and PWA files
-        if (request.path.startswith('/static/') or 
-            request.path.startswith('/admin/') or
-            request.path in ['/manifest.json', '/sw.js'] or
-            request.path.startswith('/manifest.json') or
-            request.path.startswith('/sw.js') or
-            request.path.startswith('/favicon.ico')):
-            return None
+        # Get client IP
+        client_ip = self.get_client_ip(request)
         
-        # Only perform heavy security checks for sensitive endpoints
-        if request.path.startswith('/canteen/') or request.path.startswith('/admin-dashboard/'):
-            # Update session security
-            SessionSecurity.update_session_security(request)
-            
-            # Validate session security only for authenticated endpoints
-            is_valid, message = SessionSecurity.validate_session(request)
-            if not is_valid:
-                logger.warning(f"Invalid session for {request.META.get('REMOTE_ADDR', 'unknown')}: {message}")
-                return HttpResponseForbidden("Invalid session. Please login again.")
+        # Check for suspicious requests
+        if self.is_suspicious_request(request):
+            logger.warning(f'Suspicious request detected from {client_ip}: {request.path}')
+            return HttpResponseForbidden('Suspicious request detected')
         
-        # Add basic security header only for AJAX requests
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
-            request.META['HTTP_X_REQUESTED_WITH'] = 'XMLHttpRequest'
+        # Rate limiting
+        if not self.check_rate_limit(request, client_ip):
+            logger.warning(f'Rate limit exceeded from {client_ip}')
+            return JsonResponse({'error': 'Rate limit exceeded'}, status=429)
+        
+        # Check for SQL injection attempts
+        if self.detect_sql_injection(request):
+            logger.warning(f'SQL injection attempt detected from {client_ip}')
+            return HttpResponseForbidden('Invalid request')
+        
+        # Check for XSS attempts
+        if self.detect_xss_attempt(request):
+            logger.warning(f'XSS attempt detected from {client_ip}')
+            return HttpResponseForbidden('Invalid request')
+        
+        # Check for path traversal attempts
+        if self.detect_path_traversal(request):
+            logger.warning(f'Path traversal attempt detected from {client_ip}')
+            return HttpResponseForbidden('Invalid request')
         
         return None
     
     def process_response(self, request, response):
-        """Add security headers to responses - optimized"""
+        """Add security headers to response"""
         
-        # Essential security headers only
+        # Security Headers
         response['X-Content-Type-Options'] = 'nosniff'
         response['X-Frame-Options'] = 'DENY'
         response['X-XSS-Protection'] = '1; mode=block'
-        
-        # Improved CSP policy for better security and performance
-        csp_policy = (
-            "default-src 'self'; "
-            "script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; "
-            "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.tailwindcss.com; "
-            "font-src 'self' https://cdnjs.cloudflare.com data:; "
-            "img-src 'self' data: https: blob:; "
-            "connect-src 'self' https:; "
-            "frame-ancestors 'none'; "
-            "base-uri 'self'; "
-            "form-action 'self';"
-        )
-        response['Content-Security-Policy'] = csp_policy
-        
-        # HSTS header (only for HTTPS)
-        if not settings.DEBUG and getattr(request, 'is_secure', lambda: False)():
-            response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
-        
-        # Referrer Policy
         response['Referrer-Policy'] = 'strict-origin-when-cross-origin'
-        
-        # Permissions Policy
         response['Permissions-Policy'] = 'geolocation=(), microphone=(), camera=()'
         
+        # Content Security Policy
+        csp_policy = self.get_csp_policy()
+        response['Content-Security-Policy'] = csp_policy
+        
+        # HSTS Header (only for HTTPS)
+        if request.is_secure():
+            response['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains; preload'
+        
         return response
-
-class AuthenticationMiddleware(MiddlewareMixin):
-    """Enhanced authentication middleware - optimized for performance"""
     
-    def process_request(self, request):
-        """Process authentication-related security - optimized"""
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+    
+    def is_suspicious_request(self, request):
+        """Check if request is suspicious"""
+        suspicious_patterns = [
+            r'script\s*[<>]',
+            r'javascript:',
+            r'vbscript:',
+            r'<iframe',
+            r'<object',
+            r'<embed',
+            r'eval\s*\(',
+            r'exec\s*\(',
+            r'system\s*\(',
+            r'cmd\s*\.',
+            r'powershell',
+            r'bash\s*-',
+            r'\.\./',
+            r'\.\.\\',
+            r'%00',
+            r'%0d',
+            r'%0a',
+        ]
         
-        # Skip for static files, admin, and PWA files
-        if (request.path.startswith('/static/') or 
-            request.path.startswith('/admin/') or
-            request.path in ['/manifest.json', '/sw.js'] or
-            request.path.startswith('/manifest.json') or
-            request.path.startswith('/sw.js')):
-            return None
+        # Check URL path
+        path = request.path.lower()
+        for pattern in suspicious_patterns:
+            if re.search(pattern, path, re.IGNORECASE):
+                return True
         
-        # Only check for suspicious activity on POST requests
+        # Check POST data
         if request.method == 'POST':
-            if self._is_suspicious_request(request):
-                logger.warning(f"Suspicious request detected from {request.META.get('REMOTE_ADDR', 'unknown')}")
-                return HttpResponseForbidden("Suspicious activity detected.")
+            post_data = str(request.POST)
+            for pattern in suspicious_patterns:
+                if re.search(pattern, post_data, re.IGNORECASE):
+                    return True
         
-        # Validate user session if authenticated and accessing sensitive areas
-        if (request.user.is_authenticated and 
-            (request.path.startswith('/canteen/') or request.path.startswith('/admin-dashboard/'))):
-            if not self._validate_user_session(request):
-                logger.warning(f"Invalid user session for {request.user.username}")
-                return HttpResponseForbidden("Invalid user session. Please login again.")
+        # Check headers
+        headers = str(request.headers)
+        for pattern in suspicious_patterns:
+            if re.search(pattern, headers, re.IGNORECASE):
+                return True
         
-        return None
-    
-    def _is_suspicious_request(self, request):
-        """Check for suspicious request patterns - optimized"""
-        # Check for rapid successive requests
-        user_id = request.user.id if request.user.is_authenticated else request.META.get('REMOTE_ADDR', 'anonymous')
-        rate_key = f"suspicious_{user_id}_{request.path}"
-        
-        request_count = cache.get(rate_key, 0)
-        if request_count > 10:  # More than 10 requests in 1 minute
+        # Check for unusually large requests
+        if len(str(request.POST)) > 10000:  # 10KB limit
             return True
         
-        cache.set(rate_key, request_count + 1, 60)
+        return False
+    
+    def check_rate_limit(self, request, client_ip):
+        """Check rate limiting"""
+        if not getattr(settings, 'RATE_LIMIT_ENABLED', True):
+            return True
         
-        # Check for suspicious headers
-        suspicious_headers = ['X-Forwarded-For', 'X-Real-IP', 'X-Client-IP']
-        for header in suspicious_headers:
-            if header in request.headers and request.headers[header] != request.META.get('REMOTE_ADDR'):
+        max_requests = getattr(settings, 'RATE_LIMIT_MAX_REQUESTS', 100)
+        window = getattr(settings, 'RATE_LIMIT_WINDOW', 60)
+        
+        cache_key = f'rate_limit:{client_ip}'
+        current_requests = cache.get(cache_key, 0)
+        
+        if current_requests >= max_requests:
+            return False
+        
+        cache.set(cache_key, current_requests + 1, window)
+        return True
+    
+    def detect_sql_injection(self, request):
+        """Detect SQL injection attempts"""
+        sql_patterns = [
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)',
+            r'(\b(or|and)\b\s+\d+\s*=\s*\d+)',
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\b(union|select|insert|update|delete|drop|create|alter)\b)',
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\bfrom\b)',
+            r'(\b(union|select|insert|update|delete|drop|create|alter)\b.*\bwhere\b)',
+        ]
+        
+        # Check URL parameters
+        for key, value in request.GET.items():
+            for pattern in sql_patterns:
+                if re.search(pattern, value, re.IGNORECASE):
+                    return True
+        
+        # Check POST data
+        if request.method == 'POST':
+            for key, value in request.POST.items():
+                for pattern in sql_patterns:
+                    if re.search(pattern, str(value), re.IGNORECASE):
+                        return True
+        
+        return False
+    
+    def detect_xss_attempt(self, request):
+        """Detect XSS attempts"""
+        xss_patterns = [
+            r'<script[^>]*>.*?</script>',
+            r'javascript:',
+            r'vbscript:',
+            r'<iframe[^>]*>',
+            r'<object[^>]*>',
+            r'<embed[^>]*>',
+            r'<applet[^>]*>',
+            r'<form[^>]*>',
+            r'<input[^>]*>',
+            r'<textarea[^>]*>',
+            r'<select[^>]*>',
+            r'<button[^>]*>',
+        ]
+        
+        # Check URL parameters
+        for key, value in request.GET.items():
+            for pattern in xss_patterns:
+                if re.search(pattern, value, re.IGNORECASE):
+                    return True
+        
+        # Check POST data
+        if request.method == 'POST':
+            for key, value in request.POST.items():
+                for pattern in xss_patterns:
+                    if re.search(pattern, str(value), re.IGNORECASE):
+                        return True
+        
+        return False
+    
+    def detect_path_traversal(self, request):
+        """Detect path traversal attempts"""
+        traversal_patterns = [
+            r'\.\./',
+            r'\.\.\\',
+            r'%2e%2e%2f',
+            r'%2e%2e%5c',
+            r'%252e%252e%252f',
+            r'%252e%252e%255c',
+        ]
+        
+        path = request.path
+        for pattern in traversal_patterns:
+            if re.search(pattern, path, re.IGNORECASE):
                 return True
         
         return False
     
-    def _validate_user_session(self, request):
-        """Validate user session security - optimized"""
-        try:
-            # Check if user is still active
-            if not request.user.is_active:
-                return False
+    def get_csp_policy(self):
+        """Get Content Security Policy"""
+        return "; ".join([
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://pagead2.googlesyndication.com https://www.googletagmanager.com",
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.tailwindcss.com",
+            "font-src 'self' https://fonts.gstatic.com",
+            "img-src 'self' data: https:",
+            "connect-src 'self'",
+            "media-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'",
+            "upgrade-insecure-requests"
+        ])
+
+class PaymentSecurityMiddleware(MiddlewareMixin):
+    """Payment-specific security middleware"""
+    
+    def process_request(self, request):
+        """Process payment-related requests"""
+        
+        # Check if this is a payment-related request
+        if self.is_payment_request(request):
+            # Validate payment session
+            if not self.validate_payment_session(request):
+                logger.warning(f'Invalid payment session from {self.get_client_ip(request)}')
+                return HttpResponseForbidden('Invalid payment session')
             
-            # Check if user has required permissions for sensitive areas
-            if request.path.startswith('/canteen/'):
-                # For canteen staff, check if they have access to the specific college
-                college_slug = request.path.split('/')[2] if len(request.path.split('/')) > 2 else None
-                if college_slug:
-                    from orders.models import CanteenStaff
-                    try:
-                        staff = CanteenStaff.objects.get(
-                            user=request.user, 
-                            college__slug=college_slug, 
-                            is_active=True
-                        )
-                        return True
-                    except CanteenStaff.DoesNotExist:
-                        return False
-            
-            elif request.path.startswith('/admin-dashboard/'):
-                # For admin dashboard, check if user is superuser
-                return request.user.is_superuser
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error validating user session: {e}")
+            # Check payment rate limiting
+            if not self.check_payment_rate_limit(request):
+                logger.warning(f'Payment rate limit exceeded from {self.get_client_ip(request)}')
+                return JsonResponse({'error': 'Payment rate limit exceeded'}, status=429)
+        
+        return None
+    
+    def is_payment_request(self, request):
+        """Check if request is payment-related"""
+        payment_paths = [
+            '/process-payment/',
+            '/place-order/',
+            '/collect-phone/',
+        ]
+        
+        return any(path in request.path for path in payment_paths)
+    
+    def validate_payment_session(self, request):
+        """Validate payment session"""
+        # Check if user is authenticated
+        if not request.user.is_authenticated:
             return False
+        
+        # Check if cart exists
+        if not request.session.get('cart'):
+            return False
+        
+        # Only require payment_method for place-order and process-payment, not collect-phone
+        if request.path.startswith('/place-order/') or request.path.startswith('/process-payment/'):
+            if not request.session.get('payment_method'):
+                return False
+        
+        return True
+    
+    def check_payment_rate_limit(self, request):
+        """No payment rate limiting (unlimited payments per hour)"""
+        return True
+    
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
 
 class LoggingMiddleware(MiddlewareMixin):
-    """Enhanced logging middleware - optimized for performance"""
+    """Logging middleware for security events"""
     
     def process_request(self, request):
-        """Log request information - optimized"""
-        # Only log for non-static, non-admin requests
-        if (not request.path.startswith('/static/') and 
-            not request.path.startswith('/admin/') and
-            not request.path.startswith('/manifest.json') and
-            not request.path.startswith('/sw.js')):
-            
-            # Add request start time for performance monitoring
-            request.start_time = time.time()
-            
-            # Log only important requests
-            if request.path.startswith('/canteen/') or request.path.startswith('/admin-dashboard/'):
-                logger.info(f"Access to sensitive area: {request.path} by {request.user.username if request.user.is_authenticated else 'anonymous'}")
+        """Log request details"""
+        if self.should_log_request(request):
+            logger.info(f'Request: {request.method} {request.path} from {self.get_client_ip(request)}')
         
         return None
     
     def process_response(self, request, response):
-        """Log response information - optimized"""
-        # Only log for non-static, non-admin requests
-        if (not request.path.startswith('/static/') and 
-            not request.path.startswith('/admin/') and
-            not request.path.startswith('/manifest.json') and
-            not request.path.startswith('/sw.js')):
-            
-            # Calculate request duration
-            if hasattr(request, 'start_time'):
-                duration = time.time() - request.start_time
-                
-                # Log slow requests
-                if duration > 1.0:  # Log requests slower than 1 second
-                    logger.warning(f"Slow request: {request.path} took {duration:.2f}s")
-                
-                # Log errors
-                if response.status_code >= 400:
-                    logger.error(f"Error response: {request.path} - {response.status_code} in {duration:.2f}s")
+        """Log response details"""
+        if self.should_log_response(request, response):
+            logger.info(f'Response: {response.status_code} for {request.method} {request.path}')
         
         return response
-
-class PerformanceMiddleware(MiddlewareMixin):
-    """Performance monitoring middleware - optimized"""
     
-    def process_request(self, request):
-        """Monitor request performance - optimized"""
-        # Only monitor for important requests
-        if (request.path.startswith('/canteen/') or 
-            request.path.startswith('/admin-dashboard/') or
-            request.path.startswith('/api/')):
-            
-            request.start_time = time.time()
-            request.query_count = 0
+    def should_log_request(self, request):
+        """Check if request should be logged"""
+        sensitive_paths = [
+            '/admin/',
+            '/process-payment/',
+            '/place-order/',
+            '/college-admin/',
+            '/canteen/',
+        ]
         
-        return None
+        return any(path in request.path for path in sensitive_paths)
     
-    def process_response(self, request, response):
-        """Monitor response performance - optimized"""
-        # Only monitor for important requests
-        if (request.path.startswith('/canteen/') or 
-            request.path.startswith('/admin-dashboard/') or
-            request.path.startswith('/api/')):
-            
-            if hasattr(request, 'start_time'):
-                duration = time.time() - request.start_time
-                
-                # Log performance metrics
-                if duration > 0.5:  # Log requests slower than 0.5 seconds
-                    logger.warning(f"Performance issue: {request.path} took {duration:.2f}s")
-                
-                # Add performance headers
-                response['X-Request-Duration'] = f"{duration:.3f}"
-        
-        return response 
+    def should_log_response(self, request, response):
+        """Check if response should be logged"""
+        return response.status_code >= 400 or self.should_log_request(request)
+    
+    def get_client_ip(self, request):
+        """Get client IP address"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0].strip()
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip 

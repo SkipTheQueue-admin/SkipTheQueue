@@ -6,18 +6,11 @@ This file contains all security-related settings and utilities
 import re
 import hashlib
 import hmac
-import json
-import logging
-import time
+import uuid
 from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
-from django.utils.crypto import constant_time_compare
-from django.utils.html import strip_tags
-from django.utils.safestring import mark_safe
-
-logger = logging.getLogger(__name__)
 
 # Security Constants
 MAX_LOGIN_ATTEMPTS = 5
@@ -33,24 +26,15 @@ PRICE_PATTERN = re.compile(r'^\d+(\.\d{1,2})?$')
 NAME_PATTERN = re.compile(r'^[a-zA-Z\s]{2,50}$')
 
 class SecurityValidator:
-    """Enhanced security validation utilities"""
+    """Comprehensive input validation and sanitization"""
     
     @staticmethod
     def sanitize_input(text):
-        """Sanitize user input to prevent XSS"""
+        """Remove potentially dangerous characters"""
         if not text:
             return ""
-        
-        # Remove HTML tags
-        text = strip_tags(str(text))
-        
-        # Remove potentially dangerous characters
-        text = re.sub(r'[<>"\']', '', text)
-        
-        # Limit length
-        if len(text) > 1000:
-            text = text[:1000]
-        
+        # Remove HTML tags and dangerous characters
+        text = re.sub(r'[<>"\']', '', str(text))
         return text.strip()
     
     @staticmethod
@@ -59,20 +43,11 @@ class SecurityValidator:
         if not phone:
             return False, "Phone number is required"
         
-        phone = str(phone).strip()
+        phone_clean = re.sub(r'\D', '', phone)
+        if not PHONE_PATTERN.match(phone_clean):
+            return False, "Phone number must be 10-12 digits"
         
-        # Remove all non-digit characters
-        digits_only = re.sub(r'\D', '', phone)
-        
-        # Check if it's a valid Indian phone number
-        if len(digits_only) == 10 and digits_only.startswith(('6', '7', '8', '9')):
-            return True, f"+91-{digits_only}"
-        elif len(digits_only) == 12 and digits_only.startswith('91'):
-            return True, f"+{digits_only}"
-        elif len(digits_only) == 13 and digits_only.startswith('+91'):
-            return True, digits_only
-        else:
-            return False, "Please enter a valid 10-digit Indian phone number"
+        return True, phone_clean
     
     @staticmethod
     def validate_email_address(email):
@@ -98,39 +73,7 @@ class SecurityValidator:
         if len(slug) < 2 or len(slug) > 20:
             return False, "College code must be 2-20 characters long"
         
-        return True, slug
-    
-    @staticmethod
-    def validate_price(price):
-        """Validate price format and range"""
-        if not price:
-            return False, "Price is required"
-        
-        try:
-            price_float = float(price)
-            if price_float < 0:
-                return False, "Price cannot be negative"
-            if price_float > 9999.99:
-                return False, "Price cannot exceed 9999.99"
-            return True, price_float
-        except (ValueError, TypeError):
-            return False, "Invalid price format"
-    
-    @staticmethod
-    def validate_quantity(quantity):
-        """Validate quantity format and range"""
-        if not quantity:
-            return False, "Quantity is required"
-        
-        try:
-            quantity_int = int(quantity)
-            if quantity_int <= 0:
-                return False, "Quantity must be greater than 0"
-            if quantity_int > 100:
-                return False, "Quantity cannot exceed 100"
-            return True, quantity_int
-        except (ValueError, TypeError):
-            return False, "Invalid quantity format"
+        return True, slug.lower()
     
     @staticmethod
     def validate_price(price):
@@ -163,85 +106,6 @@ class SecurityValidator:
         
         return True, name_clean
 
-    @staticmethod
-    def validate_payment_data(data):
-        """Validate payment data"""
-        required_fields = ['amount', 'currency', 'order_id']
-        
-        for field in required_fields:
-            if field not in data:
-                return False, f"Missing required field: {field}"
-        
-        # Validate amount
-        try:
-            amount = float(data['amount'])
-            if amount <= 0:
-                return False, "Amount must be greater than 0"
-        except (ValueError, TypeError):
-            return False, "Invalid amount format"
-        
-        # Validate currency
-        if data['currency'] not in ['INR']:
-            return False, "Unsupported currency"
-        
-        return True, "Valid payment data"
-    
-    @staticmethod
-    def validate_email(email):
-        """Validate email format"""
-        try:
-            validate_email(email)
-            return True, "Valid email"
-        except ValidationError:
-            return False, "Invalid email format"
-    
-    @staticmethod
-    def validate_password_strength(password):
-        """Validate password strength"""
-        if len(password) < 8:
-            return False, "Password must be at least 8 characters long"
-        
-        if not re.search(r'[A-Z]', password):
-            return False, "Password must contain at least one uppercase letter"
-        
-        if not re.search(r'[a-z]', password):
-            return False, "Password must contain at least one lowercase letter"
-        
-        if not re.search(r'\d', password):
-            return False, "Password must contain at least one number"
-        
-        if not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
-            return False, "Password must contain at least one special character"
-        
-        return True, "Strong password"
-    
-    @staticmethod
-    def generate_secure_token(data, secret_key=None):
-        """Generate secure token for data verification"""
-        if not secret_key:
-            secret_key = settings.SECRET_KEY
-        
-        # Convert data to JSON string
-        data_str = json.dumps(data, sort_keys=True)
-        
-        # Generate HMAC signature
-        signature = hmac.new(
-            secret_key.encode(),
-            data_str.encode(),
-            hashlib.sha256
-        ).hexdigest()
-        
-        return signature
-    
-    @staticmethod
-    def verify_secure_token(data, signature, secret_key=None):
-        """Verify secure token"""
-        if not secret_key:
-            secret_key = settings.SECRET_KEY
-        
-        expected_signature = SecurityValidator.generate_secure_token(data, secret_key)
-        return constant_time_compare(signature, expected_signature)
-
 class PaymentSecurity:
     """Payment-related security utilities"""
     
@@ -251,7 +115,27 @@ class PaymentSecurity:
         return str(uuid.uuid4())
     
     @staticmethod
-    def validate_payment_signature(data, signature, secret_key):
+    def validate_payment_data(data):
+        """Validate payment data"""
+        required_fields = ['amount', 'payment_method']
+        for field in required_fields:
+            if field not in data:
+                return False, f"Missing required field: {field}"
+        
+        # Validate amount
+        is_valid, amount = SecurityValidator.validate_price(data['amount'])
+        if not is_valid:
+            return False, amount
+        
+        # Validate payment method
+        valid_methods = ['Online', 'Cash', 'UPI', 'Card', 'NetBanking']
+        if data['payment_method'] not in valid_methods:
+            return False, "Invalid payment method"
+        
+        return True, "Valid"
+    
+    @staticmethod
+    def verify_payment_signature(data, signature, secret_key):
         """Verify payment signature"""
         try:
             expected_signature = hmac.new(
@@ -276,30 +160,27 @@ class RateLimiter:
     """Rate limiting utilities"""
     
     @staticmethod
-    def check_rate_limit(request, key_prefix, max_requests, window):
-        """Check rate limit for a specific key"""
-        key = f"rate_limit:{key_prefix}:{request.META.get('REMOTE_ADDR', 'unknown')}"
+    def check_rate_limit(request, key, max_requests, window):
+        """Check if request is within rate limit"""
+        from django.utils import timezone
+        now = timezone.now()
+        request_key = f"{key}_{request.session.session_key}"
         
-        # Get current count
-        current_count = request.session.get(key, 0)
+        request_count = request.session.get(request_key, 0)
+        last_request = request.session.get(f"{request_key}_time")
         
-        # Check if window has expired
-        last_request = request.session.get(f"{key}_time", 0)
-        current_time = int(time.time())
+        if last_request:
+            time_diff = (now - last_request).seconds
+            if time_diff > window:
+                request_count = 0
         
-        if current_time - last_request > window:
-            current_count = 0
+        if request_count >= max_requests:
+            return False
         
-        # Check if limit exceeded
-        if current_count >= max_requests:
-            return False, "Rate limit exceeded"
+        request.session[request_key] = request_count + 1
+        request.session[f"{request_key}_time"] = now
         
-        # Update count
-        request.session[key] = current_count + 1
-        request.session[f"{key}_time"] = current_time
-        request.session.modified = True
-        
-        return True, "Rate limit OK"
+        return True
 
 class CSRFProtection:
     """CSRF protection utilities"""
@@ -347,58 +228,6 @@ class SessionSecurity:
         
         return True
 
-    @staticmethod
-    def validate_session(request):
-        """Validate session security"""
-        # Skip validation for PWA files and static content
-        if (request.path.startswith('/static/') or 
-            request.path.startswith('/admin/') or
-            request.path in ['/manifest.json', '/sw.js'] or
-            request.path.startswith('/manifest.json') or
-            request.path.startswith('/sw.js')):
-            return True, "PWA/Static file - skipping session validation"
-        
-        # Allow anonymous users to browse without enforcing a session key
-        # Strict session integrity is enforced only for authenticated users
-        if not getattr(request, 'user', None) or not request.user.is_authenticated:
-            return True, "Anonymous user - session validation relaxed"
-
-        # Check if session is valid
-        if not request.session.session_key:
-            return False, "No active session"
-        
-        # Check session age
-        session_age = request.session.get('_session_age', 0)
-        max_age = settings.SESSION_COOKIE_AGE
-        
-        if session_age > max_age:
-            return False, "Session expired"
-        
-        return True, "Valid session"
-    
-    @staticmethod
-    def update_session_security(request):
-        """Update session security parameters"""
-        # Skip for PWA files and static content
-        if (request.path.startswith('/static/') or 
-            request.path.startswith('/admin/') or
-            request.path in ['/manifest.json', '/sw.js'] or
-            request.path.startswith('/manifest.json') or
-            request.path.startswith('/sw.js')):
-            return
-        
-        # Update session age
-        request.session['_session_age'] = request.session.get('_session_age', 0) + 1
-        
-        # Add security headers
-        request.session['_security_hash'] = SecurityValidator.generate_secure_token({
-            'user_id': request.user.id if request.user.is_authenticated else None,
-            'ip': request.META.get('REMOTE_ADDR', ''),
-            'user_agent': request.META.get('HTTP_USER_AGENT', '')
-        })
-        
-        request.session.modified = True
-
 class InputSanitizer:
     """Input sanitization utilities"""
     
@@ -429,101 +258,6 @@ class InputSanitizer:
             else:
                 sanitized[key] = value
         return sanitized
-    
-    @staticmethod
-    def sanitize_html(text):
-        """Sanitize HTML content"""
-        if not text:
-            return ""
-        
-        # Remove script tags and their content
-        text = re.sub(r'<script[^>]*>.*?</script>', '', text, flags=re.IGNORECASE | re.DOTALL)
-        
-        # Remove other potentially dangerous tags
-        dangerous_tags = ['iframe', 'object', 'embed', 'form', 'input', 'textarea', 'select']
-        for tag in dangerous_tags:
-            text = re.sub(rf'<{tag}[^>]*>.*?</{tag}>', '', text, flags=re.IGNORECASE | re.DOTALL)
-            text = re.sub(rf'<{tag}[^>]*/?>', '', text, flags=re.IGNORECASE)
-        
-        # Remove dangerous attributes
-        dangerous_attrs = ['onclick', 'onload', 'onerror', 'onmouseover', 'javascript:']
-        for attr in dangerous_attrs:
-            text = re.sub(rf'{attr}="[^"]*"', '', text, flags=re.IGNORECASE)
-            text = re.sub(rf'{attr}=\'[^\']*\'', '', text, flags=re.IGNORECASE)
-        
-        return text.strip()
-    
-    @staticmethod
-    def sanitize_sql_input(text):
-        """Sanitize input to prevent SQL injection"""
-        if not text:
-            return ""
-        
-        # Remove SQL injection patterns
-        sql_patterns = [
-            r'(\b(union|select|insert|update|delete|drop|create|alter)\b)',
-            r'(\b(and|or)\b\s+\d+\s*=\s*\d+)',
-            r'(\b(and|or)\b\s+\'\w+\'\s*=\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\w+)',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\w+)',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s+\w+\s+and\s+\w+)',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\([^)]*\))',
-            r'(\b(and|or)\b\s+\w+\s*is\s+null)',
-            r'(\b(and|or)\b\s+\w+\s*is\s+not\s+null)',
-            r'(\b(and|or)\b\s+\w+\s*=\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*<>)\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*null)',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\d+)',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(\'\w+\'\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(\'\w+\'\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s+\'\w+\'\s+and\s+\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s+\'\w+\'\s+and\s+\'\w+\')',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\))',
-            r'(\b(and|or)\b\s+\w+\s*exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+exists\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*!=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*>\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*>=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*<=\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+like\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+in\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-            r'(\b(and|or)\b\s+\w+\s*not\s+between\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\)\s+and\s*\(select\s+\w+\s+from\s+\w+\s+where\s+\w+\s*=\s*\d+\))',
-        ]
-        
-        for pattern in sql_patterns:
-            text = re.sub(pattern, '', text, flags=re.IGNORECASE)
-        
-        return text.strip()
 
 # Security decorators
 def require_secure_connection(view_func):

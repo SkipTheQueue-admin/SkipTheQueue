@@ -134,5 +134,28 @@
   </div>
 </div>
 
-<!-- Form validation and auto-focus handled by performance-optimized.js -->
+<script>
+// Auto-focus on email field
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('email').focus();
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  
+  if (!email || !password) {
+    e.preventDefault();
+    alert('Please fill in all fields.');
+    return false;
+  }
+  
+  if (!email.includes('@')) {
+    e.preventDefault();
+    alert('Please enter a valid email address.');
+    return false;
+  }
+});
+</script>
 {% endblock %} 

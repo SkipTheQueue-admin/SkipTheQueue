@@ -207,5 +207,39 @@
   </div>
 </div>
 
-<!-- Form validation and phone formatting handled by performance-optimized.js -->
+<script>
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+  const phone = document.getElementById('phone').value.trim();
+  const paymentMethod = document.querySelector('input[name="payment_method"]:checked');
+  
+  if (!phone) {
+    e.preventDefault();
+    alert('Please enter your phone number');
+    return false;
+  }
+  
+  if (!paymentMethod) {
+    e.preventDefault();
+    alert('Please select a payment method');
+    return false;
+  }
+  
+  // Basic phone number validation
+  if (phone.length < 10 || phone.length > 12) {
+    e.preventDefault();
+    alert('Please enter a valid phone number (10-12 digits)');
+    return false;
+  }
+});
+
+// Auto-format phone number
+document.getElementById('phone').addEventListener('input', function() {
+  let value = this.value.replace(/\D/g, '');
+  if (value.length > 12) {
+    value = value.slice(0, 12);
+  }
+  this.value = value;
+});
+</script>
 {% endblock %}

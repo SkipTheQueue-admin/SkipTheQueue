@@ -144,5 +144,71 @@
   </div>
 </div>
 
-<!-- Payment processing functionality handled by performance-optimized.js -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Payment gateway selection
+    const gatewayBtns = document.querySelectorAll('.gateway-btn');
+    const paymentGatewayInput = document.getElementById('payment-gateway');
+    
+    gatewayBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Remove active class from all buttons
+            gatewayBtns.forEach(b => b.classList.remove('border-blue-500', 'bg-blue-50'));
+            
+            // Add active class to clicked button
+            this.classList.add('border-blue-500', 'bg-blue-50');
+            
+            // Update hidden input
+            paymentGatewayInput.value = this.dataset.gateway;
+        });
+    });
+    
+    // Set default gateway
+    document.querySelector('[data-gateway="razorpay"]').click();
+    
+    // Form submission with security checks
+    const paymentForm = document.getElementById('payment-form');
+    const payButton = document.getElementById('pay-button');
+    
+    paymentForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Disable button to prevent double submission
+        payButton.disabled = true;
+        payButton.innerHTML = `
+            <div class="flex items-center justify-center">
+                <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing Payment...
+            </div>
+        `;
+        
+        // Submit form
+        this.submit();
+    });
+    
+    // Security: Prevent form resubmission
+    if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.href);
+    }
+    
+    // Security: Auto-logout on inactivity (30 minutes)
+    let inactivityTimer;
+    function resetInactivityTimer() {
+        clearTimeout(inactivityTimer);
+        inactivityTimer = setTimeout(() => {
+            window.location.href = '/logout/';
+        }, 30 * 60 * 1000); // 30 minutes
+    }
+    
+    // Reset timer on user activity
+    ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(event => {
+        document.addEventListener(event, resetInactivityTimer, true);
+    });
+    
+    resetInactivityTimer();
+});
+</script>
 {% endblock %} 

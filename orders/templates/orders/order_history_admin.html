@@ -2,24 +2,163 @@
 {% load static %}
 
 {% block content %}
-<main class="container">
-  <section class="card mb-8">
-    <h1 class="mb-8 text-center" style="font-size: 2rem; font-weight: 700; color: #2563eb;">Canteen Order History</h1>
-    {% if orders %}
-      <div class="college-grid">
-        {% for order in orders %}
-          <div class="card" style="padding: 1rem;">
-            <h3 style="font-size: 1.1rem; font-weight: 600; color: #111827;">Order #{{ order.id }}</h3>
-            <p style="color: #6b7280; font-size: 0.95rem;">User: {{ order.user_name }}</p>
-            <p style="color: #6b7280; font-size: 0.95rem;">Status: <span style="color: #059669; font-weight: 700;">{{ order.status }}</span></p>
-            <p style="color: #6b7280; font-size: 0.95rem;">Total: ₹{{ order.total|floatformat:2 }}</p>
-            <a href="{% url 'track_order' %}?order_id={{ order.id }}" class="btn btn-primary w-full mt-8">Track Order</a>
-          </div>
-        {% endfor %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 py-8 px-4">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900 mb-2">Order History</h1>
+          <p class="text-gray-600">Comprehensive order history with advanced filtering</p>
+        </div>
+        <a href="{% url 'super_admin_dashboard' %}" 
+           class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+          ← Back to Dashboard
+        </a>
       </div>
-    {% else %}
-      <div class="text-center mb-8">No orders found.</div>
-    {% endif %}
-  </section>
-</main>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Orders</h2>
+      <form method="get" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <input type="date" name="start_date" value="{{ start_date|date:'Y-m-d' }}" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input type="date" name="end_date" value="{{ end_date|date:'Y-m-d' }}" 
+                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">College</label>
+          <select name="college" 
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <option value="">All Colleges</option>
+            {% for college in colleges %}
+              <option value="{{ college.id }}" {% if selected_college == college.id|stringformat:"s" %}selected{% endif %}>
+                {{ college.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div class="flex items-end">
+          <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            Filter
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Orders List -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div class="p-6 border-b border-gray-200">
+        <h2 class="text-xl font-semibold text-gray-900">Order History</h2>
+        <p class="text-gray-600 mt-1">Showing {{ page_obj.paginator.count }} orders</p>
+      </div>
+      
+      <div class="p-6">
+        {% if page_obj %}
+          <div class="space-y-4">
+            {% for order in page_obj %}
+              <div class="bg-gray-50 rounded-lg p-6 hover:bg-gray-100 transition-colors">
+                <div class="flex items-center justify-between mb-4">
+                  <div class="flex items-center space-x-4">
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <span class="text-lg font-semibold text-blue-600">#{{ order.id }}</span>
+                    </div>
+                    <div>
+                      <h3 class="text-lg font-semibold text-gray-900">{{ order.user_name }}</h3>
+                      <p class="text-sm text-gray-600">{{ order.user_phone }}</p>
+                      <p class="text-xs text-gray-500">{{ order.created_at|date:"M d, Y H:i" }}</p>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <p class="text-xl font-bold text-gray-900">₹{{ order.total_price|floatformat:2 }}</p>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium {{ order.get_status_color }}">
+                      {{ order.status }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p class="text-sm text-gray-600">College</p>
+                    <p class="font-medium text-gray-900">{{ order.college.name|default:"Not specified" }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-600">Payment Method</p>
+                    <p class="font-medium text-gray-900">{{ order.payment_method }}</p>
+                  </div>
+                  <div>
+                    <p class="text-sm text-gray-600">Payment Status</p>
+                    <p class="font-medium text-gray-900">{{ order.payment_status }}</p>
+                  </div>
+                </div>
+                
+                {% if order.order_items.all %}
+                  <div class="border-t border-gray-200 pt-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Order Items:</h4>
+                    <div class="space-y-2">
+                      {% for item in order.order_items.all %}
+                        <div class="flex justify-between text-sm">
+                          <span>{{ item.quantity }}x {{ item.item.name }}</span>
+                          <span>₹{{ item.price_at_time|floatformat:2 }}</span>
+                        </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+                {% endif %}
+                
+                {% if order.special_instructions %}
+                  <div class="border-t border-gray-200 pt-4 mt-4">
+                    <p class="text-sm text-gray-600">Special Instructions:</p>
+                    <p class="text-sm text-gray-900">{{ order.special_instructions }}</p>
+                  </div>
+                {% endif %}
+              </div>
+            {% endfor %}
+          </div>
+          
+          <!-- Pagination -->
+          {% if page_obj.has_other_pages %}
+            <div class="mt-8 flex items-center justify-center">
+              <nav class="flex items-center space-x-2">
+                {% if page_obj.has_previous %}
+                  <a href="?page={{ page_obj.previous_page_number }}{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if selected_college %}&college={{ selected_college }}{% endif %}" 
+                     class="px-3 py-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Previous
+                  </a>
+                {% endif %}
+                
+                <span class="px-3 py-2 text-gray-700">
+                  Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
+                </span>
+                
+                {% if page_obj.has_next %}
+                  <a href="?page={{ page_obj.next_page_number }}{% if start_date %}&start_date={{ start_date|date:'Y-m-d' }}{% endif %}{% if end_date %}&end_date={{ end_date|date:'Y-m-d' }}{% endif %}{% if selected_college %}&college={{ selected_college }}{% endif %}" 
+                     class="px-3 py-2 text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50">
+                    Next
+                  </a>
+                {% endif %}
+              </nav>
+            </div>
+          {% endif %}
+        {% else %}
+          <div class="text-center py-8 text-gray-500">
+            <svg class="w-12 h-12 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            </svg>
+            <p>No orders found for the selected filters</p>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %} 

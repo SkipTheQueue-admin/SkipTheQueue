@@ -17,14 +17,6 @@
         <p class="text-gray-600">
           Join SkipTheQueue and provide your students with a modern ordering experience
         </p>
-        
-        <!-- Admin Only Indicator -->
-        <div class="mt-4 inline-flex items-center px-3 py-1 bg-red-100 text-red-800 text-sm font-medium rounded-full">
-          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
-          </svg>
-          Admin Only - Superuser Access Required
-        </div>
       </div>
       
       <!-- Registration Form -->
@@ -186,5 +178,33 @@
   </div>
 </div>
 
-<!-- Form validation and slug generation handled by performance-optimized.js -->
+<script>
+// Auto-generate slug from college name
+document.getElementById('name').addEventListener('input', function() {
+  const name = this.value;
+  const slug = name.toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+  document.getElementById('slug').value = slug;
+});
+
+// Form validation
+document.querySelector('form').addEventListener('submit', function(e) {
+  const name = document.getElementById('name').value.trim();
+  const slug = document.getElementById('slug').value.trim();
+  const email = document.getElementById('admin_email').value.trim();
+  
+  if (!name || !slug || !email) {
+    e.preventDefault();
+    alert('Please fill all required fields marked with *');
+    return false;
+  }
+  
+  if (!email.includes('@')) {
+    e.preventDefault();
+    alert('Please enter a valid email address');
+    return false;
+  }
+});
+</script>
 {% endblock %} 

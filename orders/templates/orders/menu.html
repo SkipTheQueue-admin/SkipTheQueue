@@ -3,9 +3,9 @@
 {% block content %}
 <div class="min-h-screen bg-gray-50">
   <!-- Header Section -->
-  <div class="bg-white shadow-sm border-b sticky top-16 z-30">
+  <div class="bg-white shadow-sm border-b">
     <div class="max-w-7xl mx-auto px-4 py-6">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+      <div class="flex items-center justify-between">
         <div>
           <h1 class="text-3xl font-bold text-gray-900">Menu</h1>
           {% if college %}
@@ -13,51 +13,47 @@
           {% endif %}
         </div>
         
-        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-          <!-- Enhanced Search Bar -->
-          <form method="get" class="w-full sm:w-auto">
+        <div class="flex items-center space-x-4">
+          <!-- Search Bar -->
+          <form method="get" class="flex items-center">
             <div class="relative">
               <input type="text" name="search" value="{{ search_query }}" 
                      placeholder="Search menu items..." 
-                     class="w-full sm:w-80 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 pr-12"
-                     aria-label="Search menu items">
-              <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     class="w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <button type="submit" class="absolute right-2 top-1/2 transform -translate-y-1/2">
+                <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                 </svg>
               </button>
             </div>
           </form>
           
-          <!-- Action Buttons -->
-          <div class="flex items-center gap-3">
-            <!-- Favorites Link -->
-            {% if user.is_authenticated %}
-              <a href="{% url 'favorites' %}" class="bg-yellow-500 text-white px-4 py-3 rounded-lg hover:bg-yellow-600 transition-all duration-300 whitespace-nowrap hover-lift focus-ring">
-                <span class="flex items-center">
-                  <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                  </svg>
-                  Favorites
-                </span>
-              </a>
-            {% endif %}
-            
-            <!-- Enhanced Cart Link -->
-            <a href="{% url 'view_cart' %}" class="relative bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition-all duration-300 whitespace-nowrap hover-lift focus-ring">
+          <!-- Favorites Link -->
+          {% if user.is_authenticated %}
+            <a href="{% url 'favorites' %}" class="bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600 transition duration-300">
               <span class="flex items-center">
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                 </svg>
-                <span class="cart-text">Cart</span>
-                {% if cart_count > 0 %}
-                  <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge font-medium">{{ cart_count }}</span>
-                {% else %}
-                  <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge hidden">0</span>
-                {% endif %}
+                Favorites
               </span>
             </a>
-          </div>
+          {% endif %}
+          
+          <!-- Cart Link -->
+          <a href="{% url 'view_cart' %}" class="relative bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-300">
+            <span class="flex items-center">
+              <svg class="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h9a2 2 0 001.94-1.5l1.2-4.5H6.24M7 13L5.2 6.5M7 13l-1 5h11m-8 0a1 1 0 11-2 0 1 1 0 012 0zm8 0a1 1 0 11-2 0 1 1 0 012 0z" />
+              </svg>
+              <span class="cart-text">Cart</span>
+              {% if cart_count > 0 %}
+                <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge">{{ cart_count }}</span>
+              {% else %}
+                <span class="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1 min-w-[1.5rem] text-center cart-badge hidden">0</span>
+              {% endif %}
+            </span>
+          </a>
         </div>
       </div>
     </div>
@@ -67,19 +63,19 @@
   <div class="max-w-7xl mx-auto px-4 py-8">
     <!-- Search Results Info -->
     {% if search_query %}
-      <div class="mb-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <p class="text-blue-800">
+      <div class="mb-6">
+        <p class="text-gray-600">
           Search results for "<strong>{{ search_query }}</strong>" 
           ({{ menu_items|length }} item{{ menu_items|length|pluralize }} found)
-          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 ml-2 underline">Clear search</a>
+          <a href="{% url 'menu' %}" class="text-blue-600 hover:text-blue-700 ml-2">Clear search</a>
         </p>
       </div>
     {% endif %}
     
     <!-- Favorite Items Section -->
     {% if favorite_items %}
-      <div class="mb-12">
-        <div class="flex items-center mb-6">
+        <div class="mb-12">
+          <div class="flex items-center mb-6">
           <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
             <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -90,12 +86,12 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {% for item in favorite_items %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-fade-in" data-item-id="{{ item.id }}">
+            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
               {% if item.image_url %}
                 <div class="h-48 bg-gray-200">
                   <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
                 </div>
-              {% else %}
+                {% else %}
                 <div class="h-48 bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
                   <svg class="w-16 h-16 text-yellow-300" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -103,159 +99,262 @@
                 </div>
               {% endif %}
               
-              <div class="p-4">
-                <h3 class="text-lg font-semibold text-gray-900 mb-2 line-clamp-2">{{ item.name }}</h3>
+              <div class="p-6">
+                <div class="flex justify-between items-start mb-2">
+                  <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                </div>
+                
                 {% if item.description %}
-                  <p class="text-sm text-gray-600 mb-3 line-clamp-2">{{ item.description }}</p>
+                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
                 {% endif %}
                 
-                <div class="flex items-center justify-between mb-3">
-                  <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
-                  {% if item.is_stock_managed %}
-                    <span class="text-xs {% if item.stock_quantity > 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                      {% if item.stock_quantity > 0 %}
-                        Stock: {{ item.stock_quantity }}
-                      {% else %}
-                        Out of stock
-                      {% endif %}
-                    </span>
+                <div class="flex space-x-2">
+                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add to Cart
+                    </button>
+                  </form>
+                  
+                  <button onclick="toggleFavorite({{ item.id }})" class="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+    
+    <!-- All Menu Items -->
+    {% if menu_items %}
+      <div class="mb-12">
+        <div class="flex items-center mb-6">
+          <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+            <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+            </svg>
+          </div>
+          <h2 class="text-2xl font-bold text-gray-900">All Items</h2>
+          </div>
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {% for item in menu_items %}
+              <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+                {% if item.image_url %}
+                  <div class="h-48 bg-gray-200">
+                    <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
+                  </div>
+                {% else %}
+                  <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                    <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                    </svg>
+                  </div>
+                {% endif %}
+                
+                <div class="p-6">
+                  <div class="flex justify-between items-start mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
+                    <span class="text-lg font-bold text-blue-600">₹{{ item.price }}</span>
+                  </div>
+                  
+                  {% if item.description %}
+                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                  {% endif %}
+                  
+                <div class="flex space-x-2">
+                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
+                    {% csrf_token %}
+                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                      </svg>
+                      Add to Cart
+                    </button>
+                  </form>
+                  
+                  {% if user.is_authenticated %}
+                    <button onclick="toggleFavorite({{ item.id }})" class="bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                      </svg>
+                    </button>
                   {% endif %}
                 </div>
-                
-                <div class="flex items-center gap-2">
-                  <button class="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors duration-200 focus-ring disabled:opacity-50 disabled:cursor-not-allowed"
-                          data-action="add-to-cart"
-                          data-item-id="{{ item.id }}"
-                          {% if item.is_stock_managed and item.stock_quantity <= 0 %}disabled{% endif %}>
-                    <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m6 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"></path>
-                    </svg>
-                    Add to Cart
-                  </button>
-                  
-                  <button class="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors duration-200 focus-ring"
-                          data-action="remove-favorite"
-                          data-item-id="{{ item.id }}"
-                          title="Remove from favorites">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                  </button>
                 </div>
               </div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-    
-    <!-- Menu Categories -->
-    {% if categories %}
-      <div class="mb-8">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6">Menu Categories</h2>
-        <div class="flex flex-wrap gap-3">
-          <a href="{% url 'menu' %}" 
-             class="px-4 py-2 rounded-full {% if not selected_category %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} transition-colors">
-            All Items
-          </a>
-          {% for category in categories %}
-            <a href="{% url 'menu' %}?category={{ category.id }}" 
-               class="px-4 py-2 rounded-full {% if selected_category == category.id %}bg-blue-600 text-white{% else %}bg-gray-200 text-gray-700 hover:bg-gray-300{% endif %} transition-colors">
-              {{ category.name }}
-            </a>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
-    
-    <!-- Menu Items Grid -->
-    {% if menu_items %}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {% for item in menu_items %}
-          <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
-            {% if item.image_url %}
-              <div class="h-48 bg-gray-200">
-                <img src="{{ item.image_url }}" alt="{{ item.name }}" class="w-full h-full object-cover">
-              </div>
-            {% else %}
-              <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-                <svg class="w-16 h-16 text-blue-300" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-            {% endif %}
-            
-            <div class="p-4">
-              <div class="flex items-start justify-between mb-2">
-                <h3 class="text-lg font-semibold text-gray-900">{{ item.name }}</h3>
-                <button data-action="toggle-favorite" 
-                        data-item-id="{{ item.id }}"
-                        class="text-gray-400 hover:text-yellow-500 transition-colors favorite-btn-{{ item.id }}"
-                        data-is-favorite="{% if item.id in favorite_item_ids %}true{% else %}false{% endif %}">
-                  <svg class="w-5 h-5" fill="{% if item.id in favorite_item_ids %}currentColor{% else %}none{% endif %}" 
-                       stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                          d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                  </svg>
-                </button>
-              </div>
-              
-              {% if item.description %}
-                <p class="text-gray-600 text-sm mb-3 line-clamp-2">{{ item.description }}</p>
-              {% endif %}
-              
-              <div class="flex items-center justify-between mb-3">
-                <span class="text-xl font-bold text-blue-600">₹{{ item.price }}</span>
-                {% if item.is_stock_managed %}
-                  <span class="text-sm {% if item.stock_quantity > 0 %}text-green-600{% else %}text-red-600{% endif %}">
-                    {% if item.stock_quantity > 0 %}
-                      Stock: {{ item.stock_quantity }}
-                    {% else %}
-                      Out of Stock
-                    {% endif %}
-                  </span>
-                {% endif %}
-              </div>
-              
-              <button data-action="add-to-cart" 
-                      data-item-id="{{ item.id }}"
-                      class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-200 font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                      {% if item.is_stock_managed and item.stock_quantity <= 0 %}disabled{% endif %}>
-                {% if item.is_stock_managed and item.stock_quantity <= 0 %}
-                  Out of Stock
-                {% else %}
-                  Add to Cart
-                {% endif %}
-              </button>
-            </div>
+            {% endfor %}
           </div>
-        {% endfor %}
-      </div>
+        </div>
     {% else %}
-      <!-- No Items Found -->
       <div class="text-center py-16">
-        <div class="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+        <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
           <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
           </svg>
         </div>
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">No items found</h3>
-        <p class="text-gray-600 mb-6">
-          {% if search_query %}
-            No menu items match your search for "{{ search_query }}".
-          {% else %}
-            No menu items are available at the moment.
-          {% endif %}
-        </p>
-        <a href="{% url 'menu' %}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors">
-          View All Items
-        </a>
+        <h3 class="text-xl font-semibold text-gray-600 mb-2">No Menu Items Available</h3>
+        <p class="text-gray-500">Check back later for available menu items.</p>
       </div>
     {% endif %}
   </div>
 </div>
 
-<!-- External JavaScript for menu functionality -->
-<script src="{% static 'js/menu.js' %}" defer></script>
-{% csrf_token %}
+<!-- Add to Cart Animation -->
+<div id="cartNotification" class="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform translate-x-full transition-transform duration-300 z-50">
+  <div class="flex items-center">
+    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+    </svg>
+    <span id="cartMessage">Item added to cart!</span>
+  </div>
+</div>
+
+<script>
+// Add to cart functionality
+document.querySelectorAll('.add-to-cart-form').forEach(form => {
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const itemCard = this.closest('[data-item-id]');
+    const itemName = itemCard.querySelector('h3').textContent;
+    const button = this.querySelector('button');
+    const originalText = button.innerHTML;
+    
+    // Show loading state
+    button.disabled = true;
+    button.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg> Adding...';
+    
+    // Show notification
+    const notification = document.getElementById('cartNotification');
+    const message = document.getElementById('cartMessage');
+    message.textContent = `Adding ${itemName} to cart...`;
+    
+    notification.classList.remove('translate-x-full');
+    
+    // Submit form
+    fetch(this.action, {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'X-CSRFToken': formData.get('csrfmiddlewaretoken'),
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    }).then(response => {
+      if (response.redirected) {
+        // Redirect to login page
+        window.location.href = response.url;
+        return;
+      }
+      
+      if (response.ok) {
+        return response.json().then(data => {
+          if (data.success) {
+        // Success animation
+            message.textContent = data.message;
+        notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        
+        // Add success animation to card
+        itemCard.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+          itemCard.style.transform = '';
+        }, 200);
+        
+            // Update cart count
+            if (typeof updateGlobalCartCount === 'function') {
+              updateGlobalCartCount(data.cart_count);
+            }
+            
+            // Reset button
+            button.disabled = false;
+            button.innerHTML = originalText;
+          } else {
+            // Error from server
+            message.textContent = data.error || `Error adding ${itemName} to cart`;
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        button.disabled = false;
+        button.innerHTML = originalText;
+          }
+        });
+      } else {
+        // HTTP error
+        message.textContent = `Error adding ${itemName} to cart`;
+        notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+        button.disabled = false;
+        button.innerHTML = originalText;
+      }
+    }).catch(error => {
+      console.error('Error:', error);
+      message.textContent = 'Network error. Please try again.';
+      notification.className = 'fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+      button.disabled = false;
+      button.innerHTML = originalText;
+});
+
+    // Hide notification after 3 seconds
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+    }, 3000);
+  });
+});
+
+// Toggle favorite functionality
+function toggleFavorite(itemId) {
+  const button = document.querySelector(`[data-item-id="${itemId}"].favorite-btn`);
+  const originalHTML = button.innerHTML;
+  
+  fetch(`/toggle-favorite/${itemId}/`, {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+      'Content-Type': 'application/json',
+    }
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      if (data.is_favorite) {
+        button.className = 'bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn';
+        button.innerHTML = '<svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
+      } else {
+        button.className = 'bg-gray-200 text-gray-600 p-2 rounded-lg hover:bg-yellow-500 hover:text-white transition duration-300 favorite-btn';
+        button.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>';
+      }
+      
+      // Show notification
+    const notification = document.getElementById('cartNotification');
+    const message = document.getElementById('cartMessage');
+      message.textContent = data.message;
+      notification.className = 'fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg transform transition-transform duration-300 z-50';
+    notification.classList.remove('translate-x-full');
+      
+    setTimeout(() => {
+      notification.classList.add('translate-x-full');
+    }, 3000);
+    }
+  })
+  .catch(error => {
+    console.error('Error:', error);
+    button.innerHTML = originalHTML;
+  });
+}
+</script>
+
+<style>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>
 {% endblock %}
