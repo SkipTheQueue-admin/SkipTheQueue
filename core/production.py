@@ -12,7 +12,7 @@ DEBUG = False
 SECRET_KEY = os.environ.get('SECRET_KEY')  # Set this in your environment
 
 # Allowed hosts for production
-ALLOWED_HOSTS = ['skipqueue.com', 'www.skipqueue.com', 'your-domain.com']
+ALLOWED_HOSTS = ['skipthequeue.onrender.com', 'skipqueue.com', 'www.skipqueue.com']
 
 # HTTPS Settings
 SECURE_SSL_REDIRECT = True
@@ -32,7 +32,7 @@ SESSION_COOKIE_AGE = 3600
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_SAMESITE = 'Lax'
-CSRF_TRUSTED_ORIGINS = ['https://skipqueue.com', 'https://www.skipqueue.com']
+CSRF_TRUSTED_ORIGINS = ['https://skipthequeue.onrender.com', 'https://skipqueue.com', 'https://www.skipqueue.com']
 
 # Database (use PostgreSQL in production)
 DATABASES = {
