@@ -44,7 +44,7 @@ class MenuItem(models.Model):
     is_available = models.BooleanField(default=True)
     college = models.ForeignKey(College, on_delete=models.CASCADE, related_name='menu_items', null=True, blank=True)
     category = models.CharField(max_length=50, default='General')
-    image_url = models.URLField(blank=True, null=True)
+    # image_url = models.URLField(blank=True, null=True)  # Removed - field doesn't exist in database
     created_at = models.DateTimeField(default=timezone.now)
     updated_at = models.DateTimeField(auto_now=True)
     
