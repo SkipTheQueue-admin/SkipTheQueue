@@ -33,11 +33,7 @@ class Migration(migrations.Migration):
             name='created_at',
             field=models.DateTimeField(default=django.utils.timezone.now),
         ),
-        migrations.AddField(
-            model_name='menuitem',
-            name='image_url',
-            field=models.URLField(blank=True, null=True),
-        ),
+
         migrations.AddField(
             model_name='order',
             name='estimated_time',
