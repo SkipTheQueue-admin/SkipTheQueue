@@ -101,7 +101,10 @@ class Order(models.Model):
         return f"Order #{self.id} - {self.user_name} ({self.status})"
 
     def total_price(self):
-        return sum(item.item.price * item.quantity for item in self.order_items.all())
+        try:
+            return sum(item.item.price * item.quantity for item in self.order_items.all())
+        except (AttributeError, TypeError):
+            return 0.00
     
     def get_status_color(self):
         status_colors = {

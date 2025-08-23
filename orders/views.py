@@ -18,7 +18,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
 from django.views.decorators.cache import never_cache
-from django.views.decorators.vary import vary_on_cookie
+# from django.views.decorators.vary import vary_on_cookie  # Removed in Django 5.2
 from datetime import timedelta
 import json
 import uuid
@@ -461,7 +461,6 @@ def home(request):
     return render(request, 'orders/home.html', context)
 
 @never_cache
-@vary_on_cookie
 def menu(request):
     """Menu page - requires college selection but not login"""
     # Check if college is selected
@@ -501,13 +500,14 @@ def menu(request):
     for item_id, quantity in cart.items():
         try:
             item = MenuItem.objects.get(id=item_id)
-            cart_items.append({
-                'item': item,
-                'quantity': quantity,
-                'total': item.price * quantity
-            })
-            cart_total += item.price * quantity
-        except MenuItem.DoesNotExist:
+            if item.college == college:  # Only show items from selected college
+                cart_items.append({
+                    'item': item,
+                    'quantity': quantity,
+                    'total': item.price * quantity
+                })
+                cart_total += item.price * quantity
+        except (MenuItem.DoesNotExist, AttributeError):
             continue
     
     # Get favorite items if user is logged in
@@ -516,7 +516,7 @@ def menu(request):
         try:
             user_profile = UserProfile.objects.get(user=request.user)
             favorite_items = user_profile.favorite_items.filter(college=college)
-        except UserProfile.DoesNotExist:
+        except (UserProfile.DoesNotExist, AttributeError):
             pass
     
     context = {
@@ -527,7 +527,7 @@ def menu(request):
         'cart_count': len(cart_items),
         'search_query': search_query,
         'favorite_items': favorite_items,
-        'categories': menu_items.values_list('category', flat=True).distinct(),
+        'categories': list(menu_items.values_list('category', flat=True).distinct()),
     }
     
     return render(request, 'orders/menu.html', context)
@@ -1288,15 +1288,26 @@ def super_admin_dashboard(request):
     total_orders = Order.objects.count()
     pending_orders = Order.objects.filter(status='Pending').count()
     completed_orders = Order.objects.filter(status='Completed').count()
-    total_revenue = sum(order.total_price() for order in Order.objects.filter(status='Completed'))
+    
+    # Safe revenue calculation
+    try:
+        total_revenue = sum(order.total_price() for order in Order.objects.filter(status='Completed'))
+    except:
+        total_revenue = 0.00
     
     # Today's statistics
     today_orders = Order.objects.filter(created_at__date=today).count()
-    today_revenue = sum(order.total_price() for order in Order.objects.filter(created_at__date=today, status='Completed'))
+    try:
+        today_revenue = sum(order.total_price() for order in Order.objects.filter(created_at__date=today, status='Completed'))
+    except:
+        today_revenue = 0.00
     
     # Selected date statistics
     date_orders = Order.objects.filter(created_at__date=selected_date).count()
-    date_revenue = sum(order.total_price() for order in Order.objects.filter(created_at__date=selected_date, status='Completed'))
+    try:
+        date_revenue = sum(order.total_price() for order in Order.objects.filter(created_at__date=selected_date, status='Completed'))
+    except:
+        date_revenue = 0.00
     
     # User statistics
     total_users = User.objects.count()
@@ -1315,29 +1326,45 @@ def super_admin_dashboard(request):
     # Orders by college for selected date
     college_orders = {}
     for college in colleges:
-        college_orders[college.name] = {
-            'total': Order.objects.filter(college=college).count(),
-            'today': Order.objects.filter(college=college, created_at__date=today).count(),
-            'selected_date': Order.objects.filter(college=college, created_at__date=selected_date).count(),
-            'revenue': sum(order.total_price() for order in Order.objects.filter(college=college, status='Completed')),
-            'pending': Order.objects.filter(college=college, status='Pending').count(),
-        }
+        try:
+            college_orders[college.name] = {
+                'total': Order.objects.filter(college=college).count(),
+                'today': Order.objects.filter(college=college, created_at__date=today).count(),
+                'selected_date': Order.objects.filter(college=college, created_at__date=selected_date).count(),
+                'revenue': sum(order.total_price() for order in Order.objects.filter(college=college, status='Completed')),
+                'pending': Order.objects.filter(college=college, status='Pending').count(),
+            }
+        except:
+            college_orders[college.name] = {
+                'total': 0,
+                'today': 0,
+                'selected_date': 0,
+                'revenue': 0.00,
+                'pending': 0,
+            }
     
     # Monthly statistics for charts
     monthly_data = []
     for i in range(12):
-        month_date = today - timedelta(days=30*i)
-        month_orders = Order.objects.filter(created_at__month=month_date.month, created_at__year=month_date.year).count()
-        month_revenue = sum(order.total_price() for order in Order.objects.filter(
-            created_at__month=month_date.month, 
-            created_at__year=month_date.year, 
-            status='Completed'
-        ))
-        monthly_data.append({
-            'month': month_date.strftime('%B %Y'),
-            'orders': month_orders,
-            'revenue': float(month_revenue)
-        })
+        try:
+            month_date = today - timedelta(days=30*i)
+            month_orders = Order.objects.filter(created_at__month=month_date.month, created_at__year=month_date.year).count()
+            month_revenue = sum(order.total_price() for order in Order.objects.filter(
+                created_at__month=month_date.month, 
+                created_at__year=month_date.year, 
+                status='Completed'
+            ))
+            monthly_data.append({
+                'month': month_date.strftime('%B %Y'),
+                'orders': month_orders,
+                'revenue': float(month_revenue)
+            })
+        except:
+            monthly_data.append({
+                'month': f'Month {i+1}',
+                'orders': 0,
+                'revenue': 0.0
+            })
     
     # User phone numbers (for admin access)
     users_with_phones = UserProfile.objects.select_related('user').filter(phone_number__isnull=False).order_by('-updated_at')
