@@ -463,74 +463,103 @@ def home(request):
 @never_cache
 def menu(request):
     """Menu page - requires college selection but not login"""
-    # Check if college is selected
-    selected_college = request.session.get('selected_college')
-    if not selected_college:
-        messages.warning(request, "Please select a college first.")
-        return redirect('home')
-    
     try:
-        college = College.objects.get(id=selected_college['id'])
-    except College.DoesNotExist:
-        messages.error(request, "Selected college not found.")
+        # Check if college is selected
+        selected_college = request.session.get('selected_college')
+        if not selected_college:
+            messages.warning(request, "Please select a college first.")
+            return redirect('home')
+        
+        try:
+            college = College.objects.get(id=selected_college['id'])
+        except College.DoesNotExist:
+            messages.error(request, "Selected college not found.")
+            return redirect('home')
+        
+        # Get search query
+        search_query = request.GET.get('search', '').strip()
+        
+        # Get menu items for the college
+        menu_items = MenuItem.objects.filter(
+            college=college,
+            is_available=True
+        ).order_by('category', 'name')
+        
+        # Apply search filter
+        if search_query:
+            menu_items = menu_items.filter(
+                Q(name__icontains=search_query) |
+                Q(description__icontains=search_query) |
+                Q(category__icontains=search_query)
+            )
+        
+        # Get cart items for display
+        cart = request.session.get('cart', {})
+        cart_items = []
+        cart_total = 0
+        
+        for item_id, quantity in cart.items():
+            try:
+                item = MenuItem.objects.get(id=item_id)
+                if item.college == college:  # Only show items from selected college
+                    cart_items.append({
+                        'item': item,
+                        'quantity': quantity,
+                        'total': item.price * quantity
+                    })
+                    cart_total += item.price * quantity
+            except (MenuItem.DoesNotExist, AttributeError):
+                # Remove invalid item from cart
+                try:
+                    del cart[item_id]
+                    request.session.modified = True
+                except:
+                    pass
+                continue
+            except Exception as e:
+                # Log any other errors but don't crash the view
+                print(f"Error processing cart item {item_id}: {e}")
+                continue
+        
+        # Get favorite items if user is logged in
+        favorite_items = []
+        if request.user.is_authenticated:
+            try:
+                user_profile = UserProfile.objects.get(user=request.user)
+                favorite_items = user_profile.favorite_items.filter(college=college)
+            except (UserProfile.DoesNotExist, AttributeError):
+                # UserProfile doesn't exist yet, create it
+                try:
+                    user_profile = UserProfile.objects.create(user=request.user)
+                    favorite_items = []
+                except Exception:
+                    # If creation fails, just continue without favorites
+                    favorite_items = []
+            except Exception as e:
+                # Log any other errors but don't crash the view
+                print(f"Error loading favorites: {e}")
+                favorite_items = []
+        
+        context = {
+            'college': college,
+            'menu_items': menu_items,
+            'cart_items': cart_items,
+            'cart_total': cart_total,
+            'cart_count': len(cart_items),
+            'search_query': search_query,
+            'favorite_items': favorite_items,
+            'categories': list(menu_items.values_list('category', flat=True).distinct()) if menu_items.exists() else [],
+        }
+        
+        return render(request, 'orders/menu.html', context)
+        
+    except Exception as e:
+        # Catch any unexpected errors and log them
+        print(f"Unexpected error in menu view: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, "An error occurred while loading the menu. Please try again.")
         return redirect('home')
-    
-    # Get search query
-    search_query = request.GET.get('search', '').strip()
-    
-    # Get menu items for the college
-    menu_items = MenuItem.objects.filter(
-        college=college,
-        is_available=True
-    ).order_by('category', 'name')
-    
-    # Apply search filter
-    if search_query:
-        menu_items = menu_items.filter(
-            Q(name__icontains=search_query) |
-            Q(description__icontains=search_query) |
-            Q(category__icontains=search_query)
-        )
-    
-    # Get cart items for display
-    cart = request.session.get('cart', {})
-    cart_items = []
-    cart_total = 0
-    
-    for item_id, quantity in cart.items():
-        try:
-            item = MenuItem.objects.get(id=item_id)
-            if item.college == college:  # Only show items from selected college
-                cart_items.append({
-                    'item': item,
-                    'quantity': quantity,
-                    'total': item.price * quantity
-                })
-                cart_total += item.price * quantity
-        except (MenuItem.DoesNotExist, AttributeError):
-            continue
-    
-    # Get favorite items if user is logged in
-    favorite_items = []
-    if request.user.is_authenticated:
-        try:
-            user_profile = UserProfile.objects.get(user=request.user)
-            favorite_items = user_profile.favorite_items.filter(college=college)
-        except (UserProfile.DoesNotExist, AttributeError):
-            pass
-    
-    context = {
-        'college': college,
-        'menu_items': menu_items,
-        'cart_items': cart_items,
-        'cart_total': cart_total,
-        'cart_count': len(cart_items),
-        'search_query': search_query,
-        'favorite_items': favorite_items,
-        'categories': list(menu_items.values_list('category', flat=True).distinct()),
-    }
-    
-    return render(request, 'orders/menu.html', context)
 
 @never_cache
 def order_success(request, order_id):
@@ -1533,53 +1562,62 @@ def delete_college(request, college_id):
 @login_required(login_url='/admin/login/')
 def view_order_history(request):
     """View comprehensive order history with date filtering"""
-    if not request.user.is_superuser:
-        messages.error(request, "Access denied. Super admin privileges required.")
-        return redirect('home')
-    
-    from datetime import datetime
-    
-    # Get date filters
-    start_date = request.GET.get('start_date')
-    end_date = request.GET.get('end_date')
-    college_id = request.GET.get('college')
-    
-    orders = Order.objects.select_related('college', 'user').order_by('-created_at')
-    
-    if start_date:
-        try:
-            start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
-            orders = orders.filter(created_at__date__gte=start_date)
-        except:
-            pass
-    
-    if end_date:
-        try:
-            end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
-            orders = orders.filter(created_at__date__lte=end_date)
-        except:
-            pass
-    
-    if college_id:
-        orders = orders.filter(college_id=college_id)
-    
-    # Pagination
-    from django.core.paginator import Paginator
-    paginator = Paginator(orders, 50)  # 50 orders per page
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    
-    colleges = College.objects.all().order_by('name')
-    
-    context = {
-        'page_obj': page_obj,
-        'colleges': colleges,
-        'start_date': start_date,
-        'end_date': end_date,
-        'selected_college': college_id,
-    }
-    
-    return render(request, 'orders/order_history_admin.html', context)
+    try:
+        if not request.user.is_superuser:
+            messages.error(request, "Access denied. Super admin privileges required.")
+            return redirect('home')
+        
+        from datetime import datetime
+        
+        # Get date filters
+        start_date = request.GET.get('start_date')
+        end_date = request.GET.get('end_date')
+        college_id = request.GET.get('college')
+        
+        orders = Order.objects.select_related('college', 'user').order_by('-created_at')
+        
+        if start_date:
+            try:
+                start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
+                orders = orders.filter(created_at__date__gte=start_date)
+            except:
+                pass
+        
+        if end_date:
+            try:
+                end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
+                orders = orders.filter(created_at__date__lte=end_date)
+            except:
+                pass
+        
+        if college_id:
+            orders = orders.filter(college_id=college_id)
+        
+        # Pagination
+        from django.core.paginator import Paginator
+        paginator = Paginator(orders, 50)  # 50 orders per page
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+        
+        colleges = College.objects.all().order_by('name')
+        
+        context = {
+            'page_obj': page_obj,
+            'colleges': colleges,
+            'start_date': start_date,
+            'end_date': end_date,
+            'selected_college': college_id,
+        }
+        
+        return render(request, 'orders/order_history_admin.html', context)
+        
+    except Exception as e:
+        # Catch any unexpected errors and log them
+        print(f"Unexpected error in view_order_history: {e}")
+        import traceback
+        traceback.print_exc()
+        messages.error(request, "An error occurred while loading order history. Please try again.")
+        return redirect('super_admin_dashboard')
 
 @require_POST
 @csrf_protect
