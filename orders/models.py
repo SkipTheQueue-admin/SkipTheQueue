@@ -21,6 +21,7 @@ class College(models.Model):
     address = models.TextField(blank=True)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
     
     # College admin details
     admin_name = models.CharField(max_length=100, default='Admin')

@@ -14,6 +14,7 @@ from django.views.decorators.csrf import csrf_exempt, csrf_protect, ensure_csrf_
 from django.urls import reverse
 from django.db.models import Q, Count
 from django.utils import timezone
+from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.conf import settings
@@ -28,6 +29,9 @@ import hmac
 from functools import wraps
 import logging
 
+# Set up logger
+logger = logging.getLogger(__name__)
+
 # Security decorators and utilities
 def rate_limit(max_requests=10, window=60):
     """Rate limiting decorator"""
@@ -41,7 +45,12 @@ def rate_limit(max_requests=10, window=60):
             
             if last_request_str:
                 try:
-                    last_request = timezone.datetime.fromisoformat(last_request_str.replace('Z', '+00:00'))
+                    # Handle both string and datetime objects
+                    if isinstance(last_request_str, str):
+                        last_request = datetime.fromisoformat(last_request_str.replace('Z', '+00:00'))
+                    else:
+                        last_request = last_request_str
+                    
                     time_diff = (now - last_request).seconds
                     if time_diff > window:
                         request_count = 0
@@ -1250,6 +1259,19 @@ def pwa_manifest(request):
     }
     return JsonResponse(manifest, content_type='application/manifest+json')
 
+def service_worker(request):
+    """Service worker for PWA"""
+    try:
+        import os
+        from django.conf import settings
+        static_root = getattr(settings, 'STATIC_ROOT', 'static')
+        sw_path = os.path.join(static_root, 'sw.js')
+        with open(sw_path, 'r') as f:
+            content = f.read()
+        return HttpResponse(content, content_type='application/javascript')
+    except FileNotFoundError:
+        return HttpResponse('// Service worker not found', content_type='application/javascript')
+
 @login_required(login_url='/admin/login/')
 @require_POST
 @csrf_protect
@@ -1301,7 +1323,7 @@ def super_admin_dashboard(request):
     
     from datetime import datetime, timedelta
     import json
-    
+
     # Get date filters
     today = timezone.now().date()
     selected_date = request.GET.get('date', today.strftime('%Y-%m-%d'))

@@ -57,6 +57,7 @@ urlpatterns = [
     
     # PWA
     path('manifest.json', views.pwa_manifest, name='pwa_manifest'),
+    path('sw.js', views.service_worker, name='service_worker'),
     
     # Authentication
     path('login/', views.custom_login, name='custom_login'),

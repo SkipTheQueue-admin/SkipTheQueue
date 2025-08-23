@@ -5,8 +5,8 @@ import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'your-default-insecure-secret-key')
-DEBUG = True  # Set to True for development - remember to change back to False for production
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-this-is-a-very-long-secret-key-for-development-only-please-change-in-production')
+DEBUG = os.environ.get('DEBUG', 'True').lower() == 'true'  # Set to False for production
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,skipthequeue.onrender.com').split(',')
 
@@ -103,6 +103,14 @@ LOGOUT_REDIRECT_URL = '/'
 
 # CSRF trusted origins (for Render)
 CSRF_TRUSTED_ORIGINS = os.environ.get('CSRF_TRUSTED_ORIGINS', 'https://skipthequeue.onrender.com').split(',') 
+
+# Security Settings
+SECURE_HSTS_SECONDS = 31536000  # 1 year
+SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+SECURE_HSTS_PRELOAD = True
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False').lower() == 'true'
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False').lower() == 'true'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False').lower() == 'true'
 
 # Role-based access configuration
 # Comma-separated list of super admin emails
