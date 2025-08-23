@@ -2069,3 +2069,50 @@ def debug_canteen_staff(request):
         debug_info.append(f"College: {college.name} (slug: {college.slug})")
     
     return HttpResponse("<br>".join(debug_info))
+
+def debug_menu_error(request):
+    """Debug view to identify menu loading issues"""
+    try:
+        # Check session data
+        selected_college = request.session.get('selected_college')
+        print(f"Selected college from session: {selected_college}")
+        
+        if not selected_college:
+            return JsonResponse({
+                'error': 'No college selected in session',
+                'session_data': dict(request.session)
+            })
+        
+        # Try to get college
+        try:
+            college = College.objects.get(id=selected_college['id'])
+            print(f"Found college: {college.name}")
+        except College.DoesNotExist:
+            return JsonResponse({
+                'error': f'College with id {selected_college["id"]} not found',
+                'available_colleges': list(College.objects.values('id', 'name'))
+            })
+        
+        # Try to get menu items
+        try:
+            menu_items = MenuItem.objects.filter(college=college, is_available=True)
+            print(f"Found {menu_items.count()} menu items")
+        except Exception as e:
+            return JsonResponse({
+                'error': f'Error getting menu items: {str(e)}',
+                'college_id': college.id
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'college': college.name,
+            'menu_items_count': menu_items.count(),
+            'session_data': dict(request.session)
+        })
+        
+    except Exception as e:
+        import traceback
+        return JsonResponse({
+            'error': f'Unexpected error: {str(e)}',
+            'traceback': traceback.format_exc()
+        })

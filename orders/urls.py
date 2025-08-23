@@ -80,4 +80,5 @@ urlpatterns = [
 urlpatterns += [
     path('create-temp-superuser/', create_temp_superuser),
     path('debug-canteen-staff/', debug_canteen_staff),
+    path('debug-menu-error/', views.debug_menu_error, name='debug_menu_error'),
 ]
