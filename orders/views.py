@@ -584,7 +584,11 @@ def order_success(request, order_id):
 @csrf_protect
 @rate_limit(max_requests=5, window=300)  # 5 requests per 5 minutes
 def register_college(request):
-    """College registration form with security"""
+    """College registration form with security - Superuser only"""
+    # Only allow superusers to register colleges
+    if not request.user.is_superuser:
+        messages.error(request, "Access denied. Only administrators can register colleges.")
+        return redirect('home')
     if request.method == 'POST':
         # Sanitize all inputs
         name = sanitize_input(request.POST.get('name'))
