@@ -922,10 +922,6 @@ def oauth_complete(request):
             if role_redirect:
                 return role_redirect
 
-        # If user is on cart page and doesn't have phone number, redirect to collect_phone
-        if (next_url == '/cart/' or next_url == '/cart') and not request.session.get('user_phone'):
-            return redirect('collect_phone')
-        
         # If user is trying to place an order and phone is missing, redirect to collect_phone
         if (
             next_url in ['/place-order/', '/place_order/', 'place_order', 'place-order'] or
