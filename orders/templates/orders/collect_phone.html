@@ -68,7 +68,8 @@
           <input type="tel" id="phone" name="phone" required
                  class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                  placeholder="Enter your phone number"
-                 pattern="[0-9]{10,12}">
+                 pattern="[0-9]{10,12}"
+                 value="{% if user.is_authenticated and user.profile and user.profile.phone_number %}{{ user.profile.phone_number }}{% elif request.session.user_phone %}{{ request.session.user_phone }}{% endif %}">
           <p class="text-xs text-gray-500 mt-1">We'll use this to contact you about your order</p>
         </div>
         

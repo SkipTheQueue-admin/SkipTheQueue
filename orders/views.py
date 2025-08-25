@@ -911,6 +911,15 @@ def oauth_complete(request):
             # Fail-safe: ignore provisioning errors; user can still proceed
             pass
 
+        # If user has a saved phone number, prefill session to avoid re-entering
+        try:
+            user_profile = UserProfile.objects.filter(user=request.user).first()
+            if user_profile and user_profile.phone_number:
+                request.session['user_phone'] = user_profile.phone_number
+                request.session.modified = True
+        except Exception:
+            pass
+
         # Get the stored next URL from session
         next_url = request.session.get('next_url', '/')
         # Clear the stored URL
