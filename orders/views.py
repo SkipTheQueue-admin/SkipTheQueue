@@ -492,10 +492,9 @@ def menu(request):
         # Get search query
         search_query = request.GET.get('search', '').strip()
         
-        # Get menu items for the college
+        # Get menu items for the college (include unavailable to show disabled state)
         menu_items = MenuItem.objects.filter(
-            college=college,
-            is_available=True
+            college=college
         ).order_by('category', 'name')
         
         # Apply search filter

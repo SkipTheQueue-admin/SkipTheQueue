@@ -96,21 +96,25 @@
               <div class="p-6">
                 <div class="flex items-start justify-between mb-2 gap-3 min-w-0">
                   <h3 class="text-lg font-semibold text-gray-900 truncate">{{ item.name }}</h3>
-                  <span class="text-lg font-bold text-blue-600 shrink-0">₹{{ item.price }}</span>
+                  <span class="text-lg font-bold {% if not item.is_available %}text-gray-400{% else %}text-blue-600{% endif %} shrink-0">₹{{ item.price }}</span>
                 </div>
                 
                 {% if item.description %}
-                  <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                  <p class="text-gray-600 text-sm mb-2 line-clamp-2">{{ item.description }}</p>
+                {% endif %}
+                {% if not item.is_available %}
+                  <p class="text-sm font-medium text-red-600 mb-4">This item is currently unavailable</p>
                 {% endif %}
                 
                 <div class="flex space-x-2">
                   <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
                     {% csrf_token %}
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                    <button type="submit" {% if not item.is_available %}disabled{% endif %}
+                            class="w-full {% if not item.is_available %}bg-gray-300 cursor-not-allowed{% else %}bg-blue-600 hover:bg-blue-700{% endif %} text-white py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center group">
                       <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                       </svg>
-                      Add to Cart
+                      {% if not item.is_available %}Unavailable{% else %}Add to Cart{% endif %}
                     </button>
                   </form>
                   
