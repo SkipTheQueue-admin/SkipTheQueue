@@ -877,7 +877,7 @@ def decline_order(request, college_slug, order_id):
 
 def custom_login(request):
     """Custom login view that handles redirects after OAuth"""
-    next_url = request.GET.get('next', '/')
+    next_url = request.GET.get('next', request.META.get('HTTP_REFERER') or '/')
     
     # Store the next URL in session for after login
     request.session['next_url'] = next_url
@@ -920,7 +920,7 @@ def oauth_complete(request):
             pass
 
         # Get the stored next URL from session
-        next_url = request.session.get('next_url', '/')
+        next_url = request.session.get('next_url', request.META.get('HTTP_REFERER') or '/')
         # Clear the stored URL
         request.session.pop('next_url', None)
 

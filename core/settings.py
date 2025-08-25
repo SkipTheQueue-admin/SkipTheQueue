@@ -98,7 +98,7 @@ AUTHENTICATION_BACKENDS = [
 ]
 
 LOGIN_URL = '/auth/login/google-oauth2/'
-LOGIN_REDIRECT_URL = '/'
+LOGIN_REDIRECT_URL = '/oauth-complete/'
 LOGOUT_REDIRECT_URL = '/'
 
 # CSRF trusted origins (for Render)
