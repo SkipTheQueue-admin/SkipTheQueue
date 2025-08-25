@@ -25,6 +25,7 @@ urlpatterns = [
     path('process-payment/<int:order_id>/', views.process_payment, name='process_payment'),
     path('order-success/<int:order_id>/', views.order_success, name='order_success'),
     path('order-history/', views.order_history, name='order_history'),
+    path('reorder/<int:order_id>/', views.reorder_order, name='reorder_order'),
     path('track-order/', views.track_order, name='track_order'),
     
     # Phone collection

@@ -1217,6 +1217,58 @@ def order_history(request):
         'total_spent': total_spent
     })
 
+@login_required(login_url='/login/?next=/order-history/')
+@csrf_protect
+def reorder_order(request, order_id):
+    """Repopulate the cart from a previous order and redirect to cart."""
+    try:
+        # Only allow reordering own orders
+        order = get_object_or_404(Order, id=order_id, user=request.user)
+
+        # Initialize/clear cart
+        cart = {}
+
+        # Ensure selected college in session matches the order's college
+        if order.college:
+            request.session['selected_college'] = {
+                'id': order.college.id,
+                'name': order.college.name,
+                'slug': order.college.slug,
+            }
+
+        # Add items back to cart with availability and stock checks
+        unavailable_items = []
+        for oi in order.order_items.select_related('item').all():
+            item = oi.item
+            # Skip items not in the same college context
+            if order.college and item.college_id != order.college_id:
+                continue
+            if not item.is_available:
+                unavailable_items.append(item.name)
+                continue
+            qty = oi.quantity
+            if item.is_stock_managed:
+                # Cap to available stock (>=0)
+                qty = max(0, min(qty, item.stock_quantity))
+                if qty == 0:
+                    unavailable_items.append(f"{item.name} (out of stock)")
+                    continue
+            cart[str(item.id)] = cart.get(str(item.id), 0) + qty
+
+        request.session['cart'] = cart
+        request.session.modified = True
+
+        # Inform user about any missing items
+        if unavailable_items:
+            messages.warning(request, "Some items weren't re-added: " + ", ".join(unavailable_items))
+        else:
+            messages.success(request, f"Items from Order #{order.id} were added to your cart.")
+
+        return redirect('view_cart')
+    except Exception as e:
+        messages.error(request, "Couldn't reorder. Please try again.")
+        return redirect('order_history')
+
 @never_cache
 def track_order(request):
     """Enhanced order tracking with validation"""

@@ -253,9 +253,10 @@
                   Track Order
                 </a>
                 {% if order.status == 'Completed' %}
-                  <button class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 font-medium">
+                  <a href="{% url 'reorder_order' order.id %}"
+                     class="flex-1 bg-green-600 text-white py-2 px-4 rounded-lg hover:bg-green-700 transition-colors duration-200 text-center font-medium">
                     Reorder
-                  </button>
+                  </a>
                 {% endif %}
               </div>
             </div>
