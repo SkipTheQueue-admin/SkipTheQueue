@@ -72,64 +72,7 @@
       </div>
     {% endif %}
     
-    <!-- Favorite Items Section -->
-    {% if favorite_items %}
-        <div class="mb-12">
-          <div class="flex items-center mb-6">
-          <div class="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center mr-3">
-            <svg class="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-          </div>
-          <h2 class="text-2xl font-bold text-gray-900">Your Favorites</h2>
-        </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {% for item in favorite_items %}
-            <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
-              <div class="h-48 bg-gradient-to-br from-yellow-50 to-orange-100 flex items-center justify-center">
-                <svg class="w-16 h-16 text-yellow-300" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-              </div>
-              
-              <div class="p-6">
-                <div class="flex items-start justify-between mb-2 gap-3 min-w-0">
-                  <h3 class="text-lg font-semibold text-gray-900 truncate">{{ item.name }}</h3>
-                  <span class="text-lg font-bold {% if not item.is_available %}text-gray-400{% else %}text-blue-600{% endif %} shrink-0">₹{{ item.price }}</span>
-                </div>
-                
-                {% if item.description %}
-                  <p class="text-gray-600 text-sm mb-2 line-clamp-2">{{ item.description }}</p>
-                {% endif %}
-                {% if not item.is_available %}
-                  <p class="text-sm font-medium text-red-600 mb-4">This item is currently unavailable</p>
-                {% endif %}
-                
-                <div class="flex space-x-2">
-                  <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
-                    {% csrf_token %}
-                    <button type="submit" {% if not item.is_available %}disabled{% endif %}
-                            class="w-full {% if not item.is_available %}bg-gray-300 cursor-not-allowed{% else %}bg-blue-600 hover:bg-blue-700{% endif %} text-white py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center group">
-                      <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                      </svg>
-                      {% if not item.is_available %}Unavailable{% else %}Add to Cart{% endif %}
-                    </button>
-                  </form>
-                  
-                  <button onclick="toggleFavorite({{ item.id }})" class="bg-yellow-500 text-white p-2 rounded-lg hover:bg-yellow-600 transition duration-300 favorite-btn" data-item-id="{{ item.id }}">
-                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          {% endfor %}
-        </div>
-      </div>
-    {% endif %}
+    <!-- Favorites are not shown in menu; accessible via Favorites page -->
     
     <!-- All Menu Items -->
     {% if menu_items %}
