@@ -284,9 +284,9 @@
         <div>
           <h4 class="font-semibold mb-4">Support</h4>
           <ul class="space-y-2 text-sm text-gray-400">
-            <li><a href="#" class="hover:text-white transition duration-200">Help Center</a></li>
-            <li><a href="#" class="hover:text-white transition duration-200">Contact Us</a></li>
-            <li><a href="#" class="hover:text-white transition duration-200">Privacy Policy</a></li>
+            <li><a href="{% url 'help_center' %}" class="hover:text-white transition duration-200">Help Center</a></li>
+            <li><a href="mailto:skipthequeue.app@gmail.com" class="hover:text-white transition duration-200">Contact Us</a></li>
+            <li><a href="{% url 'privacy_policy' %}" class="hover:text-white transition duration-200">Privacy Policy</a></li>
           </ul>
         </div>
         
@@ -296,7 +296,7 @@
             Get the best experience with our mobile app
           </p>
           <button onclick="installPWA()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200 text-sm">
-            Install App
+            Add to Home Screen
           </button>
         </div>
       </div>
@@ -350,7 +350,24 @@
           deferredPrompt = null;
           pwaInstallPrompt.classList.remove('show');
         });
+        return;
       }
+
+      // Fallback instructions when the browser doesn't expose the prompt
+      const ua = window.navigator.userAgent || '';
+      const isIOS = /iPhone|iPad|iPod/i.test(ua);
+      const isAndroid = /Android/i.test(ua);
+      const isChrome = /Chrome\//i.test(ua) && !/Edge\//i.test(ua) && !/OPR\//i.test(ua);
+
+      let message = 'To install: use your browser\'s menu and tap "Add to Home screen".';
+      if (isIOS) {
+        message = 'On iPhone/iPad: tap the Share icon (square with arrow) and choose "Add to Home Screen".';
+      } else if (isAndroid && isChrome) {
+        message = 'On Android Chrome: tap the three dots menu ⋮ and choose "Add to Home screen".';
+      } else if (!('serviceWorker' in navigator)) {
+        message = 'Your browser does not support installing as an app. Try using Chrome, Edge, or Safari on mobile.';
+      }
+      alert(message);
     }
 
     function dismissPWA() {

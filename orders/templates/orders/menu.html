@@ -88,7 +88,7 @@
           
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {% for item in menu_items %}
-              <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1" data-item-id="{{ item.id }}">
+              <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition duration-300 transform hover:-translate-y-1 {% if not item.is_available %}opacity-60 pointer-events-none{% endif %}" data-item-id="{{ item.id }}">
                 <div class="h-48 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
                   <svg class="w-16 h-16 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
@@ -102,17 +102,20 @@
                   </div>
                   
                   {% if item.description %}
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ item.description }}</p>
+                    <p class="text-gray-600 text-sm {% if not item.is_available %}mb-2{% else %}mb-4{% endif %} line-clamp-2">{{ item.description }}</p>
+                  {% endif %}
+                  {% if not item.is_available %}
+                    <p class="text-sm font-medium text-red-600 mb-4">This item is currently unavailable</p>
                   {% endif %}
                   
                 <div class="flex space-x-2">
                   <form method="post" action="{% url 'add_to_cart' item.id %}" class="flex-1 add-to-cart-form">
                     {% csrf_token %}
-                    <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center group">
+                    <button type="submit" {% if not item.is_available %}disabled{% endif %} class="w-full bg-blue-600 {% if not item.is_available %}opacity-60 cursor-not-allowed{% else %}hover:bg-blue-700{% endif %} text-white py-2 px-4 rounded-lg transition duration-300 flex items-center justify-center group">
                       <svg class="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                       </svg>
-                      Add to Cart
+                      {% if not item.is_available %}Unavailable{% else %}Add to Cart{% endif %}
                     </button>
                   </form>
                   
