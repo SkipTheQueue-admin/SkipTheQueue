@@ -403,8 +403,12 @@ def place_order(request):
 
     # Create order
     college = None
-    if selected_college:
-        college = College.objects.get(id=selected_college['id'])
+    if selected_college and isinstance(selected_college, dict) and 'id' in selected_college:
+        try:
+            college = College.objects.get(id=selected_college['id'])
+        except College.DoesNotExist:
+            messages.error(request, "Selected college not found. Please re-select your college.")
+            return redirect('home')
 
     try:
         order = Order.objects.create(

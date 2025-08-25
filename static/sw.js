@@ -8,12 +8,8 @@ const DYNAMIC_CACHE = 'skipqueue-dynamic-v1.0.0';
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
-  '/static/css/style.css',
-  '/static/js/app.js',
   '/static/images/icon-192x192.png',
   '/static/images/icon-512x512.png',
-  'https://cdn.tailwindcss.com',
-  'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap',
   '/manifest.json'
 ];
 
@@ -101,7 +97,7 @@ self.addEventListener('notificationclick', (event) => {
 
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/canteen-dashboard/')
+      clients.openWindow('/')
     );
   }
 });

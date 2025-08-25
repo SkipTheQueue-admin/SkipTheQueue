@@ -1,0 +1,5 @@
+[33m554cc9a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m kuch bhi ho ye code perfect hai yaha se use krna hai
+[33m7a1210b[m Remove Register College button from public access - restrict to superusers only
+[33mdb90711[m Fix migration issues: Remove duplicate migration and ensure clean migration state
+[33m8710161[m Fix migration issue: Replace PostgreSQL-specific SQL with database-agnostic migrations
+[33m177d30e[m bohot hi kyab toh kuch kuch 2
