@@ -1286,6 +1286,11 @@ def track_order(request):
         orders = Order.objects.filter(user_phone=phone).order_by('-created_at')
         return render(request, 'orders/track_order.html', {'orders': orders})
     
+    # Logged-in users: show their orders without requiring phone/order id
+    if request.user.is_authenticated:
+        user_orders = Order.objects.filter(user=request.user).order_by('-created_at')
+        return render(request, 'orders/track_order.html', {'orders': user_orders})
+    
     return render(request, 'orders/track_order.html')
 
 # PWA Manifest view
